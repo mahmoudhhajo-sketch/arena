@@ -1,3 +1,4 @@
+import {DIVISION_NAMES} from '../constants/leagues';
 import { db } from '../db';
 import { worldState, clubs, players, matches, shoutboxMessages, tipsetCoupons } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
@@ -177,7 +178,7 @@ export async function initializeSeason1World(forceReset = false) {
 // 2. Hometown is randomly assigned from valid settlements of chosen race (NOT user selectable)
 // 3. 20 new players of that race generated
 // 4. Starts with 200,000 gold, 0 merit, 0 matches, 0 wins/draws/losses, no coach, no owned arena
-// 5. Assigned to an available Division 3:1 slot (replacing a bot club to maintain structure)
+// 5. Assigned to the highest available division slot (replacing a bot club to maintain structure)
 export async function createHumanClub(params: {
   userId: string;
   managerName: string;
@@ -201,12 +202,11 @@ export async function createHumanClub(params: {
   // 2. Randomly pick valid settlement for race
   const settlement = getRandomSettlementForRace(race);
 
-  // 3. Find a bot slot in Division 3:1 to replace
-  const botToReplace = await tx
-    .select()
-    .from(clubs)
-    .where(sql`${clubs.division} LIKE 'Division 3%' AND ${clubs.isBot} = true`)
-    .limit(1);
+  // 3. Fill Kejsarserien, then Division 1 Östra and the remaining divisions in order
+  const available = (await tx.select().from(clubs).where(eq(clubs.isBot,true)))
+    .filter((c:any)=>DIVISION_NAMES.includes(c.division))
+    .sort((a:any,b:any)=>DIVISION_NAMES.indexOf(a.division)-DIVISION_NAMES.indexOf(b.division)||a.position-b.position||a.id.localeCompare(b.id));
+  const botToReplace=available.slice(0,1);
 
   let clubId: string;
   let division = 'Division 3:1';

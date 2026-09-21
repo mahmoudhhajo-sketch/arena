@@ -57,3 +57,5 @@ button:focus-visible,a:focus-visible{outline:2px solid #728654;outline-offset:3p
 .race-icon{display:inline-flex;vertical-align:middle;margin-right:4px;width:15px;height:18px}.race-icon .crest.small{width:15px;height:18px;margin:0;flex-shrink:0}.squad-group th{text-align:left;padding-top:16px;background:#dbe1cf}.pagination{display:flex;align-items:center;justify-content:space-between;margin:10px 0}.stats-controls{display:flex;gap:12px;flex-wrap:wrap;padding:12px 0}.player-stat-table td:not(:first-child),.player-stat-table th:not(:first-child){text-align:right}.player-stat-table tbody tr:nth-child(even){background:#e8eadf}.player-stat-table td{padding:7px 9px}.stats-note{font-size:12px;line-height:1.5;color:#505744}
 
 .shirt .race-icon{position:absolute;left:-4px;top:-4px;width:11px;height:13px}.shirt .race-icon .crest.small{width:11px;height:13px}
+
+.launch-notice { margin: 10px auto; padding: 12px 20px; max-width: 1000px; border: 1px solid #879978; background: #e7eadb; color: #35492b; text-align: center; }

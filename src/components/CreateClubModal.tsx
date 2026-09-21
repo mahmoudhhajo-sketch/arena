@@ -55,7 +55,7 @@ export const CreateClubModal: React.FC<CreateClubModalProps> = ({
             <ul className="list-disc pl-4 space-y-0.5">
               <li>Hemort tilldelas slumpmässigt bland din ras heliga bosättningar i Mambenna.</li>
               <li>20 nya orörda spelare av samma ras mönstras till din trupp.</li>
-              <li>Startkassa: 200 000 guld. Startserie: Division 3:1.</li>
+              <li>Startkassa: 200 000 guld. Nya lag tar över datorlag i Kejsarserien först, därefter Division 1 Östra.</li>
               <li>0 spelade matcher &bull; 0/0/0 i matchrad &bull; 0 i meritpoäng.</li>
             </ul>
           </div>

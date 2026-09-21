@@ -1,3 +1,5 @@
+import {prepareLaunch} from './launch';
+import {deliverWelcomeMail} from './welcomeMail';
 import {replenishArtifacts} from './artifactSupply';
 import {transitionSeason} from './seasonTransition';
 import {liveMatchView} from './liveMatch';
@@ -91,6 +93,8 @@ export async function tickWorld(now=new Date()){
  let worker:any;
  try{
  if(!localClient){worker=await createPool().connect();const lock=await worker.query('SELECT pg_try_advisory_lock(719202) AS acquired');if(!lock.rows[0].acquired)return;}
+ await deliverWelcomeMail();
+ if(!await prepareLaunch(now))return;
  if(!await record('calendar-clock'))await advanceCalendar(now);
  const due=[...(await records('artifact-auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'artifact',date:item.endsAt,item})),...(await records('auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'auction',date:item.endsAt,item})),...(await records('scout')).filter(s=>s.destination&&new Date(s.returnsAt)<=now).map(item=>({type:'scout',date:item.returnsAt,item})),...(await records('fixture')).filter(f=>!f.played&&new Date(f.date)<=now).map(item=>({type:'fixture',date:item.date,item}))].sort((a,b)=>a.date.localeCompare(b.date));
  for(const event of due){
