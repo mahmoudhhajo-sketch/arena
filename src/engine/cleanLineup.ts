@@ -1,0 +1,2 @@
+import {SLOT_KEYS,activeIds,reserveIds} from './lineup';
+export function cleanLineup(lineup:any,players:any[]){const copy=structuredClone(lineup),valid=new Set(players.filter(p=>!p.isDeceased).map(p=>p.id));copy.slots=Object.fromEntries(SLOT_KEYS.map(k=>{const old=copy.slots[k]||{};const active=activeIds(old).filter(id=>valid.has(id)),reserves=reserveIds(old).filter(id=>valid.has(id));return[k,{...old,slotKey:k,activePlayerIds:active,reservePlayerIds:reserves,starterPlayerId:active[0]??null,subPlayerId:reserves[0]??null}]}));return copy}

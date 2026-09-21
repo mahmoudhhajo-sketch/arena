@@ -1,0 +1,7 @@
+import {RaceIcon} from './RaceIcon';
+import {PLACES} from '../constants/geography';
+import {ReactNode,useSyncExternalStore} from 'react';
+let races:Record<string,any>={};let retired=new Set<string>(),version=0,pending=false;const listeners=new Set<()=>void>();const subscribe=(fn:()=>void)=>{listeners.add(fn);if(!pending){pending=true;fetch('/api/entity-index').then(r=>r.ok?r.json():null).then(d=>{if(d){retired=new Set(d.retired);races=d.races||{};version++;listeners.forEach(f=>f())}}).catch(()=>{});}return ()=>{listeners.delete(fn)}};window.addEventListener('arena-players-changed',()=>{fetch('/api/entity-index').then(r=>r.ok?r.json():null).then(d=>{if(d){retired=new Set(d.retired);races=d.races||{};version++;listeners.forEach(f=>f())}}).catch(()=>{})});
+export function EntityLink({kind,id,children,className=''}:{kind:'club'|'player'|'manager'|'place'|'venue'|'mail'|'division';id:string|number;children:ReactNode;className?:string}){useSyncExternalStore(subscribe,()=>version);if(kind==='player'&&(!id||retired.has(String(id))))return <span className={className}>{children}</span>;return <a href={'#/'+kind+'/'+encodeURIComponent(id)} className={'text-link '+className} onClick={e=>{e.preventDefault();e.stopPropagation();window.dispatchEvent(new CustomEvent('arena-entity',{detail:{kind,id}}))}}>{kind==='player'&&<RaceIcon race={races[id]}/ >}{children}</a>}
+
+export function PlaceLink({name}:{name:string}){const p=PLACES.find(p=>p.name===name);return p?<EntityLink kind="place" id={p.id}>{name}</EntityLink>:<>{name}</>}

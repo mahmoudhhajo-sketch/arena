@@ -1,0 +1,14 @@
+import {Express} from 'express';import {db} from '../db';import {players,clubs,matches} from '../db/schema';import {desc} from 'drizzle-orm';
+export function registerLore(app:Express){app.get('/api/lore',async(_req,res)=>{try{const [rich]=await db.select().from(players).orderBy(desc(players.wage)).limit(1);const games=await db.select().from(matches),teams=await db.select().from(clubs);const entries:any[]=[
+ {category:'Ur krönikorna',label:'Berunias första arena var en handelsgård. När den tredje korgen förstörde tullhuset förbjöd kejsaren fler än två sidokorgar.'},
+ {category:'Ur krönikorna',label:'Skogsbyarnas alver syr löv på lagets resmantlar. Ett silverlöv betyder en bortaseger som ingen väntade sig.'},
+ {category:'Ur krönikorna',label:'En dvärgdomare sägs ha blåst slutsignalen med en tekittel när visselpipan frös fast i skägget.'},
+ {category:'Ur krönikorna',label:'I Mambenna anses det ge otur att putsa vänsterskon före högerskon på matchdagen.'},
+ {category:'Speltips',label:'Två reserver i samma ruta: den vänstra får första chansen när en spelare skadas.'},
+ {category:'Speltips',label:'En stark skytt behöver inte vara en bra målvakt. Jämför positionspoängen när du väljer uppställning.'},
+ {category:'Ur krönikorna',label:'Kejsarens hovkock vägrar servera kålsoppa före tvekampen. Det räcker med en sorts oro på läktaren.'}];
+ if(rich)entries.push({category:'Spelarrekord',before:'Högst angiven spelarlön har ',label:rich.name,entity:{kind:'player',id:rich.id},after:': '+rich.wage.toLocaleString('sv-SE')+' guld.'});
+ if(games.length){for(const category of ['injuries','goals']){const score=(m:any)=>{const r=m.matchReport;return category==='injuries'?(r.injuries.home.length+r.injuries.away.length):r.events.filter((e:any)=>e.type==='GOAL_NORMAL'||e.type==='GOAL_BASKET').length};const sorted=[...games].sort((a,b)=>score(b)-score(a)),best:any=sorted[0];entries.push({category:'Matchrekord',before:category==='injuries'?'Flest skador noterades i ':'Flest mål och korgmål noterades i ',label:best.matchReport.homeClub.name+' – '+best.matchReport.awayClub.name,entity:{kind:'match',id:best.id},after:': '+score(best)+'.'});}
+ let best={count:0,id:''};for(const c of teams){let count=0;for(const m of [...games].sort((a,b)=>+new Date(a.playedAt)-+new Date(b.playedAt))){if(m.homeClubId!==c.id&&m.awayClubId!==c.id)continue;const own=m.homeClubId===c.id?m.homeScore:m.awayScore,other=m.homeClubId===c.id?m.awayScore:m.homeScore;count=own>=other?count+1:0;if(count>best.count)best={count,id:c.id}}}if(best.count)entries.push({category:'Lagrekord',before:'Längsta sviten utan förlust har ',label:teams.find(c=>c.id===best.id)?.name,entity:{kind:'club',id:best.id},after:': '+best.count+' matcher.'});}
+ res.json(entries[Math.floor(Math.random()*entries.length)]);
+ }catch(e:any){res.status(500).json({error:e.message})}})}

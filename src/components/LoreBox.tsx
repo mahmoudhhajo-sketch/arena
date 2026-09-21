@@ -1,0 +1,2 @@
+import {useData} from './WorldViews';import {Entity} from './FeatureViews';
+export function LoreBox({onOpen,onMatch}:{onOpen?:(e:Entity)=>void;onMatch?:(id:string)=>void}){const {data}=useData('/lore',null);return <div className="lorebox">{data?<><small>{data.category}</small><br/>{data.before}{data.entity?<button className="text-link" onClick={()=>data.entity.kind==='match'?onMatch?.(data.entity.id):onOpen?.(data.entity)}>{data.label}</button>:data.label}{data.after}</>:<>Yaraaz Vigil i kejsardömet Mambenna.</>}</div>}
