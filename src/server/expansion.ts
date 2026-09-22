@@ -94,9 +94,9 @@ export async function tickWorld(now=new Date()){
  try{
  if(!localClient){worker=await createPool().connect();const lock=await worker.query('SELECT pg_try_advisory_lock(719202) AS acquired');if(!lock.rows[0].acquired)return;}
  await deliverWelcomeMail();
- if(!await prepareLaunch(now))return;
+ const matchesStarted=await prepareLaunch(now);
  if(!await record('calendar-clock'))await advanceCalendar(now);
- const due=[...(await records('artifact-auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'artifact',date:item.endsAt,item})),...(await records('auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'auction',date:item.endsAt,item})),...(await records('scout')).filter(s=>s.destination&&new Date(s.returnsAt)<=now).map(item=>({type:'scout',date:item.returnsAt,item})),...(await records('fixture')).filter(f=>!f.played&&new Date(f.date)<=now).map(item=>({type:'fixture',date:item.date,item}))].sort((a,b)=>a.date.localeCompare(b.date));
+ const due=[...(await records('artifact-auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'artifact',date:item.endsAt,item})),...(await records('auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'auction',date:item.endsAt,item})),...(await records('scout')).filter(s=>s.destination&&new Date(s.returnsAt)<=now).map(item=>({type:'scout',date:item.returnsAt,item})),...(await records('fixture')).filter(f=>matchesStarted&&!f.played&&new Date(f.date)<=now).map(item=>({type:'fixture',date:item.date,item}))].sort((a,b)=>a.date.localeCompare(b.date));
  for(const event of due){
   await advanceCalendar(new Date(event.date));
   if(event.type==='artifact'){await finishArtifactAuction(event.item.id,event.date);}
@@ -129,9 +129,7 @@ export async function tickWorld(now=new Date()){
  }
  await advanceCalendar(now);
  await settleTips();
- await advanceImperialGames(now);
- await awardSeason(now);
- await transitionSeason(now);
+ if(matchesStarted){await advanceImperialGames(now);await awardSeason(now);await transitionSeason(now);}
  await progressEconomy(now);
  await releaseMarketPlayers(now);
  await replenishArtifacts(now);
@@ -183,7 +181,7 @@ export function registerExpansion(app:Express){
  route(app,'get','/api/scout/:clubId',async(req)=>await record('scout-'+req.params.clubId)||{hired:false});
  route(app,'post','/api/scout/:clubId',async(req)=>{const id='scout-'+req.params.clubId;const [club]=await db.select().from(clubs).where(eq(clubs.id,req.params.clubId));if(!club)throw Error('Laget saknas.');
  const current=await record(id);
- if(req.body.action==='hire'){if(current?.hired)return current;await put('scout',id,{clubId:club.id,hired:true,wage:1000,destination:null});}
+ if(req.body.action==='hire'){if(current?.hired)return current;await put('scout',id,{clubId:club.id,hired:true,wage:3000,destination:null});}
  else if(req.body.action==='cancel'){if(!current?.destination)throw Error('Scouten är inte på resa.');await put('scout',id,{...current,destination:null,returnsAt:null,message:'Resan avbröts. Scouten stannar på sin senaste ort.'});}
  else if(req.body.action==='send'){if(!current?.hired||current.destination)throw Error('Talangscouten är inte tillgänglig.');const dest=PLACES.find(p=>p.id===req.body.destination);if(!dest)throw Error('Välj en ort.');const home=PLACES.find(p=>p.id===current.locationId)||PLACES.find(p=>p.name===club.hometown)||PLACES[0];const neighbor=nearbyPlaces(home.id).find(p=>p.id===dest.id);if(!neighbor)throw Error('Scouten kan bara resa till en närliggande ort. Res vidare i etapper.');const days=neighbor.days;await put('scout',id,{...current,destination:dest.id,returnsAt:dailyUpdates(new Date(),new Date(Date.now()+(days+2)*86400000))[days-1].toISOString(),message:''});}
  else throw Error('Okänd åtgärd.');return await record(id);

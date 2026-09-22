@@ -1,5 +1,11 @@
+import {queueMail,gameMailbox} from './welcomeMail';
+import {records} from './records';
+import {db} from '../db';
+import {clubs} from '../db/schema';
+import {eq} from 'drizzle-orm';
 export async function sendContact(id:string,subject:string,message:string,clubId:string){
- if(!process.env.RESEND_API_KEY||!process.env.MAIL_FROM)return false;
- const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':id},body:JSON.stringify({from:process.env.MAIL_FROM,to:['mahmoudhhajo@gmail.com'],subject:'[Arena '+id+'] '+subject,text:'Lag: '+clubId+'\n\n'+message}),signal:AbortSignal.timeout(15000)});
- if(!response.ok)throw Error('Mejltjänsten kunde inte ta emot ärendet. Ärendet finns sparat lokalt.');return true;
+ const [club]=await db.select().from(clubs).where(eq(clubs.id,clubId));
+ const account=(await records('account')).find(a=>a.userId===club?.userId);
+ await queueMail('contact-mail-'+id,gameMailbox,'[Arenan '+id+'] '+subject,'Lag: '+(club?.name||clubId)+'\nManager: '+(club?.ownerName||'')+'\n\n'+message,db,account?.email);
+ return false; // Durable queue; never report delivery before the mail server accepts it.
 }

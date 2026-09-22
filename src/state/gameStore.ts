@@ -251,31 +251,10 @@ export function useGameStore() {
   // Shoutbox
   const addShoutboxMessage = useCallback(
     async (text: string) => {
-      const authorName = state.club?.ownerName || 'Manager';
-      const now = new Date();
-      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-      setState((prev) => ({
-        ...prev,
-        shoutboxMessages: [
-          {
-            user: authorName,
-            time: timeStr,
-            text,
-          },
-          ...prev.shoutboxMessages,
-        ].slice(0, 30),
-      }));
-
-      await fetch('/api/shoutbox', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          authorName,
-          content: text,
-        }),
-      });
+      const response=await fetch('/api/shoutbox',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:text})});
+      const message=await response.json();
+      if(!response.ok)throw new Error(message.error||'Meddelandet kunde inte skickas.');
+      setState(prev=>({...prev,shoutboxMessages:[{id:message.id,user:message.authorName,text:message.content,time:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Stockholm',hour:'2-digit',minute:'2-digit'}).format(new Date(message.createdAt))},...prev.shoutboxMessages.filter(m=>m.id!==message.id)].slice(0,500)}));
     },
     [state.club?.ownerName, userId]
   );

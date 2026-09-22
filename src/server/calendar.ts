@@ -44,7 +44,7 @@ export async function advanceCalendar(until:Date){
     const scouts=new Map((await records('scout',tx)).map(s=>[s.clubId,s]));
     for(const c of all){
      if(c.createdAt>at)continue;
-     const costs:Array<[string,number]>=[['Spelarlöner',squad.filter((p:any)=>p.clubId===c.id&&!p.isDeceased&&!p.isMercenary&&p.createdAt<=at).reduce((s:number,p:any)=>s+p.wage,0)],['Tränare',c.coach?.wage||0],['Läkare',c.doctorInvestment],['Talangscout',scouts.get(c.id)?.hired?1000:0],['Arenadrift',c.arena?.weeklyRent||0],['Magi',c.magicInvestment||0]];
+     const costs:Array<[string,number]>=[['Spelarlöner',squad.filter((p:any)=>p.clubId===c.id&&!p.isDeceased&&!p.isMercenary&&p.createdAt<=at).reduce((s:number,p:any)=>s+p.wage,0)],['Tränare',c.coach?.wage||0],['Läkare',c.doctorInvestment],['Talangscout',scouts.get(c.id)?.hired?3000:0],['Arenadrift',c.arena?.weeklyRent||0],['Magi',c.magicInvestment||0]];
      // Magic now regenerates mana and is paid as a weekly investment.
      const total=costs.reduce((s,[,v])=>s+v,0);
      const thresholds=magicThresholds(c.id,all),progress=await record('magic-progress-'+c.id,tx);const qualified=c.magicInvestment>=thresholds.level3&&c.gold>=total;

@@ -33,13 +33,6 @@ export async function prepareLaunch(now:Date){
   const rounds=[...new Set<number>(fixtures.map(f=>f.round))].sort((a,b)=>a-b);
   const dates=launchFixtures(start,rounds.length);
   for(const f of fixtures)await put('fixture',f.id,{...f,date:dates[rounds.indexOf(f.round)]},tx);
-  // Preserve remaining auction/travel time, never settle everything immediately on opening.
-  for(const kind of ['auction','artifact-auction','scout'])for(const item of await records(kind,tx)){
-   const field=kind==='scout'?'returnsAt':'endsAt';if(item.closed||!item[field])continue;
-   const remaining=Math.max(86400000,+new Date(item[field])-+new Date(state.pausedAt));
-   await put(kind,item.id,{...item,[field]:new Date(+start+remaining).toISOString()},tx);
-  }
-  await put('system','calendar-clock',{last:start.toISOString()},tx);
   await put('system','world-launch',{...state,startedAt:start.toISOString(),firstMatchAt:dates[0]},tx);
   return true;
  });

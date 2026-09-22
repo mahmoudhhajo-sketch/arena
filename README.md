@@ -36,33 +36,21 @@ connection automatically builds and deploys main. Deploy code without replacing
 production game data with a local test database.
 
 
-## Controlled opening of the hosted world
+## Match start and email
 
-Railway worlds wait for an explicit start by default. Accounts and clubs can be
-created and formations prepared, but simulation, auctions and other game actions
-are held. Local test worlds retain their existing behavior. For isolated tests,
-set ARENA_REQUIRE_LAUNCH=true.
+Only scheduled matches wait for launch on Railway. Market, chat, scouting,
+training, doctors, wages and magic operate immediately. Local worlds are unchanged.
+Set ARENA_LAUNCH_AT only when the owner explicitly requests match start. The next
+worker rebases unplayed fixture dates once: Fri–Mon -> Tue; Tue–Thu -> Fri,
+19:00 Europe/Stockholm. It does not reset other game clocks or auction deadlines.
 
-Only after the owner explicitly requests launch, set ARENA_LAUNCH_AT to the agreed
-ISO timestamp in Railway. Never set this variable as part of ordinary deployment.
-The first worker after that time rebases all unplayed fixture dates once, preserving
-pairings. Friday through Monday starts lead to Tuesday; Tuesday through Thursday
-starts lead to Friday. Kickoff is 19:00 Europe/Stockholm, including DST changes.
-Calendar updates begin at launch; no paused weeks are billed retroactively.
-Open auctions retain their remaining time (at least one day).
+Registration stores a private email and queues both a welcome letter and a notice
+to mahmoudhhajo@gmail.com. Contact forms queue mail there too, with the manager's
+email as Reply-To. Configure GMAIL_APP_PASSWORD in Railway to send through Gmail
+SMTP/TLS (requires Railway Pro). Never put credentials in chat or Git.
+Alternatively configure GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and
+GMAIL_REFRESH_TOKEN for Gmail API over HTTPS. The outbox survives deployment and
+retries failures hourly, up to five attempts. Real delivery requires credentials.
 
-## Welcome email (Google connection required)
-
-Registration stores a private email address and an outbox message atomically.
-Gmail delivery is inactive until server-only GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET
-and GMAIL_REFRESH_TOKEN are configured for mahmoudhhajo@gmail.com. Use Google's
-OAuth authorization with only gmail.send permission and offline access. Never
-commit tokens or send them through chat. Trial Railway blocks SMTP, so app
-passwords cannot be used here. The Gmail API uses HTTPS. Failed deliveries retry
-hourly up to five times, and pending messages survive deployment. Inspect
-mail-outbox records for delivery status. Google authentication has not yet been
-connected or tested against the real mailbox.
-
-Integration test (isolated database): set LOCAL_DB_DIR=:memory:,
-PUBLIC_ORIGIN=https://arena-test.invalid and ALLOW_SIGNUPS=true, then run
-`node --import tsx tests/launch.integration.ts`.
+The isolated tests in tests/launch.integration.ts use LOCAL_DB_DIR=:memory:,
+PUBLIC_ORIGIN=https://arena-test.invalid and ALLOW_SIGNUPS=true.
