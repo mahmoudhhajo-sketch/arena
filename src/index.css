@@ -79,3 +79,4 @@ button:focus-visible,a:focus-visible{outline:2px solid #728654;outline-offset:3p
 
 
 .registration-club{border:1px solid #a6aa96;border-radius:8px;padding:12px;margin:14px 0;min-width:0}.registration-club legend{font-weight:bold;padding:0 6px}.login-page .registration-club label{display:grid;gap:4px;margin:9px 0}.registration-club input,.registration-club select{width:100%;box-sizing:border-box}.registration-club small{font-size:11px;color:#535c45}.club-settings .club-upload{display:block;max-height:220px;object-fit:contain;margin:12px 0}
+.login-page .login-frame form label{grid-template-columns:minmax(0,1fr);gap:5px;text-align:left}.login-page .login-frame form label>input,.login-page .login-frame form label>select{width:100%;min-width:0}.login-page .login-frame form label>small{grid-column:1;line-height:1.4}.login-page .login-frame form label{margin-bottom:12px}
