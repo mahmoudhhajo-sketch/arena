@@ -4,6 +4,7 @@ import { worldState, clubs, players, matches, shoutboxMessages, tipsetCoupons } 
 import { eq, sql } from 'drizzle-orm';
 import { Race, LineupConfig, TacticsConfig, TrainableAttribute } from '../types';
 import { generateStarterSquad } from '../engine/playerGenerator';
+import { generateNewClubSquad } from '../engine/newClubSquad';
 import { getRandomSettlementForRace, generateProceduralBotClubName } from '../constants/mambenna';
 
 const DEFAULT_TACTICS: TacticsConfig = {
@@ -298,7 +299,7 @@ export async function createHumanClub(params: {
   }
 
   // 4. Generate 20 new players for human club
-  const squad = generateStarterSquad(race, clubId, settlement.name);
+  const squad = generateNewClubSquad(race, clubId, settlement.name);
 
   const createdPlayers = [];
   for (let i = 0; i < squad.length; i++) {
