@@ -77,3 +77,5 @@ button:focus-visible,a:focus-visible{outline:2px solid #728654;outline-offset:3p
 
 @media(max-width:700px){.formation-page .lineup-layout{grid-template-columns:minmax(0,1fr);gap:12px}.formation-page .bench{grid-template-columns:repeat(6,minmax(0,1fr));max-height:220px;gap:9px 3px}.formation-page .pitch{height:280px}}
 
+
+.registration-club{border:1px solid #a6aa96;border-radius:8px;padding:12px;margin:14px 0;min-width:0}.registration-club legend{font-weight:bold;padding:0 6px}.login-page .registration-club label{display:grid;gap:4px;margin:9px 0}.registration-club input,.registration-club select{width:100%;box-sizing:border-box}.registration-club small{font-size:11px;color:#535c45}.club-settings .club-upload{display:block;max-height:220px;object-fit:contain;margin:12px 0}

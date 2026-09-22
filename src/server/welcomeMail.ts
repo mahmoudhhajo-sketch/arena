@@ -9,7 +9,7 @@ export async function queueMail(id:string,to:string,subject:string,text:string,t
  await put('mail-outbox',id,{to,subject,text,replyTo,attempts:0,createdAt:new Date().toISOString(),sentAt:null},tx);
 }
 export async function queueWelcome(account:any,tx:any){
- const text='Välkommen till Arenan, '+account.name+'!\n\nDitt managerkonto är skapat. Logga in och anmäl ditt lag:\n'+process.env.PUBLIC_ORIGIN+'\n\nSkapa din klubb, lär känna spelarna och gör din första uppställning. Marknaden, talangjakten, magin och läkaren finns redan till hands. Seriematcherna börjar först när spelledningen ger startsignalen.\n\nNybörjarguiden hjälper dig med de första stegen. Har du frågor kan du svara på det här brevet.\n\nVi ses i Mambenna!\nSpelledningen';
+ const text='Välkommen till Arenan, '+(account.managerName||account.name)+'!\n\nDitt konto och lag är skapade. Logga in och lär känna din trupp:\n'+process.env.PUBLIC_ORIGIN+'\n\nLär känna spelarna och gör din första uppställning. Marknaden, talangjakten, magin och läkaren finns redan till hands. Seriematcherna börjar först när spelledningen ger startsignalen.\n\nNybörjarguiden hjälper dig med de första stegen. Har du frågor kan du svara på det här brevet.\n\nVi ses i Mambenna!\nSpelledningen';
  await queueMail('welcome-'+account.userId,account.email,'Välkommen till Arenan!',text,tx);
  await queueMail('signup-notice-'+account.userId,gameMailbox,'[Arenan] Ny manager registrerad',account.name+' har registrerat ett konto.\nMejl: '+account.email,tx,account.email);
 }

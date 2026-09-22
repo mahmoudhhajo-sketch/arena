@@ -186,18 +186,25 @@ export async function createHumanClub(params: {
   clubName: string;
   shortName: string;
   race: Race;
-}) {
-  const { userId, managerName, clubName, shortName, race } = params;
+}, transaction?: any) {
+  const { userId, race } = params;
+  const managerName = String(params.managerName || '').trim(), clubName = String(params.clubName || '').trim(), shortName = String(params.shortName || '').trim();
+  if (managerName.length < 2 || managerName.length > 50) throw new Error('Managernamnet ska ha 2–50 tecken.');
+  if (clubName.length < 3 || clubName.length > 50) throw new Error('Lagnamnet ska ha 3–50 tecken.');
+  if (!shortName || shortName.length > 25) throw new Error('Kortnamnet ska ha 1–25 tecken.');
   if (!['human','elf','dwarf','orc'].includes(race)) throw new Error('Välj människa, alv, dvärg eller orch.');
-  const [owned] = await db.select().from(clubs).where(eq(clubs.userId,userId));
+  const [owned] = await (transaction || db).select().from(clubs).where(eq(clubs.userId,userId));
   if(owned) throw new Error('Du har redan ett lag.');
 
 
   // 1. Ensure world is initialized
-  await initializeSeason1World(false);
-  return db.transaction(async(tx:any)=>{
+  if (!transaction) await initializeSeason1World(false);
+  const create = async(tx:any)=>{
     await tx.execute(sql`SELECT pg_advisory_xact_lock(719092)`);
     if((await tx.select().from(clubs).where(eq(clubs.userId,userId))).length)throw new Error('Du har redan ett lag.');
+    const existingTeams = await tx.select().from(clubs);
+    if (existingTeams.some((c:any)=>c.name.toLocaleLowerCase('sv')===clubName.toLocaleLowerCase('sv'))) throw new Error('Lagnamnet är upptaget.');
+    if (existingTeams.some((c:any)=>!c.isBot&&c.ownerName.toLocaleLowerCase('sv')===managerName.toLocaleLowerCase('sv'))) throw new Error('Managernamnet är upptaget.');
 
 
   // 2. Randomly pick valid settlement for race
@@ -354,5 +361,6 @@ export async function createHumanClub(params: {
     club: finalClub,
     players: createdPlayers,
   };
-  });
+  };
+  return transaction ? create(transaction) : db.transaction(create);
 }

@@ -1,3 +1,4 @@
+import {Meter} from './SquadOverview';
 import {InjuryMark} from './InjuryMark';
 import {SPELLS} from '../constants/spells';
 import {ARTIFACTS} from '../constants/market';
@@ -22,22 +23,7 @@ interface PlayerProfileViewProps {
 
 const ATTRIBUTE_KEYS = Object.keys(ATTRIBUTE_NAMES_SV) as Array<keyof PlayerAttributes>;
 
-function AttributeMeter({ value }: { value: number }) {
-  const visible = Math.max(0, Math.min(16, Math.round(value)));
-  return (
-    <div className="flex items-center gap-2 min-w-0">
-      <span className="w-[72px] shrink-0 font-medium text-stone-800">{getQualitativeLabel(value)}</span>
-      <div className="grid grid-cols-16 gap-[1px] flex-1 min-w-[108px]" aria-label={`${getQualitativeLabel(value)} av 16 synliga nivåer`}>
-        {Array.from({ length: 16 }).map((_, i) => (
-          <span
-            key={i}
-            className={`h-2 border border-[#b9aa96] ${i < visible ? 'bg-[#9c3a25]' : 'bg-[#eee8dc]'}`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
+function AttributeMeter({value}:{value:number}){return <Meter value={value}/>;}
 
 export const PlayerProfileView: React.FC<PlayerProfileViewProps> = ({
   player,

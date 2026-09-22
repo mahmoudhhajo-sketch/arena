@@ -182,3 +182,6 @@ export const RACE_DESCRIPTIONS: Record<Race, string> = {
 
 };
 
+
+// Display only complete visible levels: 3 (Värdelös) is three times 1 (Skamlig).
+export function attributeBarPercent(value:number){return Math.max(0,Math.min(16,Math.round(Number.isFinite(value)?value:0)))/16*100;}
