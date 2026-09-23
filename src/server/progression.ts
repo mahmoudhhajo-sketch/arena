@@ -22,10 +22,16 @@ export async function releaseMarketPlayers(now:Date){
  const day=weatherFor('',now).date;
  await db.transaction(async(tx:any)=>{
   await tx.execute(sql`SELECT pg_advisory_xact_lock(719082)`);
-  const auctions=(await records('auction',tx)).filter(a=>!a.closed&&+new Date(a.endsAt)>+now);
+  let auctions=(await records('auction',tx)).filter(a=>!a.closed&&+new Date(a.endsAt)>+now);
+  const allPlayers=await tx.select().from(players),wages=new Map(allPlayers.map(p=>[p.id,p.wage])),middle=(a:any)=>{const wage=wages.get(Number(a.playerId))||0;return wage>=1500&&wage<=2000;};
+  // During the opening flood, rotate only untouched imperial listings until 40% form a useful middle class.
+  const middleTarget=18,middleShortage=Math.max(0,middleTarget-auctions.filter(middle).length);
+  const replaceable=auctions.filter(a=>!middle(a)&&!a.bidderId&&!a.sellerId).slice(0,middleShortage);
+  for(const auction of replaceable)await put('auction',auction.id,{...auction,closed:true,replaced:true},tx);
+  const replaced=new Set(replaceable.map(a=>a.id));auctions=auctions.filter(a=>!replaced.has(a.id));
   const missing=Math.max(0,45-auctions.length);
   if(!missing){if(!await record('market-day-'+day,tx))await put('system','market-day-'+day,{date:day,active:auctions.length},tx);return;}
-  const allPlayers=await tx.select().from(players),reference=worldMarketQuality(allPlayers);
+  const reference=worldMarketQuality(allPlayers);let middleNeeded=Math.max(0,middleTarget-auctions.filter(middle).length);
   const races:any[]=['human','elf','dwarf','orc','human','elf','dwarf','orc','goblin','troll'];
   const roles:any[]=['goalkeeper','defender','midfielder','attacker'];
   for(let i=0;i<missing;i++){
@@ -33,7 +39,7 @@ export async function releaseMarketPlayers(now:Date){
    const p=generateSinglePlayer(0,race,'',home.name,1,roles[(auctions.length+i)%roles.length]);
    p.attributes=marketAttributes(p.attributes,reference);
    // About two players in five form the useful middle class of the market.
-   if((auctions.length+i)%5<2)p.attributes=tuneMarketWage(p.attributes,1500+Math.floor(Math.random()*501));
+   if(middleNeeded>0){p.attributes=tuneMarketWage(p.attributes,1500+Math.floor(Math.random()*501));middleNeeded--;}
    p.wage=calculateWage(p.attributes);
    const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;
    const [created]=await tx.insert(players).values({...row,clubId:null}).returning();
