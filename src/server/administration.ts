@@ -5,6 +5,9 @@ import {clubs,players,gameRecords,shoutboxMessages} from '../db/schema';
 import {record,records,put} from './records';
 import {teamNews} from './newsStatistics';
 import {ARTIFACTS} from '../constants/market';
+import {PLACES} from '../constants/geography';
+import {generateNewClubSquad} from '../engine/newClubSquad';
+import {botLineup} from '../engine/botLineup';
 
 function boundedText(value:any,min:number,max:number){const v=String(value??'').trim();if(v.length<min||v.length>max)throw Error(`Ange ${min}–${max} tecken.`);return v;}
 async function lockedRecord(id:string,kind:string,tx:any){const [r]=await tx.select().from(gameRecords).where(eq(gameRecords.id,id)).for('update');if(!r||r.kind!==kind)throw Error('Posten saknas.');return {id:r.id,...r.payload};}
@@ -15,7 +18,7 @@ export function registerAdministration(app:Express){
   const teams=await db.select().from(clubs),accounts=await records('account'),bans=await records('moderation-account'),roles=await records('admin-role');
   const ps=await db.select({id:players.id,name:players.name}).from(players);
   const auctions=[...(await records('auction')).map(a=>({...a,kind:'auction',name:ps.find(p=>p.id===a.playerId)?.name||'Spelare #'+a.playerId})),...(await records('artifact-auction')).map(a=>({...a,kind:'artifact-auction',name:ARTIFACTS.find(i=>i.id===a.artifactId)?.name||a.artifactId}))];
-  res.json({clubs:teams.map(c=>({id:c.id,name:c.name,shortName:c.shortName,ownerName:c.ownerName,isBot:c.isBot,gold:c.gold,division:c.division})),accounts:accounts.map(a=>({userId:a.userId,name:a.name,managerName:a.managerName||a.name,clubName:teams.find(c=>c.userId===a.userId)?.name,admin:roles.some(r=>r.userId===a.userId&&r.enabled),banned:bans.find(b=>b.userId===a.userId)?.banned||false})),forum:(await records('forum')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,500),chat:await db.select().from(shoutboxMessages).orderBy(desc(shoutboxMessages.createdAt)).limit(100),auctions:auctions.filter(a=>!a.closed).map(a=>({...a,sellerName:teams.find(c=>c.id===a.sellerId)?.name||'Kejsaren',bidderName:teams.find(c=>c.id===a.bidderId)?.name||'Inget bud'})),content:await records('content-page'),contentVersions:(await records('content-version')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,100),audit:(await records('admin-audit')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,100)});
+  res.json({clubs:teams.map(c=>({id:c.id,name:c.name,shortName:c.shortName,race:c.race,hometown:c.hometown,ownerName:c.ownerName,isBot:c.isBot,gold:c.gold,division:c.division})),accounts:accounts.map(a=>({userId:a.userId,name:a.name,managerName:a.managerName||a.name,clubName:teams.find(c=>c.userId===a.userId)?.name,admin:roles.some(r=>r.userId===a.userId&&r.enabled),banned:bans.find(b=>b.userId===a.userId)?.banned||false})),forum:(await records('forum')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,500),chat:await db.select().from(shoutboxMessages).orderBy(desc(shoutboxMessages.createdAt)).limit(100),auctions:auctions.filter(a=>!a.closed).map(a=>({...a,sellerName:teams.find(c=>c.id===a.sellerId)?.name||'Kejsaren',bidderName:teams.find(c=>c.id===a.bidderId)?.name||'Inget bud'})),content:await records('content-page'),contentVersions:(await records('content-version')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,100),audit:(await records('admin-audit')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,100)});
  }catch{res.status(500).json({error:'Administrationen kunde inte hämtas.'})}});
  app.post('/api/administration/action',async(req:any,res)=>{try{
   const reason=boundedText(req.body.reason,5,500),requestId=String(req.body.requestId||'');
@@ -26,15 +29,24 @@ export function registerAdministration(app:Express){
    if(!(await record('admin-role-'+req.arenaUser.userId,tx))?.enabled||(await record('moderation-account-'+req.arenaUser.userId,tx))?.banned)throw Error('Administratörsbehörighet saknas.');
    const auditId='admin-audit-'+requestId,existing=await record(auditId,tx);if(existing){if(existing.actor!==req.arenaUser.userId)throw Error('Åtgärds-ID används redan.');return {success:true,repeated:true};}
    const {action,target}=req.body;let before:any,after:any;
-   if(action==='club-name'||action==='club-gold'){
+   if(action==='club-name'||action==='club-gold'||action==='club-rebuild'){
     const [c]=await tx.select().from(clubs).where(eq(clubs.id,String(target))).for('update');if(!c)throw Error('Laget saknas.');
     if(action==='club-name'){
      const name=boundedText(req.body.name,3,50),shortName=boundedText(req.body.shortName,1,25);
      if((await tx.select().from(clubs)).some((other:any)=>other.id!==c.id&&other.name.toLocaleLowerCase('sv')===name.toLocaleLowerCase('sv')))throw Error('Lagnamnet används redan.');
      before={name:c.name,shortName:c.shortName};after={name,shortName};await tx.update(clubs).set(after).where(eq(clubs.id,c.id));
-    }else{
+    }else if(action==='club-gold'){
      const amount=Number(req.body.amount);if(!Number.isSafeInteger(amount)||amount===0||Math.abs(amount)>10000000)throw Error('Ange en justering på högst 10 000 000 guld.');
      before={gold:c.gold};after={gold:c.gold+amount};await tx.update(clubs).set(after).where(eq(clubs.id,c.id));await put('ledger',auditId,{clubId:c.id,amount,category:'Spelledningen: '+reason,date:new Date().toISOString()},tx);
+    }else{
+     const race=String(req.body.race||''),hometown=String(req.body.hometown||'');
+     if(!['human','elf','dwarf','orc'].includes(race)||!PLACES.some(p=>p.name===hometown&&p.race===race))throw Error('Välj en hemort som tillhör lagets nya ras.');
+     const former=await tx.select().from(players).where(eq(players.clubId,c.id)).for('update');
+     await tx.update(players).set({clubId:null}).where(eq(players.clubId,c.id));
+     const rows=generateNewClubSquad(race as any,c.id,hometown).map((p:any)=>{const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;return {...row,clubId:c.id};});
+     const squad=await tx.insert(players).values(rows).returning(),lineup=botLineup(squad);
+     await tx.update(clubs).set({race,hometown,lineup}).where(eq(clubs.id,c.id));
+     before={race:c.race,hometown:c.hometown,squadSize:former.length};after={race,hometown,squadSize:squad.length,newPlayers:squad.map((p:any)=>p.name)};
     }
     await teamNews(tx,c.id,requestId,'Spelledningen har gjort en justering',reason);
    }else if(action==='account-ban'||action==='account-unban'){
