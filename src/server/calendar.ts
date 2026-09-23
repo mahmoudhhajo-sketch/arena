@@ -1,4 +1,5 @@
-import {magicThresholds,earnedMagicLevel,regenerateMana} from '../engine/magicEconomy';
+import {weeklyMagicThresholds,refreshMagicPrices} from './magicPrices';
+import {earnedMagicLevel,regenerateMana} from '../engine/magicEconomy';
 import {calculateWage} from '../engine/playerGenerator';
 import {db} from '../db';
 import {clubs,players,worldState} from '../db/schema';
@@ -19,6 +20,7 @@ export async function advanceCalendar(until:Date){
    const recovery=new Map((await records('recovery',tx)).map(r=>[r.playerId,r]));
    const participation=new Map((await records('participation',tx)).map(r=>[r.playerId,r]));
    const sunday=at.getUTCDay()===0,weekStart=at.getTime()-7*86400000;
+   if(sunday)await refreshMagicPrices(all,at,tx);
    const byClub=new Map(all.map((c:any)=>[c.id,c]));
    for(const p of squad){
     if(p.isDeceased||p.createdAt>at)continue;
@@ -47,7 +49,7 @@ export async function advanceCalendar(until:Date){
      const costs:Array<[string,number]>=[['Spelarlöner',squad.filter((p:any)=>p.clubId===c.id&&!p.isDeceased&&!p.isMercenary&&p.createdAt<=at).reduce((s:number,p:any)=>s+p.wage,0)],['Tränare',c.coach?.wage||0],['Läkare',c.doctorInvestment],['Talangscout',scouts.get(c.id)?.hired?3000:0],['Arenadrift',c.arena?.weeklyRent||0],['Magi',c.magicInvestment||0]];
      // Magic now regenerates mana and is paid as a weekly investment.
      const total=costs.reduce((s,[,v])=>s+v,0);
-     const thresholds=magicThresholds(c.id,all),progress=await record('magic-progress-'+c.id,tx);const qualified=c.magicInvestment>=thresholds.level3&&c.gold>=total;
+     const thresholds=await weeklyMagicThresholds(c.id,tx),progress=await record('magic-progress-'+c.id,tx);const qualified=c.magicInvestment>=thresholds.level3&&c.gold>=total;
      await put('magic-progress','magic-progress-'+c.id,{weeks:qualified?(progress?.weeks||0)+1:0,lastPayment:at.toISOString(),premium:thresholds.level3,paid:c.magicInvestment},tx);
      await tx.update(clubs).set({gold:sql`${clubs.gold}-${total}`}).where(eq(clubs.id,c.id));
      for(const [category,amount] of costs)if(amount)await put('ledger','week-'+at.toISOString()+'-'+c.id+'-'+category,{clubId:c.id,category,amount:-amount,date:at.toISOString()},tx);
@@ -57,7 +59,7 @@ export async function advanceCalendar(until:Date){
    for(const snapshot of all){
     const [c]=await tx.select().from(clubs).where(eq(clubs.id,snapshot.id)).for('update');
     if(c.createdAt>at)continue;
-    const thresholds=magicThresholds(c.id,all),progress=await record('magic-progress-'+c.id,tx);
+    const thresholds=await weeklyMagicThresholds(c.id,tx),progress=await record('magic-progress-'+c.id,tx);
     const state=regenerateMana(await record('mana-'+c.id,tx),c.magicInvestment,earnedMagicLevel(c.magicInvestment,thresholds,progress?.weeks||0),thresholds.reference,+at);
     await put('mana','mana-'+c.id,state,tx);
    }
