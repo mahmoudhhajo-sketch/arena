@@ -1,3 +1,4 @@
+import {moraleFactor} from './economy';
 import {attendanceDemand,arenaConfidence} from './economy';
 import {describeEvent} from './commentary';
 import {activeSpells,SPELLS,spellById} from '../constants/spells';
@@ -111,7 +112,7 @@ export function simulateMatch(
     const reservesBySlot = new Map<string, Player[]>();
     const usedIds = new Set<number>();
     const allActiveIds=new Set(Object.values(club.lineup?.slots||{}).flatMap(activeIds));
-    const morale=((club as any).morale??100)/100;
+    const morale=moraleFactor((club as any).morale??100);
 
     // The manager's formation is authoritative. Never auto-fill empty slots.
     // Each cell can contain two active players plus two ordered reserves.
@@ -278,7 +279,7 @@ export function simulateMatch(
           const sub=players.find(p=>p.id===reserveId&&!p.isDeceased&&p.currentInjury===0&&!unavailable.has(p.id)&&!squad.active.some(a=>a.player.id===p.id));
           if(!sub){events.push({id:'shadow-missed-'+outgoing.player.id,period,minute:60,type:'PREMATCH',teamSide:side,playerId:outgoing.player.id,playerName:outgoing.player.name,text:outgoing.player.name+' väntar vid skuggornas rand, men den utsedda förstareserven är inte tillgänglig. Skuggbytet uteblir.',important:true} as any);continue;}
           const old=outgoing.player;unavailable.add(old.id);
-          const morale=((club as any).morale??100)/100;
+          const morale=moraleFactor((club as any).morale??100);
           outgoing.player={...sub,form:Math.min(16,sub.form+activeSpells(sub.artifacts).reduce((a,s)=>a+(s.form||0),0)),attributes:Object.fromEntries(Object.entries(effectiveAttributes(sub)).map(([k,v])=>[k,v*morale])) as any};
           events.push({id:'shadow-sub-'+old.id,period,minute:60,type:'SUBSTITUTION',teamSide:side,playerId:sub.id,playerName:sub.name,opponentPlayerId:old.id,opponentPlayerName:old.name,slot:outgoing.slotKey,shirtNumber:sub.shirtNumber,text:'Inför sista perioden drar en slöja av lövskuggor över planen. '+old.name+' kliver ur skenet och '+sub.name+' tar spelarens plats genom Skuggbyte.',important:true} as any);
         }
@@ -385,7 +386,7 @@ export function simulateMatch(
           (loserSide==='home'?homeInjuries:awayInjuries).push({playerId:old.id,playerName:old.name,severity});
           const queue=loserSquad.reservesBySlot.get(slot)||[];let sub:Player|undefined;
           while(queue.length&&!sub){const candidate=queue.shift()!;if(!unavailable.has(candidate.id)&&!loserSquad.active.some(p=>p.player.id===candidate.id))sub=candidate}
-          if(sub){const reserveMorale=(((loserSide==='home'?homeClub:awayClub) as any).morale??100)/100;loser.player={...sub,form:Math.min(16,sub.form+activeSpells(sub.artifacts).reduce((a,s)=>a+(s.form||0),0)),attributes:Object.fromEntries(Object.entries(effectiveAttributes(sub)).map(([k,v])=>[k,v*reserveMorale])) as any};
+          if(sub){const reserveMorale=moraleFactor(((loserSide==='home'?homeClub:awayClub) as any).morale??100);loser.player={...sub,form:Math.min(16,sub.form+activeSpells(sub.artifacts).reduce((a,s)=>a+(s.form||0),0)),attributes:Object.fromEntries(Object.entries(effectiveAttributes(sub)).map(([k,v])=>[k,v*reserveMorale])) as any};
             events.push({id:'sub-'+period+'-'+phase,period,minute:currentMinute,type:'SUBSTITUTION',teamSide:loserSide,playerId:sub.id,playerName:sub.name,opponentPlayerId:old.id,opponentPlayerName:old.name,text:`${sub.name} sprang in när ${old.name} lämnade planen.`,slot,shirtNumber:sub.shirtNumber} as any);
           }else{loserSquad.active.splice(loserSquad.active.indexOf(loser),1);events.push({id:'inj-'+period+'-'+phase,period,minute:currentMinute,type:'INJURY',teamSide:loserSide,playerId:old.id,playerName:old.name,text:`${old.name} lämnade planen skadad. Laget fortsätter med en spelare mindre.`,slot} as any)}
         }

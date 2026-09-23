@@ -1,3 +1,4 @@
+import {Administration} from './components/Administration';
 import {useHistoryState} from './lib/useHistoryState';
 import {ArenaRental} from './components/ArenaRental';
 import {ArtifactMarket} from './components/ArtifactMarket';
@@ -30,6 +31,7 @@ function Game(){
  if(selected)return <EntityPage entity={{kind:'player',id:selected.id}} clubId={state.club.id} viewerUserId={state.userId} onBack={()=>selectPlayer(null)} onRefresh={refetch}/>;
  if(match)return <><button className="text-link" onClick={goBack}>← Tillbaka</button><MatchView match={match} matchesHistory={[match]} onSelectMatch={()=>{}} onSimulateNewMatch={()=>{}}/></>;
  switch(state.currentTab){
+ case 'administration':return <Administration/>;
  case 'lag':return <ClubView club={state.club} players={state.players} onNavigateTab={navigate} onUpdatePresentation={updatePresentation}/>;
  case 'spelare':return <><button onClick={()=>setOverview(true)}>Öppna spelaröversikt ↗</button><PlayersListView grouped players={state.players} onSelectPlayer={id=>setEntity({kind:'player',id})} onNavigateTab={navigate}/></>;
  case 'uppstallning':return <LineupView club={state.club} players={state.players} onSaveLineup={async(lineup)=>{await api('/clubs/'+state.club.id+'/lineup',{lineup});await refetch()}}/>;

@@ -9,7 +9,7 @@ Hemmapubliken ger spelarna mod. Arenans ära inspirerar båda lagen medan skräc
 
 Mångrenens stav verkar från klubbens förråd under den säsong då den förvärvas; därefter är kraften uttömd. Staven är mycket sällsynt. Alla raser har en dyr antimagi på nivå 3 som under en match dämpar båda lagens besvärjelser. Orcher kan på nivå 3 brygga ett drakblod en gång per säsong till hög manakostnad.
 
-Nya spelarköp kan tillfälligt störa lagandan, särskilt när olika traditioner möts. Moralen återhämtar sig gradvis under ungefär två veckor. Ett blandat lag har alltså ingen permanent moralbestraffning. Alla orcher är inte lika hetlevrade; individer kan avvika mycket från rasens vanliga temperament.`],
+En ny spelare eller fribrytare av en annan ras än klubbens sänker moralen med fem procentenheter. Varje vecka återhämtas två procentenheter, upp till full moral, oavsett hur blandad truppen är. Lagandan har en liten inverkan på matchen; spelarnas förmåga och taktik betyder betydligt mer. Ett blandat lag har ingen permanent moralbestraffning. Alla orcher är inte lika hetlevrade; individer kan avvika mycket från rasens vanliga temperament.`],
  ['Mambenna och Yaraaz Vigil',`Mambenna är landet där ditt lag hör hemma. Här finns skogsriken, bergsfästen, kuststäder och torra gränsmarker. Kartan under Världen visar platserna. Varje division är knuten till en ort, men långt fler byar finns att besöka. Orten är både en del av klubbens identitet och en plats där talanger kan hittas.
 
 Yaraaz Vigil är sporten, medan Arena är managerspelet där du leder ett lag som utövar den. Bollen har en kedja, planen har nio rutor och en särskild målruta, och två sidokorgar förändrar värdet på mål. Det är vunna perioder som avgör matchen, inte summan av alla poäng under hela kvällen.

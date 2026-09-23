@@ -1,3 +1,4 @@
+import {dailyUpdates} from './calendar';
 // Home demand is bounded by the club's support, never by the number of rented seats.
 export function attendanceDemand(home:any,away:any,ticket:number,variation=.5){
  const tier=home.division==='Kejsarserien'?0:Number(home.division?.match(/Division (\d)/)?.[1]||3);
@@ -14,4 +15,12 @@ export function arenaConfidence(toughness:number,glory:number,dread:number,homeF
  const support=isHome?.08*(1-Math.exp(-Math.max(0,homeFans)/35000)):0;
  return {courage,fear,support,multiplier:1+courage+support-fear};
 }
-export function acquisitionMorale(events:{date:string;penalty:number}[],now=Date.now()){return Math.max(80,100-events.reduce((sum,e)=>sum+e.penalty*Math.max(0,1-(now-+new Date(e.date))/(14*86400000)),0))}
+export function acquisitionMorale(events:{date:string;penalty:number}[],now=Date.now()){
+ const changes=events.filter(e=>Number.isFinite(+new Date(e.date))&&+new Date(e.date)<=now).sort((a,b)=>+new Date(a.date)-+new Date(b.date));
+ let morale=100,at=changes.length?+new Date(changes[0].date):now;
+ const recover=(until:number)=>{morale=Math.min(100,morale+2*dailyUpdates(new Date(at),new Date(until)).filter(d=>d.getUTCDay()===0).length);at=until;};
+ for(const e of changes){recover(+new Date(e.date));morale=Math.max(0,morale-Math.max(0,e.penalty));}
+ recover(now);return morale;
+}
+// Even the full morale range changes effective abilities by at most two percent.
+export function moraleFactor(morale=100){return .98+.02*Math.max(0,Math.min(100,morale))/100;}

@@ -1,3 +1,4 @@
+import {registerAdministration} from './src/server/administration';
 import './src/server/runtimeConfig';
 import {withInitializationLock} from './src/db';
 import {synchronizeGameClock} from './src/lib/gameClock';
@@ -73,6 +74,7 @@ const PORT = Number(process.env.PORT || 3000);
 app.use(express.json({limit:"1mb"}));
 
 registerAuth(app);
+registerAdministration(app);
 
 registerRevision13(app);registerRevision11(app);registerSharedChat(app);
 registerProgression(app);registerNews(app);registerCommunity(app);

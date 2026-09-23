@@ -1,4 +1,4 @@
-import {magicThresholds} from '../engine/magicEconomy';
+import {magicThresholds,earnedMagicLevel,regenerateMana} from '../engine/magicEconomy';
 import {calculateWage} from '../engine/playerGenerator';
 import {db} from '../db';
 import {clubs,players,worldState} from '../db/schema';
@@ -52,6 +52,14 @@ export async function advanceCalendar(until:Date){
      await tx.update(clubs).set({gold:sql`${clubs.gold}-${total}`}).where(eq(clubs.id,c.id));
      for(const [category,amount] of costs)if(amount)await put('ledger','week-'+at.toISOString()+'-'+c.id+'-'+category,{clubId:c.id,category,amount:-amount,date:at.toISOString()},tx);
     }
+   }
+   // One daily credit at the world's normal morning update, including while matches are paused.
+   for(const snapshot of all){
+    const [c]=await tx.select().from(clubs).where(eq(clubs.id,snapshot.id)).for('update');
+    if(c.createdAt>at)continue;
+    const thresholds=magicThresholds(c.id,all),progress=await record('magic-progress-'+c.id,tx);
+    const state=regenerateMana(await record('mana-'+c.id,tx),c.magicInvestment,earnedMagicLevel(c.magicInvestment,thresholds,progress?.weeks||0),thresholds.reference,+at);
+    await put('mana','mana-'+c.id,state,tx);
    }
    // Recover one potential point every seven full days since the last scout visit/recovery.
    for(const p of await records('potential',tx))if(+at-+new Date(p.date)>=7*86400000){
