@@ -9,12 +9,13 @@ import {ARTIFACTS} from '../constants/market';
 function boundedText(value:any,min:number,max:number){const v=String(value??'').trim();if(v.length<min||v.length>max)throw Error(`Ange ${min}–${max} tecken.`);return v;}
 async function lockedRecord(id:string,kind:string,tx:any){const [r]=await tx.select().from(gameRecords).where(eq(gameRecords.id,id)).for('update');if(!r||r.kind!==kind)throw Error('Posten saknas.');return {id:r.id,...r.payload};}
 export function registerAdministration(app:Express){
+ app.get('/api/manual-content',async(_req,res)=>{try{res.json(await records('content-page'))}catch{res.status(500).json({error:'Texterna kunde inte hämtas.'})}});
  app.use('/api/administration',(req:any,res,next)=>{if(!req.arenaUser?.admin)return res.status(403).json({error:'Administratörsbehörighet krävs.'});next();});
  app.get('/api/administration',async(_req,res)=>{try{
   const teams=await db.select().from(clubs),accounts=await records('account'),bans=await records('moderation-account'),roles=await records('admin-role');
   const ps=await db.select({id:players.id,name:players.name}).from(players);
   const auctions=[...(await records('auction')).map(a=>({...a,kind:'auction',name:ps.find(p=>p.id===a.playerId)?.name||'Spelare #'+a.playerId})),...(await records('artifact-auction')).map(a=>({...a,kind:'artifact-auction',name:ARTIFACTS.find(i=>i.id===a.artifactId)?.name||a.artifactId}))];
-  res.json({clubs:teams.map(c=>({id:c.id,name:c.name,shortName:c.shortName,ownerName:c.ownerName,isBot:c.isBot,gold:c.gold,division:c.division})),accounts:accounts.map(a=>({userId:a.userId,name:a.name,managerName:a.managerName||a.name,clubName:teams.find(c=>c.userId===a.userId)?.name,admin:roles.some(r=>r.userId===a.userId&&r.enabled),banned:bans.find(b=>b.userId===a.userId)?.banned||false})),forum:(await records('forum')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,500),chat:await db.select().from(shoutboxMessages).orderBy(desc(shoutboxMessages.createdAt)).limit(100),auctions:auctions.filter(a=>!a.closed).map(a=>({...a,sellerName:teams.find(c=>c.id===a.sellerId)?.name||'Kejsaren',bidderName:teams.find(c=>c.id===a.bidderId)?.name||'Inget bud'})),audit:(await records('admin-audit')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,100)});
+  res.json({clubs:teams.map(c=>({id:c.id,name:c.name,shortName:c.shortName,ownerName:c.ownerName,isBot:c.isBot,gold:c.gold,division:c.division})),accounts:accounts.map(a=>({userId:a.userId,name:a.name,managerName:a.managerName||a.name,clubName:teams.find(c=>c.userId===a.userId)?.name,admin:roles.some(r=>r.userId===a.userId&&r.enabled),banned:bans.find(b=>b.userId===a.userId)?.banned||false})),forum:(await records('forum')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,500),chat:await db.select().from(shoutboxMessages).orderBy(desc(shoutboxMessages.createdAt)).limit(100),auctions:auctions.filter(a=>!a.closed).map(a=>({...a,sellerName:teams.find(c=>c.id===a.sellerId)?.name||'Kejsaren',bidderName:teams.find(c=>c.id===a.bidderId)?.name||'Inget bud'})),content:await records('content-page'),contentVersions:(await records('content-version')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,100),audit:(await records('admin-audit')).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,100)});
  }catch{res.status(500).json({error:'Administrationen kunde inte hämtas.'})}});
  app.post('/api/administration/action',async(req:any,res)=>{try{
   const reason=boundedText(req.body.reason,5,500),requestId=String(req.body.requestId||'');
@@ -47,6 +48,15 @@ export function registerAdministration(app:Express){
     if(action==='forum-restore'){const saved=await record('moderation-backup-'+p.id,tx);if(!p.removed||!saved)throw Error('Ingen borttagen version finns.');after={...saved.post,id:p.id,removed:false};}
     if(action==='forum-lock'||action==='forum-unlock'){if(p.threadId)throw Error('Välj trådens första inlägg.');if(p.removed)throw Error('Återställ tråden först.');after.locked=action==='forum-lock';}
     await put('forum',p.id,after,tx);
+   }else if(action==='content-save'||action==='content-reset'){
+    if(!/^(guide|rules)-\d+$/.test(String(target)))throw Error('Textavsnittet saknas.');
+    const current=await record('content-'+target,tx);before=current||null;
+    if(action==='content-save'){
+     const title=boundedText(req.body.title,2,120),body=boundedText(req.body.body,1,30000);
+     after={section:String(target).split('-')[0],index:Number(String(target).split('-')[1]),title,body,active:true,updatedAt:new Date().toISOString(),updatedBy:req.arenaUser.name};
+    }else after={...(current||{}),active:false,updatedAt:new Date().toISOString(),updatedBy:req.arenaUser.name};
+    await put('content-page','content-'+target,after,tx);
+    await put('content-version','content-version-'+requestId,{target,action,title:after.title,body:after.body,active:after.active,date:after.updatedAt,actor:req.arenaUser.name,reason},tx);
    }else if(action==='chat-hide'){
     const [p]=await tx.select().from(shoutboxMessages).where(eq(shoutboxMessages.id,Number(target))).for('update');if(!p)throw Error('Meddelandet saknas.');before=p;after={content:'Meddelandet har tagits bort av spelledningen.'};await tx.update(shoutboxMessages).set(after).where(eq(shoutboxMessages.id,p.id));
    }else if(action==='auction-cancel'||action==='auction-edit'){

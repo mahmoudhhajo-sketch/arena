@@ -7,7 +7,41 @@ import {LOANS} from '../constants/loans';export {LOANS};
 import {progressSolvency} from './solvency';
 export async function initializeRevision8(){if(await record('revision-v8'))return;await db.transaction(async(tx:any)=>{if(await record('revision-v8',tx))return;for(const p of await tx.select().from(players)){const attributes={...p.attributes},rng=new SeededRNG(p.id*197+832);attributes.aggressivitet=generateAggression(p.race,()=>rng.next());await tx.update(players).set({attributes,wage:calculateWage(attributes)}).where(eq(players.id,p.id));}for(const c of await tx.select().from(clubs))if(c.coach){const coach=COACHES.find(p=>p.id===c.coach.id);if(coach)await tx.update(clubs).set({coach}).where(eq(clubs.id,c.id));}await put('system','revision-v8',{date:new Date().toISOString()},tx);});}
 export async function progressEconomy(now:Date){await progressLoanConsequences(now);await progressSolvency(now)}
-export async function releaseMarketPlayers(now:Date){const day=weatherFor('',now).date;await db.transaction(async(tx:any)=>{await tx.execute(sql`SELECT pg_advisory_xact_lock(719082)`);if(await record('market-day-'+day,tx))return;const weekday=new Date(day+'T12:00:00Z').getUTCDay();const races=([['human','elf'],['dwarf','orc'],['human','elf'],['dwarf','goblin'],['human','orc'],['elf','dwarf'],['orc','human','troll']][weekday]) as any[];const reference=worldMarketQuality(await tx.select().from(players));for(let i=0;i<races.length;i++){const race=races[i],homes=PLACES.filter(p=>p.race===race),home=homes[Math.floor(Math.random()*homes.length)];const p=generateSinglePlayer(0,race,'',home.name,1,['goalkeeper','defender','midfielder','attacker'][Math.floor(Math.random()*4)] as any);p.attributes=marketAttributes(p.attributes,reference);p.wage=calculateWage(p.attributes);const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;const [created]=await tx.insert(players).values({...row,clubId:null}).returning();await put('auction','auction-'+randomUUID(),{playerId:created.id,sellerId:null,price:Math.max(100,Math.round(p.wage*5)),bidderId:null,endsAt:new Date(+now+7*86400000).toISOString(),closed:false},tx);}await put('system','market-day-'+day,{date:day},tx);});}
+function tuneMarketWage(attributes:any,target:number){
+ let low=.2,high=4,best={...attributes};
+ for(let n=0;n<30;n++){
+  const factor=(low+high)/2;
+  const candidate=Object.fromEntries(Object.entries(attributes).map(([key,value])=>[key,key==='aggressivitet'?value:Math.round(Math.min(8,Number(value)*factor)*1000)/1000]));
+  best=candidate;
+  if(calculateWage(candidate as any)<target)low=factor;else high=factor;
+ }
+ return best;
+}
+
+export async function releaseMarketPlayers(now:Date){
+ const day=weatherFor('',now).date;
+ await db.transaction(async(tx:any)=>{
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(719082)`);
+  const auctions=(await records('auction',tx)).filter(a=>!a.closed&&+new Date(a.endsAt)>+now);
+  const missing=Math.max(0,45-auctions.length);
+  if(!missing){if(!await record('market-day-'+day,tx))await put('system','market-day-'+day,{date:day,active:auctions.length},tx);return;}
+  const allPlayers=await tx.select().from(players),reference=worldMarketQuality(allPlayers);
+  const races:any[]=['human','elf','dwarf','orc','human','elf','dwarf','orc','goblin','troll'];
+  const roles:any[]=['goalkeeper','defender','midfielder','attacker'];
+  for(let i=0;i<missing;i++){
+   const race=races[(auctions.length+i)%races.length],homes=PLACES.filter(p=>p.race===race),home=homes[Math.floor(Math.random()*homes.length)];
+   const p=generateSinglePlayer(0,race,'',home.name,1,roles[(auctions.length+i)%roles.length]);
+   p.attributes=marketAttributes(p.attributes,reference);
+   // About two players in five form the useful middle class of the market.
+   if((auctions.length+i)%5<2)p.attributes=tuneMarketWage(p.attributes,1500+Math.floor(Math.random()*501));
+   p.wage=calculateWage(p.attributes);
+   const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;
+   const [created]=await tx.insert(players).values({...row,clubId:null}).returning();
+   await put('auction','auction-'+randomUUID(),{playerId:created.id,sellerId:null,price:Math.max(100,Math.round(p.wage*5)),bidderId:null,endsAt:new Date(+now+7*86400000).toISOString(),closed:false},tx);
+  }
+  await put('system','market-day-'+day,{date:day,added:missing,target:45},tx);
+ });
+}
 export async function awardSeason(now:Date){const [currentWorld]=await db.select().from(worldState);const f=(await records('fixture')).filter(f=>(f.season||1)===currentWorld.season);if(!f.length||f.some(f=>!f.played)||Math.max(...f.map(f=>f.round))<18)return;await db.transaction(async(tx:any)=>{await tx.execute(sql`SELECT pg_advisory_xact_lock(719083)`);const [w]=await tx.select().from(worldState);if(await record('season-award-'+w.season,tx))return;const all=await tx.select().from(clubs);for(const division of new Set<string>(all.map((c:any)=>c.division))){const ordered=all.filter((c:any)=>c.division===division).sort((a:any,b:any)=>(b.wins*3+b.draws)-(a.wins*3+a.draws)||(b.goalsFor-b.goalsAgainst)-(a.goalsFor-a.goalsAgainst)||a.id.localeCompare(b.id));const tier=division==='Kejsarserien'?0:Number(division.match(/Division (\d)/)?.[1]||3);for(let i=0;i<ordered.length;i++){const prize=seasonPrize(tier,i+1);if(!prize)continue;await tx.update(clubs).set({gold:sql`${clubs.gold}+${prize}`}).where(eq(clubs.id,ordered[i].id));await put('ledger','season-prize-'+w.season+'-'+ordered[i].id,{clubId:ordered[i].id,category:'Säsongspris, plats '+(i+1),amount:prize,date:now.toISOString()},tx);await seasonPrizeNotice(tx,ordered[i],w.season,division,i+1,prize,now.toISOString());} if(division==='Kejsarserien'&&ordered[0])await put('trophy','kodudorf-'+w.season,{clubId:ordered[0].id,season:w.season,name:'Kodudorfpokalen',date:now.toISOString()},tx);}await put('system','season-award-'+w.season,{date:now.toISOString()},tx);});}
 export function registerProgression(app:Express){const route=(method:'get'|'post',path:string,fn:(req:any)=>Promise<any>)=>app[method](path,async(req,res)=>{try{res.json(await fn(req))}catch(e:any){res.status(400).json({error:e.message})}});
  route('get','/api/weather',async req=>weatherFor(String(req.query.place||'')));
