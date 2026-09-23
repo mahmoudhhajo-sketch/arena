@@ -23,7 +23,7 @@ export async function releaseMarketPlayers(now:Date){
  await db.transaction(async(tx:any)=>{
   await tx.execute(sql`SELECT pg_advisory_xact_lock(719082)`);
   let auctions=(await records('auction',tx)).filter(a=>!a.closed&&+new Date(a.endsAt)>+now);
-  const allPlayers=await tx.select().from(players),wages=new Map(allPlayers.map(p=>[p.id,p.wage])),middle=(a:any)=>{const wage=wages.get(Number(a.playerId))||0;return wage>=1500&&wage<=2000;};
+  const allPlayers=await tx.select().from(players),wages=new Map(allPlayers.map(p=>[p.id,p.wage])),middle=(a:any)=>{const wage=Number(wages.get(Number(a.playerId))||0);return wage>=1500&&wage<=2000;};
   // During the opening flood, rotate only untouched imperial listings until 40% form a useful middle class.
   const middleTarget=18,middleShortage=Math.max(0,middleTarget-auctions.filter(middle).length);
   const replaceable=auctions.filter(a=>!middle(a)&&!a.bidderId&&!a.sellerId).slice(0,middleShortage);
