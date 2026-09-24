@@ -254,7 +254,7 @@ export function useGameStore() {
       const response=await fetch('/api/shoutbox',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:text})});
       const message=await response.json();
       if(!response.ok)throw new Error(message.error||'Meddelandet kunde inte skickas.');
-      setState(prev=>({...prev,shoutboxMessages:[{id:message.id,user:message.authorName,text:message.content,time:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Stockholm',hour:'2-digit',minute:'2-digit'}).format(new Date(message.createdAt))},...prev.shoutboxMessages.filter(m=>m.id!==message.id)].slice(0,500)}));
+      setState(prev=>({...prev,shoutboxMessages:[...prev.shoutboxMessages.filter(m=>m.id!==message.id),{id:message.id,user:message.authorName,text:message.content,time:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Stockholm',hour:'2-digit',minute:'2-digit'}).format(new Date(message.createdAt))}].slice(-500)}));
     },
     [state.club?.ownerName, userId]
   );

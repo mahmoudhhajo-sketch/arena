@@ -11,9 +11,8 @@ export async function launchStatus(){
  return {paused:launchControlled()&&!state?.startedAt,startedAt:state?.startedAt||null,firstMatchAt:state?.firstMatchAt||null};
 }
 export function launchFixtures(at:Date,count=18){
- // Always skip the current Stockholm day: Tue–Thu -> Friday; Fri–Mon -> Tuesday.
- const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Stockholm',year:'numeric',month:'2-digit',day:'2-digit'}).format(at);
- return fixtureDates(new Date(day+'T23:59:59.999Z'),count);
+ if(count<=0)return [];
+ return [at.toISOString(),...fixtureDates(new Date(+at+1),count-1)];
 }
 export async function prepareLaunch(now:Date){
  if(!launchControlled())return true;
@@ -26,14 +25,14 @@ export async function prepareLaunch(now:Date){
   if(!configured)return false;
   const start=new Date(configured);
   if(!Number.isFinite(+start))throw Error('ARENA_LAUNCH_AT must be an ISO timestamp.');
-  if(start>now)return false;
   if(+start<+new Date(state.pausedAt))throw Error('Launch time cannot precede the pause.');
-  const [world]=await tx.select().from(worldState);
-  const fixtures=(await records('fixture',tx)).filter(f=>!f.played&&(f.season||1)===world.season);
-  const rounds=[...new Set<number>(fixtures.map(f=>f.round))].sort((a,b)=>a-b);
-  const dates=launchFixtures(start,rounds.length);
-  for(const f of fixtures)await put('fixture',f.id,{...f,date:dates[rounds.indexOf(f.round)]},tx);
-  await put('system','world-launch',{...state,startedAt:start.toISOString(),firstMatchAt:dates[0]},tx);
+  if(state.firstMatchAt!==start.toISOString()){
+   const [world]=await tx.select().from(worldState),fixtures=(await records('fixture',tx)).filter(f=>!f.played&&(f.season||1)===world.season),rounds=[...new Set<number>(fixtures.map(f=>f.round))].sort((a,b)=>a-b),dates=launchFixtures(start,rounds.length);
+   for(const f of fixtures)await put('fixture',f.id,{...f,date:dates[rounds.indexOf(f.round)]},tx);
+   state={...state,firstMatchAt:dates[0],scheduledAt:now.toISOString()};await put('system','world-launch',state,tx);
+  }
+  if(start>now)return false;
+  await put('system','world-launch',{...state,startedAt:start.toISOString(),firstMatchAt:start.toISOString()},tx);
   return true;
  });
 }

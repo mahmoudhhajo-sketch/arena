@@ -1,4 +1,4 @@
-import {registerSharedChat} from '../src/server/sharedChat';
+import {chatWeekStart,registerSharedChat} from '../src/server/sharedChat';
 import {deliverWelcomeMail} from '../src/server/welcomeMail';
 import assert from 'node:assert/strict';import express from 'express';
 import {initializeDatabase,closeDatabase,db} from '../src/db';
@@ -9,8 +9,10 @@ process.env.ARENA_REQUIRE_LAUNCH='true';
 const pause=new Date('2026-09-21T10:00:00Z');await prepareLaunch(pause);
 await put('system','calendar-clock',{last:pause.toISOString()});
 const worldBefore=await db.select().from(worldState),fixturesBefore=await records('fixture');await tickWorld(new Date('2026-09-22T12:00:00Z'));assert.ok((await db.select().from(worldState))[0].day>worldBefore[0].day);assert.deepEqual(await records('fixture'),fixturesBefore);assert.equal((await launchStatus()).paused,true);
-for(const [input,expected] of [['2026-09-21','2026-09-22'],['2026-09-22','2026-09-25'],['2026-09-23','2026-09-25'],['2026-09-24','2026-09-25'],['2026-09-25','2026-09-29'],['2026-09-26','2026-09-29'],['2026-09-27','2026-09-29']])assert.ok(launchFixtures(new Date(input+'T08:00:00Z'))[0].startsWith(expected));
-assert.equal(launchFixtures(new Date('2026-10-23T08:00:00Z'))[0],'2026-10-27T18:00:00.000Z');
+assert.deepEqual(launchFixtures(new Date('2026-09-26T17:00:00Z'),4),['2026-09-26T17:00:00.000Z','2026-09-29T17:00:00.000Z','2026-10-02T17:00:00.000Z','2026-10-06T17:00:00.000Z']);
+assert.equal(launchFixtures(new Date('2026-10-23T17:00:00Z'),2)[1],'2026-10-27T18:00:00.000Z');
+assert.equal(chatWeekStart(new Date('2026-09-28T01:00:00Z')).toISOString(),'2026-09-21T02:00:00.000Z');
+assert.equal(chatWeekStart(new Date('2026-09-28T02:00:00Z')).toISOString(),'2026-09-28T02:00:00.000Z');
 const ksBots=(await db.select().from(clubs)).filter(c=>c.isBot&&c.division==='Kejsarserien').length;
 for(let i=0;i<ksBots+1;i++){const c=await createHumanClub({userId:'check-'+i,managerName:'Check '+i,clubName:'Check Club '+i,shortName:'CHK',race:'elf'});assert.equal(c.club.division,i<ksBots?'Kejsarserien':'Division 1 Östra');}
 assert.equal((await records('fixture')).length,fixturesBefore.length);
@@ -23,14 +25,16 @@ try{
  assert.equal((await signup('MANAGER@example.invalid','Duplicate')).status,400);
  assert.equal((await fetch(base+'/api/test-mutation',{method:'POST',headers:{cookie}})).status,200);
  const auth=await (await fetch(base+'/api/auth/status')).json();assert.equal(auth.launch.paused,true);
- const chat=await fetch(base+'/api/shoutbox',{method:'POST',headers:{cookie,'Content-Type':'application/json'},body:JSON.stringify({content:'Ett beständigt testmeddelande'})});assert.equal(chat.status,200);
- assert.ok((await (await fetch(base+'/api/shoutbox',{headers:{cookie}})).json()).some((m:any)=>m.content==='Ett beständigt testmeddelande'));
+ const chat=await fetch(base+'/api/shoutbox',{method:'POST',headers:{cookie,'Content-Type':'application/json'},body:JSON.stringify({content:'Första testmeddelandet'})});assert.equal(chat.status,200);
+ await fetch(base+'/api/shoutbox',{method:'POST',headers:{cookie,'Content-Type':'application/json'},body:JSON.stringify({content:'Senaste testmeddelandet'})});
+ const messages=await (await fetch(base+'/api/shoutbox',{headers:{cookie}})).json();assert.equal(messages.at(-1).content,'Senaste testmeddelandet');
+ const online=await (await fetch(base+'/api/online',{headers:{cookie}})).json();assert.ok(online.some((u:any)=>u.name==='LaunchTester'));
  const realFetch=globalThis.fetch;let deliveries=0;
  process.env.GMAIL_CLIENT_ID='test';process.env.GMAIL_CLIENT_SECRET='test';process.env.GMAIL_REFRESH_TOKEN='test';
  try{globalThis.fetch=(async(url:any,options:any)=>{if(String(url).includes('/token'))return new Response(JSON.stringify({access_token:'mock'}));assert.equal(String(url),'https://gmail.googleapis.com/gmail/v1/users/me/messages/send');assert.ok(JSON.parse(options.body).raw);deliveries++;return new Response(JSON.stringify({id:'mock-delivery'}));}) as any;await deliverWelcomeMail();await deliverWelcomeMail();assert.equal(deliveries,2);}finally{globalThis.fetch=realFetch;delete process.env.GMAIL_CLIENT_ID;delete process.env.GMAIL_CLIENT_SECRET;delete process.env.GMAIL_REFRESH_TOKEN;}
- process.env.ARENA_LAUNCH_AT='2026-09-24T10:00:00Z';await prepareLaunch(new Date('2026-09-24T10:00:00Z'));assert.equal((await launchStatus()).paused,false);
- const dates=(await records('fixture')).filter(f=>f.round===1).map(f=>f.date);assert.ok(dates.every(d=>d==='2026-09-25T17:00:00.000Z'));
- const once=await records('fixture');await prepareLaunch(new Date('2026-09-26T10:00:00Z'));assert.deepEqual(await records('fixture'),once);
+ process.env.ARENA_LAUNCH_AT='2026-09-26T17:00:00Z';await prepareLaunch(new Date('2026-09-24T10:00:00Z'));assert.equal((await launchStatus()).paused,true);
+ const round1=(await records('fixture')).filter(f=>f.round===1).map(f=>f.date),round2=(await records('fixture')).filter(f=>f.round===2).map(f=>f.date);assert.ok(round1.every(d=>d==='2026-09-26T17:00:00.000Z'));assert.ok(round2.every(d=>d==='2026-09-29T17:00:00.000Z'));
+ const once=await records('fixture');await prepareLaunch(new Date('2026-09-25T10:00:00Z'));assert.deepEqual(await records('fixture'),once);await prepareLaunch(new Date('2026-09-26T17:00:00Z'));assert.equal((await launchStatus()).paused,false);
  assert.notEqual((await record('calendar-clock')).last,'2026-09-24T10:00:00.000Z');
- console.log('PASS: only matches paused, other game functions active; all 7 launch weekdays and DST; Kejsarserien -> Division 1 Östra; email validation/uniqueness/queue; launch reschedules once without advancing world.');
+ console.log('PASS: matches stay paused until the exact launch time; first Saturday then Tue/Fri with DST; weekly chat order/reset/online list; Kejsarserien replacement; email queue.');
 }finally{await new Promise<void>(r=>server.close(()=>r()));await closeDatabase();}

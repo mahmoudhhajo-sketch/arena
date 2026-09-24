@@ -1,0 +1,10 @@
+process.env.LOCAL_DB_DIR=':memory:';delete process.env.DATABASE_URL;delete process.env.SQL_HOST;delete process.env.RAILWAY_ENVIRONMENT;
+const ts=require('typescript'),fs=require('fs');require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,f);
+const assert=require('node:assert/strict');
+const {launchFixtures}=require('../src/server/launch'),{chatWeekStart}=require('../src/server/sharedChat');
+assert.deepEqual(launchFixtures(new Date('2026-09-26T17:00:00Z'),4),['2026-09-26T17:00:00.000Z','2026-09-29T17:00:00.000Z','2026-10-02T17:00:00.000Z','2026-10-06T17:00:00.000Z']);
+assert.equal(launchFixtures(new Date('2026-10-23T17:00:00Z'),2)[1],'2026-10-27T18:00:00.000Z');
+assert.equal(chatWeekStart(new Date('2026-09-28T01:00:00Z')).toISOString(),'2026-09-21T02:00:00.000Z');
+assert.equal(chatWeekStart(new Date('2026-09-28T02:00:00Z')).toISOString(),'2026-09-28T02:00:00.000Z');
+assert.equal(chatWeekStart(new Date('2026-12-02T12:00:00Z')).toISOString(),'2026-11-30T03:00:00.000Z');
+console.log('PASS: launch schedule starts Saturday then alternates Tuesday/Friday; weekly chat reset follows Stockholm DST.');

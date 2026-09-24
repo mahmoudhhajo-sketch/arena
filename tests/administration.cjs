@@ -9,7 +9,7 @@ try{
  let r=await post('/api/auth/login',input);const user=await ok(r),cookie=r.headers.get('set-cookie').split(';')[0];r=await post('/api/auth/login',{...input,name:'user-login',managerName:'Other',email:'b@example.invalid',clubName:'Second Team'});const other=await ok(r),otherCookie=r.headers.get('set-cookie').split(';')[0];
  await ok(await get('/api/administration'),401);await ok(await get('/api/administration',cookie),403);
  await put('admin-role','admin-role-'+user.userId,{userId:user.userId,enabled:true});
- const summary=await ok(await get('/api/administration',cookie));assert.equal(JSON.stringify(summary).includes('salt'),false);assert.equal(JSON.stringify(summary).includes('hash'),false);
+ const summary=await ok(await get('/api/administration',cookie));assert.equal(JSON.stringify(summary).includes('salt'),false);assert.equal(JSON.stringify(summary).includes('hash'),false);assert.ok(summary.loginStats.some(x=>x.userId===user.userId&&x.total===1&&x.online));assert.equal(summary.loginSummary.online,1);assert.equal(summary.loginSummary.total,1);
  const team=(await db.select().from(clubs)).find(c=>c.userId===user.userId),otherTeam=(await db.select().from(clubs)).find(c=>c.userId===other.userId);
  const action=(body,c=cookie)=>post('/api/administration/action',{reason:'Integration test',requestId:randomUUID(),...body},c);
  await ok(await action({action:'club-name',target:team.id,name:'New Team',shortName:'NEW'},otherCookie),403);
