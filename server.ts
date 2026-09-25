@@ -4,6 +4,7 @@ import {withInitializationLock} from './src/db';
 import {synchronizeGameClock} from './src/lib/gameClock';
 import {record} from './src/server/records';
 import {initializeRevision14} from './src/server/revision14';
+import {initializeRevision15} from './src/server/revision15';
 import {initializeMatchMerit} from './src/server/meritRevision';
 import {initializeUnreservedBids} from './src/server/solvency';
 import {registerRevision13,initializeRevision13,clubMorale} from './src/server/revision13';
@@ -844,7 +845,7 @@ async function startServer() {
   await initializeExpansion();
 
   await initializeFeatures();
-  await initializeRevision8();await initializeUnreservedBids();await initializeMatchMerit();await initializeRevision13();await initializeRevision14();
+  await initializeRevision8();await initializeUnreservedBids();await initializeMatchMerit();await initializeRevision13();await initializeRevision14();await initializeRevision15();
 
   });
   await tickWorld();

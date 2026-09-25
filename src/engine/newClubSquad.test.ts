@@ -7,7 +7,7 @@ import { validateLineup } from './lineup';
 test('new club squads improve modestly and receive one specialist for every supported role', () => {
   const original = Math.random;
   const roles = ['Målvakt', 'Back', 'Innermittfält', 'Yttermittfält', 'Anfall', 'Anfall'];
-  const indices = [0, 2, 8, 9, 15, 16];
+  const indices = [0, 2, 8, 9, 14, 15];
   try {
     for (const race of ['human', 'elf', 'dwarf', 'orc'] as const) for (let role = 0; role < 6; role++) {
       // Constant RNG puts the role choice in each of its six intervals and makes the baseline comparable.

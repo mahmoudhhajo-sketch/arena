@@ -6,8 +6,8 @@ const profiles: { index: number; position: NominalPosition; strengths: (keyof Pl
   { index: 2, position: 'Back', strengths: ['markering', 'tuffhet', 'snabbhet'] },
   { index: 8, position: 'Innermittfält', strengths: ['speluppfattning', 'teknik', 'passning'] },
   { index: 9, position: 'Yttermittfält', strengths: ['snabbhet', 'teknik', 'passning', 'skott'] },
-  { index: 15, position: 'Anfall', strengths: ['skott', 'speluppfattning', 'teknik'] },
-  { index: 16, position: 'Anfall', strengths: ['snabbhet', 'skott', 'teknik'] },
+  { index: 14, position: 'Anfall', strengths: ['skott', 'speluppfattning', 'teknik'] },
+  { index: 15, position: 'Anfall', strengths: ['snabbhet', 'skott', 'teknik'] },
 ];
 
 // Registration only: existing squads, market players and world seeding retain their own balance.

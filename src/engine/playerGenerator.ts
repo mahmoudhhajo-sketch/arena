@@ -255,9 +255,9 @@ export function generateStarterSquad(race: Race, clubId: string, hometown: strin
 
 
 
-  // 7 Midfielders
+  // 6 Midfielders
 
-  const midNumbers = [5, 7, 8, 9, 10, 16, 17];
+  const midNumbers = [5, 7, 8, 9, 10, 16];
 
   for (const num of midNumbers) {
 
@@ -267,9 +267,9 @@ export function generateStarterSquad(race: Race, clubId: string, hometown: strin
 
 
 
-  // 5 Attackers
+  // 6 Attackers
 
-  const atkNumbers = [11, 12, 13, 19, 20];
+  const atkNumbers = [11, 12, 13, 17, 19, 20];
 
   for (const num of atkNumbers) {
 

@@ -92,3 +92,5 @@ button:focus-visible,a:focus-visible{outline:2px solid #728654;outline-offset:3p
 .admin-review textarea {min-height:90px}
 .content-editor>label textarea{min-height:360px;line-height:1.55;font-family:Georgia,serif}
 .admin-content-preview{max-height:220px;overflow:auto;white-space:pre-wrap;border:1px solid #b8ad90;padding:10px;background:#fffdf5}
+.forum-category b,.forum-category span,.forum-category small{display:block}.forum-category span{margin-top:3px;color:#4d6638}.forum-category small{margin-top:2px;color:#6d715e;font-weight:normal;line-height:1.3}.scout-candidate{border:3px ridge #b8c3b1;padding:12px;margin:16px 0;background:#f7f3e5}.scout-candidate .retro-table{max-width:420px}.mobile-chat-close{display:none}
+@media(max-width:1000px){.community.mobile-open .mobile-chat-close{display:block;position:sticky;top:0;z-index:2;margin:0 0 8px auto;padding:7px 12px;background:#e5d8c7;border:2px ridge #a99b87}.community.mobile-open{overflow-y:auto}.community.mobile-open .chat-messages{height:min(48dvh,360px)}}

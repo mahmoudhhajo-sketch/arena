@@ -4,10 +4,11 @@ const extras:Array<[string,Race,number,number]>=[['Grotthem','troll',91,34],['Di
 const BASE_PLACES=[...MAMBENNA_SETTLEMENTS.map((s,i)=>({...s,x:coords[i][0],y:coords[i][1]})),...extras.map(([name,race,x,y])=>({id:name.toLowerCase(),name,race,x,y,potential:12,description:race==='elf'?'En bosättning bland skogens höga träd.':race==='dwarf'?'Ett bergsfäste med djupa gruvgångar.':race==='orc'?'En befäst by vid kejsardömets gamla vägar.':'En liten bosättning i Mambenna.'}))];
 
 
-export function nearbyPlaces(id:string){const origin=PLACES.find(p=>p.id===id);if(!origin)return [];const nearest=(p:typeof origin)=>PLACES.filter(q=>q.id!==p.id).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y)).slice(0,3);return PLACES.filter(p=>p.id!==id&&(nearest(origin).some(n=>n.id===p.id)||nearest(p).some(n=>n.id===id))).map(p=>({...p,days:Math.max(1,Math.ceil(Math.hypot(p.x-origin.x,p.y-origin.y)/8))}));}
+export function nearbyPlaces(id:string){const origin=PLACES.find(p=>p.id===id);if(!origin)return [];const nearest=(p:typeof origin)=>PLACES.filter(q=>q.id!==p.id).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y)).slice(0,3);return PLACES.filter(p=>p.id!==id&&(nearest(origin).some(n=>n.id===p.id)||nearest(p).some(n=>n.id===id))).map(p=>({...p,days:Math.max(2,Math.ceil(Math.hypot(p.x-origin.x,p.y-origin.y)/5))}));}
 export function divisionTown(name:string){if(name==='Kejsarserien')return 'Berunia';if(name.startsWith('Division 1'))return name.endsWith('Östra')?'Österborg':name.endsWith('Södra')?'Söderhamn':'Västerport';return name.replace(/^Division [23] /,'');}
 
 const LOCAL_STORIES:Record<string,string>={
+'Nätarhamn':'Nätarhamn är en dvärgby av låga stenhus, salta rökhus och grova bryggor vid sydkusten. Här arbetar nätbindare, fiskare, tunnmakare och hamnbärare sida vid sida innan gryningsskiftet går ut. Byns spelplan är byggd av packad strandsingel, och efter en hemmaseger slår arbetarna sina båtkrokar mot kajens järnringar tills ljudet hörs över hela viken.',
 'Grotthem':'Grotthem är trollens största mötesplats, en stad av hallar i den östra kalkklippan. Eldar hålls brinnande vid varje port så att sena resenärer hittar hem. Vid den stora bollgården möts släkternas lag, och matchvinnaren får börja kvällens berättelse vid rådselden.',
 'Dimmervad':'Dimmervads troll har byggt låga stenhus vid den norra flodens vadställe. I gryningen syns bara skorstenarna ovanför dimman. Här lär sig barnen fånga bollar från strand till strand, medan färjkarlarna envist hävdar att deras gamla rop gav upphov till spelets första laghejaramsor.',
 'Rotdjup':'Rotdjup gömmer sig under väldiga rötter i den västra skogen. Trollfamiljerna odlar svamp och byter stenhuggararbete mot alvernas örter. Deras bollplan ligger i en naturlig sänka där publiken sitter på mjuka mossbankar och håller sig ovanligt tyst under uppkasten.',
@@ -60,4 +61,4 @@ const LOCAL_STORIES:Record<string,string>={
  'Mossklyftan':'Mossklyftans troll bor nära den gamla stenbron. De talar långsamt om släktens bragder, men rösterna blir betydligt starkare vid en jämn tvekamp.',
  'Stendjup':'Stendjup ligger där bergsvägen försvinner mellan höga väggar. Trollfamiljerna håller råd vid en rund sten och följer sina bollspelare som en enda stor släkt.'
 };
-export const PLACES=BASE_PLACES.map(p=>({...p,description:LOCAL_STORIES[p.name]||p.description}));
+export const PLACES=[...BASE_PLACES,{id:'nätarhamn',name:'Nätarhamn',race:'dwarf' as Race,x:64,y:89,potential:12,description:LOCAL_STORIES.Nätarhamn}].map(p=>({...p,description:LOCAL_STORIES[p.name]||p.description}));
