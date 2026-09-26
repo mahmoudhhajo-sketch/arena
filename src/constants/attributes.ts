@@ -176,9 +176,9 @@ export const RACE_DESCRIPTIONS: Record<Race, string> = {
 
   orc: 'Orcher är brutala och aggressiva, med tunga skott och stor stridslust. De trivs i lerig jord.',
 
-  goblin: 'Goblins är kvicka och listiga, specialiserade på snabba löpningar och oväntade bollar.',
+  goblin: 'Goblins är kvicka, aggressiva och listiga, specialiserade på snabba löpningar och oväntade bollar.',
 
-  troll: 'Troll är monstruösa jättar med enorm fysik och förkärlek för våldsamma drabbningar.',
+  troll: 'Troll är tuffa jättar som ofta utvecklas till väldiga markerare eller kraftfulla skyttar.',
 
 };
 

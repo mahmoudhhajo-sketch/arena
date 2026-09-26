@@ -54,7 +54,7 @@ export function generateSinglePlayer(
 
   const attrs: PlayerAttributes = {
 
-    snabbhet: randAttr(race === 'elf' ? 1.6 : race === 'dwarf' ? -0.6 : race === 'goblin' ? 1.4 : 0),
+    snabbhet: randAttr(race === 'elf' ? 1.6 : race === 'dwarf' ? -0.6 : race === 'goblin' ? 2.2 : 0),
 
     kondition: randAttr(0),
 
@@ -70,9 +70,9 @@ export function generateSinglePlayer(
 
     malvakt: randAttr(0),
 
-    aggressivitet: randAttr(race === 'orc' ? 1.8 : race === 'troll' ? 1.8 : 0),
+    aggressivitet: randAttr(race === 'orc' ? 1.8 : race === 'troll' ? 1.8 : race === 'goblin' ? 2.2 : 0),
 
-    tuffhet: randAttr(race === 'dwarf' ? 1.8 : race === 'troll' ? 2.0 : 0),
+    tuffhet: randAttr(race === 'dwarf' ? 1.8 : race === 'troll' ? 2.8 : 0),
 
   };
 
@@ -100,13 +100,20 @@ export function generateSinglePlayer(
 
     attrs.passning = Math.min(11, attrs.passning + 1.5);
 
-  } else if (bonusBias === 'attacker') {
+  } else if (bonusBias === 'attacker') {
 
     attrs.skott = Math.min(11, attrs.skott + 1.8 + Math.random());
 
-    attrs.snabbhet = Math.min(11, attrs.snabbhet + 0.8);
+    attrs.snabbhet = Math.min(11, attrs.snabbhet + 0.8);
 
-  }
+  }
+
+  // Troll utvecklar två tydliga spelartyper: murar som stänger ytor eller
+  // kraftspelare som avslutar hårt. Båda behåller rasens höga tuffhet.
+  if (race === 'troll') {
+    const specialty = Math.random() < .5 ? 'markering' : 'skott';
+    attrs[specialty] = Math.min(11, attrs[specialty] + 1.6 + Math.random() * .8);
+  }
 
 
 
