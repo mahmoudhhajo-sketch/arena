@@ -23,13 +23,14 @@ function Game(){
  navigationRef.current={arena:true,tab:state.currentTab,entity,planning,match};
  const navigate=(t:string)=>{if(t==='forum'){setForum(true);return}pushView({entity:null,planning:null,match:null,tab:t},'#/tab/'+t);saveEntity(null);selectPlayer(null);setPlanning(null);setMatch(null);setTab(t);setError('')};
  const openMatch=async(id:string)=>{try{const m=await api('/match/'+id);pushView({entity:null,planning:m.upcoming?id:null,match:m.upcoming?null:m},'#/match/'+encodeURIComponent(id));saveEntity(null);if(m.upcoming){setPlanning(id);setMatch(null)}else{setPlanning(null);setMatch(m)}setError('')}catch(e:any){setError(e.message)}};
+ const refreshMatch=async(id:string)=>{try{const m=await api('/match/'+id);if(!m.upcoming)setMatch(m);setError('')}catch(e:any){setError(e.message)}};
  useEffect(()=>{const matchHandle=(e:any)=>openMatch(e.detail);window.addEventListener('arena-match',matchHandle);const handle=(e:any)=>setEntity(e.detail);const pop=()=>{const matchRoute=location.hash.match(/^#\/match\/(.+)$/);if(matchRoute){api('/match/'+decodeURIComponent(matchRoute[1])).then(m=>{saveEntity(null);setPlanning(m.upcoming?m.id:null);setMatch(m.upcoming?null:m)}).catch(e=>setError(e.message));return;}if(history.state?.arena){const v=history.state;saveEntity(v.entity);setPlanning(v.planning);setMatch(v.match);setTab(v.tab);selectPlayer(null);setTimeout(()=>window.scrollTo(0,v.scrollY||0),120);return}const tab=location.hash.match(/^#\/tab\/(.+)$/);if(tab)setTab(decodeURIComponent(tab[1]));const m=location.hash.match(/^#\/(player|club|manager|place|venue|mail|division)\/(.+)$/);saveEntity(m?{kind:m[1] as any,id:decodeURIComponent(m[2])}:null)};pop();window.addEventListener('popstate',pop);window.addEventListener("arena-entity",handle);return()=>{window.removeEventListener('arena-entity',handle);window.removeEventListener('popstate',pop)}},[]);
  const selected=state.players.find(p=>p.id===state.selectedPlayerId);
  const content=()=>{
  if(entity)return <EntityPage entity={entity} clubId={state.club.id} viewerUserId={state.userId} onBack={goBack} onRefresh={refetch}/>;
  if(planning)return <MatchPlanningView id={planning} club={state.club} players={state.players} onBack={goBack}/>;
  if(selected)return <EntityPage entity={{kind:'player',id:selected.id}} clubId={state.club.id} viewerUserId={state.userId} onBack={()=>selectPlayer(null)} onRefresh={refetch}/>;
- if(match)return <><button className="text-link" onClick={goBack}>← Tillbaka</button><MatchView match={match} matchesHistory={[match]} onSelectMatch={()=>{}} onSimulateNewMatch={()=>{}}/></>;
+ if(match)return <><button className="text-link" onClick={goBack}>← Tillbaka</button><MatchView match={match} onRefresh={()=>refreshMatch(match.id)}/></>;
  switch(state.currentTab){
  case 'administration':return <Administration/>;
  case 'lag':return <ClubView club={state.club} players={state.players} onNavigateTab={navigate} onUpdatePresentation={updatePresentation}/>;
