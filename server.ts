@@ -7,6 +7,7 @@ import {initializeRevision14} from './src/server/revision14';
 import {initializeRevision15} from './src/server/revision15';
 import {initializeRevision16} from './src/server/revision16';
 import {initializeRevision17} from './src/server/revision17';
+import {initializeRevision18} from './src/server/revision18';
 import {initializeMatchMerit} from './src/server/meritRevision';
 import {initializeUnreservedBids} from './src/server/solvency';
 import {registerRevision13,initializeRevision13,clubMorale} from './src/server/revision13';
@@ -847,7 +848,7 @@ async function startServer() {
   await initializeExpansion();
 
   await initializeFeatures();
-  await initializeRevision8();await initializeUnreservedBids();await initializeMatchMerit();await initializeRevision13();await initializeRevision14();await initializeRevision15();await initializeRevision16();await initializeRevision17();
+  await initializeRevision8();await initializeUnreservedBids();await initializeMatchMerit();await initializeRevision13();await initializeRevision14();await initializeRevision15();await initializeRevision16();await initializeRevision17();await initializeRevision18();
 
   });
   await tickWorld();

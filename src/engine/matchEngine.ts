@@ -79,6 +79,11 @@ export function cellStrength(values:number[]):number {
 }
 // Smooth, unbounded skill comparison: a huge mismatch is not flattened to 75/95%.
 export function contestProbability(a:number,b:number){const x=Math.pow(Math.max(0,a)+.35,1.7),y=Math.pow(Math.max(0,b)+.35,1.7);return x/(x+y)}
+export function surfaceRaceFactor(race:string,underlag:PitchUnderlag){
+ if(underlag==='Nimonimbus'||race==='human'||race==='goblin'||race==='troll')return 1;
+ const preferred=race==='elf'?'Gräs':race==='dwarf'?'Sten':race==='orc'?'Jord':null;
+ return underlag===preferred?1.04:.98;
+}
 export function simulateMatch(
   homeClub: Club,
   awayClub: Club,
@@ -170,7 +175,7 @@ export function simulateMatch(
   const inc=(p:ActivePlayerState,k:string,field='antal')=>{individualStats[p.player.id].stats[k][field]++};
   const fatigue=new Map<number,number>();
   const effort=(p:ActivePlayerState,cost:number)=>fatigue.set(p.player.id,(fatigue.get(p.player.id)||0)+cost*(10/Math.max(1,(homeSquad.active.some(a=>a.player.id===p.player.id)?homeSquad:awaySquad).active.length))*(1+Math.max(0,weather.temp-23)*.035+(weather.condition==='Regn'?.06:0))/(1+p.player.attributes.kondition*.14));
-  const skill=(p:ActivePlayerState,k:string)=>Math.max(0,Number((p.player.attributes as any)[k]))*(.75+p.player.form/64)*Math.max(.55,1-(fatigue.get(p.player.id)||0))*(k==='aggressivitet'||k==='tuffhet'?1:arenaConfidence(p.player.attributes.tuffhet,homeClub.arena?.ara||0,homeClub.arena?.skrack||0,attendance,homeSquad.active.includes(p)).multiplier);
+  const skill=(p:ActivePlayerState,k:string)=>Math.max(0,Number((p.player.attributes as any)[k]))*(.75+p.player.form/64)*Math.max(.55,1-(fatigue.get(p.player.id)||0))*(k==='aggressivitet'||k==='tuffhet'?1:arenaConfidence(p.player.attributes.tuffhet,homeClub.arena?.ara||0,homeClub.arena?.skrack||0,attendance,homeSquad.active.includes(p)).multiplier)*surfaceRaceFactor(p.player.race,underlag);
   const local=(squad:ActivePlayerState[],row:number,col:number)=>squad.filter(p=>p.slotKey!=='goal'&&p.fieldRow===row&&p.fieldCol===col);
   const pickWeighted=(pool:ActivePlayerState[],weights:number[])=>{let roll=rng.next()*weights.reduce((a,b)=>a+b,0);for(let i=0;i<pool.length;i++){roll-=weights[i];if(roll<=0)return pool[i]}return pool[pool.length-1]};
   const distance=(p:ActivePlayerState,row:number,col:number)=>Math.abs(p.fieldRow-row)+Math.abs(p.fieldCol-col);
