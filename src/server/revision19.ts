@@ -34,7 +34,7 @@ export async function initializeRevision19(){
    const remaining=await tx.select().from(players).where(eq(players.clubId,team.id));
    const used=new Set(remaining.map(p=>p.shirtNumber)),numbers:number[]=[];
    for(let number=1;numbers.length<5;number++)if(!used.has(number))numbers.push(number);
-   const targets=[2037,1837,1649,1543,1439];
+   const targets=[2037,1837,1261,1137,1049];
    const roles=['attacker','defender','midfielder','goalkeeper','attacker'] as const;
    const created=[];
    for(let index=0;index<5;index++){
@@ -48,7 +48,7 @@ export async function initializeRevision19(){
     created.push(inserted);
    }
    const finalSquad=[...remaining,...created];
-   await tx.update(clubs).set({race:'goblin',hometown:'Skrothåla',lineup:botLineup(finalSquad)}).where(eq(clubs.id,team.id));
+   await tx.update(clubs).set({race:'orc',hometown:'Skrothåla',lineup:botLineup(finalSquad)}).where(eq(clubs.id,team.id));
   }
   await put('system','revision-v19-goblinboyz',{date:new Date().toISOString()},tx);
  });
