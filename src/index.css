@@ -97,9 +97,13 @@ button:focus-visible,a:focus-visible{outline:2px solid #728654;outline-offset:3p
 
 /* Round-one interface refinements */
 .left-nav .guide{color:#18a911;text-shadow:0 0 5px #8cff79;font-weight:900}
-.standing-club{display:inline-flex;align-items:center;gap:5px;max-width:100%;text-align:left}
+.standing-club{display:grid;grid-template-columns:20px minmax(0,1fr) 20px;align-items:center;gap:5px;width:100%;max-width:100%;text-align:left}
+.standing-club .crest.small{margin:0;justify-self:center}.standing-logo-slot{width:20px;height:20px;display:flex;align-items:center;justify-content:center}
 .standing-logo{width:18px;height:18px;object-fit:contain;border-radius:3px;box-shadow:0 0 0 1px #7f8876;background:#edeadf}
 .ticket-setting{margin:10px 0 18px;padding:10px 12px;border:3px ridge #b7c1ad;background:#e9eee3}
 .ticket-setting p{margin:4px 0 8px}
 .club-history{margin-top:12px}
 .side-baskets circle{filter:drop-shadow(0 1px 1px #332)}
+
+.series-link{display:block;margin:5px 0;text-align:left}
+.series-group-break{margin-top:18px}

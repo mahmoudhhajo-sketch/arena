@@ -7,7 +7,8 @@ export function attendanceDemand(home:any,away:any,ticket:number,variation=.5){
  const form=1+Math.max(-.15,Math.min(.18,((home.recentForm??.5)-.5)*.36));
  const history=1+Math.min(.12,(home.wins+home.draws+home.losses||0)*.005);
  const visiting=1.05+Math.min(.08,Math.max(0,away.merit||0)*.002);
- return Math.round(base*merit*form*history*visiting*Math.exp(-.13*(Math.max(0,ticket)-3))*(.94+variation*.12));
+ const derby=home.hometown&&away.hometown&&home.hometown===away.hometown?1.13:1;
+ return Math.round(base*merit*form*history*visiting*derby*Math.exp(-.13*(Math.max(0,ticket)-3))*(.94+variation*.12));
 }
 export function arenaConfidence(toughness:number,glory:number,dread:number,homeFans:number,isHome:boolean){
  const courage=.10*(1-Math.exp(-Math.max(0,glory)/20));

@@ -1,5 +1,5 @@
-import {Express} from 'express';import {db} from '../db';import {players,clubs,matches} from '../db/schema';import {desc} from 'drizzle-orm';
-export function registerLore(app:Express){app.get('/api/lore',async(_req,res)=>{try{const [rich]=await db.select().from(players).orderBy(desc(players.wage)).limit(1);const games=await db.select().from(matches),teams=await db.select().from(clubs);const entries:any[]=[
+import {Express} from 'express';import {db} from '../db';import {players,clubs,matches} from '../db/schema';import {desc,eq} from 'drizzle-orm';
+export function registerLore(app:Express){app.get('/api/lore',async(_req,res)=>{try{const [rich]=await db.select().from(players).where(eq(players.isMercenary,false)).orderBy(desc(players.wage)).limit(1);const games=await db.select().from(matches),teams=await db.select().from(clubs);const entries:any[]=[
  {category:'Ur krönikorna',label:'Berunias första arena var en handelsgård. När den tredje korgen förstörde tullhuset förbjöd kejsaren fler än två sidokorgar.'},
  {category:'Ur krönikorna',label:'Skogsbyarnas alver syr löv på lagets resmantlar. Ett silverlöv betyder en bortaseger som ingen väntade sig.'},
  {category:'Ur krönikorna',label:'En dvärgdomare sägs ha blåst slutsignalen med en tekittel när visselpipan frös fast i skägget.'},

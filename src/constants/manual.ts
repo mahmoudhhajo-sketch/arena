@@ -1,5 +1,5 @@
 export const EXTRA_CHAPTERS:Array<[string,string]>= [
- ['Publik, arenadrift och mod',`Biljettpris, division, merit, färska matchresultat och klubbens historia påverkar efterfrågan. En liten klubb får inte fler supportrar bara för att den hyr en jättelik arena. Gratis inträde kan locka fler, men ger ingen biljettintäkt. Vanliga priser ligger ungefär mellan 3 och 12 guld; högre pris kan ge betydligt glesare läktare. Kejsarseriens publikunderlag fyller normalt en 30 000-arena vid 6 guld, men ingen klubb är garanterad 120 000 åskådare med ett mycket högt pris.
+ ['Publik, arenadrift och mod',`Biljettpris, division, merit, färska matchresultat och klubbens historia påverkar efterfrågan. När två lag från samma ort möts lockar stadsderbyt extra intresse. En liten klubb får inte fler supportrar bara för att den hyr en jättelik arena. Gratis inträde kan locka fler, men ger ingen biljettintäkt. Vanliga priser ligger ungefär mellan 3 och 12 guld; högre pris kan ge betydligt glesare läktare. Kejsarseriens publikunderlag fyller normalt en 30 000-arena vid 6 guld, men ingen klubb är garanterad 120 000 åskådare med ett mycket högt pris.
 
 Hemmapubliken ger spelarna mod. Arenans ära inspirerar båda lagen medan skräck kan göra spelare tveksamma; tuffa spelare står bättre emot. En storslagen arena ersätter aldrig bra spelare.
 
