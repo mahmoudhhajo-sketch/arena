@@ -372,7 +372,7 @@ export function simulateMatch(
       const fightSide=rng.next()<.5?'home':'away',fightSquad=fightSide==='home'?homeSquad:awaySquad,opponentSquad=fightSide==='home'?awaySquad:homeSquad;
       const fightStats=fightSide==='home'?homeStats:awayStats,opponentStats=fightSide==='home'?awayStats:homeStats;
       const fighterCandidate = fightSquad.active[rng.nextInt(0,fightSquad.active.length-1)];
-      if(fighterCandidate&&opponentSquad.active.length&&rng.next()<Math.min(.45,matchHeat*(.02+Math.max(0,fighterCandidate.player.attributes.aggressivitet)*.008))){
+      if(fighterCandidate&&opponentSquad.active.length&&rng.next()<Math.min(.65,matchHeat*(.025+Math.max(0,fighterCandidate.player.attributes.aggressivitet)*.012))){
         const defender=choose(opponentSquad.active,fighterCandidate.fieldRow,fighterCandidate.fieldCol);
         inc(fighterCandidate,'slagsmal');inc(defender,'slagsmal');inc(fighterCandidate,'slagsmal','startade');
         fightStats.slagsmal.antal++;opponentStats.slagsmal.antal++;fightStats.slagsmal.startade++;
@@ -768,7 +768,7 @@ export function simulateMatch(
   };
 }
 
-export function injuryProbability(attack:number,defense:number){const ratio=(Math.max(0,attack)+.5)/(Math.max(0,defense)+.5);return Math.min(.92,.34*Math.pow(ratio,4.15));}
+export function injuryProbability(attack:number,defense:number){const ratio=(Math.max(0,attack)+.5)/(Math.max(0,defense)+.5);return Math.min(.94,.7*Math.pow(ratio,4.7));}
 function reportEvent(e:any,index:number,seed:number){if(['GOAL_NORMAL','INJURY','SUBSTITUTION','PERIOD_START','PERIOD_END','MATCH_END'].includes(e.type)||e.important)return true;const probability:Record<string,number>={SHOT_NORMAL:.08,GOAL_BASKET:.65,FIGHT_RESULT:.15,SAVE_NORMAL:.10,SAVE_BASKET:.06,UPPKAST:.02,PASS_SUCCESS:.04,RUN_SUCCESS:.07,INTERCEPTION:.06};return new SeededRNG(seed+index*7919).next()<(probability[e.type]??0)}
 
 export function calculateAttendance(home:any,away:any,ticket:number,capacity:number,variation=.5){

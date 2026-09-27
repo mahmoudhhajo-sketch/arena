@@ -5,8 +5,10 @@ import {db} from '../db';
 import {clubs,players,worldState} from '../db/schema';
 import {eq,sql} from 'drizzle-orm';
 import {records,record,put} from './records';
-import {dailyUpdates,healingProgress,weeklyAttributes,trainingStepGains} from '../engine/calendar';
+import {dailyUpdates,healingProgress,weeklyPositionAttributes,trainingStepGains} from '../engine/calendar';
 import {PLACES} from '../constants/geography';
+import {ATTRIBUTE_NAMES_SV,QUALITATIVE_ATTRIBUTE_LABELS} from '../constants/attributes';
+import {teamNews} from './newsStatistics';
 
 export async function advanceCalendar(until:Date){
  const clock=await record('calendar-clock');
@@ -20,6 +22,7 @@ export async function advanceCalendar(until:Date){
    const recovery=new Map((await records('recovery',tx)).map(r=>[r.playerId,r]));
    const participation=new Map((await records('participation',tx)).map(r=>[r.playerId,r]));
    const sunday=at.getUTCDay()===0,weekStart=at.getTime()-7*86400000;
+   const trainingReports=new Map<string,string[]>();
    if(sunday)await refreshMagicPrices(all,at,tx);
    const byClub=new Map(all.map((c:any)=>[c.id,c]));
    for(const p of squad){
@@ -33,12 +36,15 @@ export async function advanceCalendar(until:Date){
     }
     if(sunday&&c){
      const dates=(participation.get(p.id)?.dates||[]).filter((d:string)=>+new Date(d)>weekStart&&+new Date(d)<=+at);
-     update.attributes=weeklyAttributes(p.attributes,c.trainingPoints,dates.length);
+     const appearances=participation.get(p.id)?.appearances||[];
+     update.attributes=weeklyPositionAttributes(p.attributes,c.trainingPoints,appearances,+at,weekStart);
      if(p.artifacts?.includes('seven-mile-boots')&&c.trainingPoints.kondition===0)update.attributes.kondition=p.attributes.kondition;
-     await put('training-gain','gain-'+p.id,{playerId:p.id,clubId:p.clubId,date:at.toISOString(),attributes:trainingStepGains(p.attributes,update.attributes)},tx);
+     const gains=trainingStepGains(p.attributes,update.attributes);
+     await put('training-gain','gain-'+p.id,{playerId:p.id,clubId:p.clubId,date:at.toISOString(),attributes:gains},tx);
+     for(const key of gains){const from=Math.min(16,Math.floor(p.attributes[key])),to=Math.min(16,Math.floor(update.attributes[key]));if(from!==to){const rows=trainingReports.get(p.clubId)||[];rows.push(`${p.name}: ${ATTRIBUTE_NAMES_SV[key]} ${QUALITATIVE_ATTRIBUTE_LABELS[from]} → ${QUALITATIVE_ATTRIBUTE_LABELS[to]}`);trainingReports.set(p.clubId,rows)}}
      update.wage=calculateWage(update.attributes);
      update.form=Math.min(16,Math.max(0,p.form+(dates.length>=2?1:dates.length===0?-1:0)));
-     await put('participation','participation-'+p.id,{playerId:p.id,dates:[]},tx);
+     await put('participation','participation-'+p.id,{playerId:p.id,dates:[],appearances:[]},tx);
     }
     if(Object.keys(update).length)await tx.update(players).set(update).where(eq(players.id,p.id));
    }
@@ -46,6 +52,7 @@ export async function advanceCalendar(until:Date){
     const scouts=new Map((await records('scout',tx)).map(s=>[s.clubId,s]));
     for(const c of all){
      if(c.createdAt>at)continue;
+     if(!c.isBot){const changes=trainingReports.get(c.id)||[];await teamNews(tx,c.id,'training-'+at.toISOString(),'Veckans träning är genomförd',changes.length?'Följande synliga egenskapsnivåer ökade:\n\n'+changes.join('\n'):'Träningen är genomförd. Ingen spelare passerade en ny synlig egenskapsnivå denna vecka.');}
      const costs:Array<[string,number]>=[['Spelarlöner',squad.filter((p:any)=>p.clubId===c.id&&!p.isDeceased&&!p.isMercenary&&p.createdAt<=at).reduce((s:number,p:any)=>s+p.wage,0)],['Tränare',c.coach?.wage||0],['Läkare',c.doctorInvestment],['Talangscout',scouts.get(c.id)?.hired?3000:0],['Arenadrift',c.arena?.weeklyRent||0],['Magi',c.magicInvestment||0]];
      // Magic now regenerates mana and is paid as a weekly investment.
      const total=costs.reduce((s,[,v])=>s+v,0);

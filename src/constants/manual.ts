@@ -26,7 +26,9 @@ Goblins är små, kvicka och listiga; troll är stora, sega och kraftfulla. De k
 
 Gå till Uppställning och dra in tio spelare. Spara sedan en standarduppställning på plats 1. Den används om du inte har lagt en särskild plan för en kommande match. Kontrollera både aktiva och reserver; en skadad eller såld spelare blir inte spelklar bara för att han står i en gammal mall.
 
-Fördela träningspoängen, granska de kommande matcherna och se vilken arena din hemmamatch ska spelas på. Titta på veckokostnaderna under Ekonomi innan du anställer eller värvar. Behåll en buffert för löner, skador och framtida bud. Att köpa den dyraste spelaren först kan göra det svårt att betala resten av laget.`],
+Fördela träningspoängen, granska de kommande matcherna och se vilken arena din hemmamatch ska spelas på. En spelare får bara veckans träning i en egenskap om han under veckan har spelat på en position där egenskapen används. Målvaktsträning går därför bara till spelare som har stått i det stora målet eller försvarat någon av sidokorgarna. Skott tränas av mittfältare och anfallare, markering av mittfältare och backar, medan tuffhet används på alla positioner. Efter söndagens uppdatering får laget en privat träningsrapport som berättar vilka spelare som passerat en ny synlig egenskapsnivå.
+
+Titta på veckokostnaderna under Ekonomi innan du anställer eller värvar. Behåll en buffert för löner, skador och framtida bud. Att köpa den dyraste spelaren först kan göra det svårt att betala resten av laget.`],
  ['Vad varje egenskap gör',`Snabbhet hjälper spelaren att röra sig med bollen och reagera vid sidokorgen. Kondition bromsar tröttheten. Markering hjälper försvararen att stänga vägar och bryta anfall. Passning avgör hur bra bollen förs mot en medspelare, medan mottagningen framför allt använder teknik och speluppfattning.
 
 Teknik är också central i uppkasten. Speluppfattning hjälper till att läsa lägen, hitta stöd och utnyttja skottmöjligheter. Skott är den viktigaste egenskapen för avslutaren. Målvakt används både vid det stora målet och i försvar av sidokorgar; det är inte bara den nominella målvakten som kan ha nytta av den.
