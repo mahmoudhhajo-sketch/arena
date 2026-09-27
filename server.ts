@@ -546,7 +546,7 @@ app.get('/api/divisions/:divisionName/standings', async (req, res) => {
 
     const [w]=await db.select().from(worldState);const selected=Number(req.query.season||w.season);
     const rows=selected===w.season?divisionClubs:(await record('season-history-'+selected))?.tables?.[divisionName]||[];
-    res.json(rows.map((c:any)=>({id:c.id,name:c.name,race:c.race,position:c.position,wins:c.wins,draws:c.draws,losses:c.losses,goalsFor:c.goalsFor,goalsAgainst:c.goalsAgainst})));
+    res.json(await Promise.all(rows.map(async(c:any)=>({id:c.id,name:c.name,race:c.race,position:c.position,wins:c.wins,draws:c.draws,losses:c.losses,goalsFor:c.goalsFor,goalsAgainst:c.goalsAgainst,image:(await record('club-image-'+c.id))?.data||null}))));
 
   } catch (err: any) {
 

@@ -372,7 +372,7 @@ export function simulateMatch(
       const fightSide=rng.next()<.5?'home':'away',fightSquad=fightSide==='home'?homeSquad:awaySquad,opponentSquad=fightSide==='home'?awaySquad:homeSquad;
       const fightStats=fightSide==='home'?homeStats:awayStats,opponentStats=fightSide==='home'?awayStats:homeStats;
       const fighterCandidate = fightSquad.active[rng.nextInt(0,fightSquad.active.length-1)];
-      if(fighterCandidate&&opponentSquad.active.length&&rng.next()<Math.min(.65,matchHeat*(.025+Math.max(0,fighterCandidate.player.attributes.aggressivitet)*.012))){
+      if(fighterCandidate&&opponentSquad.active.length&&rng.next()<Math.min(.45,matchHeat*(.02+Math.max(0,fighterCandidate.player.attributes.aggressivitet)*.008))){
         const defender=choose(opponentSquad.active,fighterCandidate.fieldRow,fighterCandidate.fieldCol);
         inc(fighterCandidate,'slagsmal');inc(defender,'slagsmal');inc(fighterCandidate,'slagsmal','startade');
         fightStats.slagsmal.antal++;opponentStats.slagsmal.antal++;fightStats.slagsmal.startade++;
@@ -402,7 +402,11 @@ export function simulateMatch(
       if(lastPossession!==possession){ballHolder=undefined;lastPass=null;}lastPossession=possession;
       if(!attackSquad.active.some(p=>p.player.id===ballHolder)){
         const claimant=choose(attackSquad.active,ballRow,ballCol),reach=distance(claimant,ballRow,ballCol);
-        if(reach>0&&rng.next()>contestProbability(skill(claimant,'snabbhet')/(1+reach),pressure(defendSquad.active,ballRow,ballCol))){possession=possession==='home'?'away':'home';ballHolder=undefined;continue}
+        if(reach>0){
+          inc(claimant,'mottagningar');attackStats.mottagningar.antal++;
+          if(rng.next()>contestProbability(skill(claimant,'snabbhet')/(1+reach),pressure(defendSquad.active,ballRow,ballCol))){possession=possession==='home'?'away':'home';ballHolder=undefined;continue}
+          inc(claimant,'mottagningar','lyckade');attackStats.mottagningar.lyckade++;
+        }
         ballHolder=claimant.player.id;claimant.fieldRow=ballRow;claimant.fieldCol=ballCol;effort(claimant,.014*reach);
       }
       const inAttackingThird = (possession === 'home' && ballRow === 0) || (possession === 'away' && ballRow === 2);
@@ -411,7 +415,7 @@ export function simulateMatch(
       // Shooting Decision (Goal or Basket)
       if (rng.next() < (inAttackingThird?.8:isMidfield?.38:.06)) {
         const ownedBaskets=Number(leftBasketOwner===possession)+Number(rightBasketOwner===possession);
-        const basketBias=tactics?.skytte==='Korg'?.76:tactics?.skytte==='Mål'?.25:isMidfield?.6:.42;
+        const basketBias=tactics?.skytte==='Korg'?.68:tactics?.skytte==='Mål'?.32:isMidfield?.56:.44;
         const wantsBasket = !(weather as any).basketsBlocked && rng.next() < basketBias*(ownedBaskets===2?.5:ownedBaskets===1?.75:1);
 
         if (wantsBasket) {
@@ -556,8 +560,8 @@ export function simulateMatch(
 
       // Ball progression: Run or Pass
       const actor=attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
-      const runBias=tactics?.uppspel==='Löpning'?.72:tactics?.uppspel==='Passning'?.28:.5;
-      const prefersRun = rng.next()<Math.max(.15,Math.min(.85,runBias+(skill(actor,'snabbhet')-skill(actor,'passning'))*.015-pressure(defendSquad.active,ballRow,ballCol)*.008));
+      const runBias=tactics?.uppspel==='Löpning'?.66:tactics?.uppspel==='Passning'?.34:.5;
+      const prefersRun = rng.next()<Math.max(.2,Math.min(.8,runBias+(skill(actor,'snabbhet')-skill(actor,'passning'))*.015-pressure(defendSquad.active,ballRow,ballCol)*.008));
       if (prefersRun) {
         // Run action (Löpning)
         attackStats.lopningar.antal++;
@@ -764,7 +768,7 @@ export function simulateMatch(
   };
 }
 
-export function injuryProbability(attack:number,defense:number){const ratio=(Math.max(0,attack)+.5)/(Math.max(0,defense)+.5);return Math.min(.94,.7*Math.pow(ratio,4.7));}
+export function injuryProbability(attack:number,defense:number){const ratio=(Math.max(0,attack)+.5)/(Math.max(0,defense)+.5);return Math.min(.92,.34*Math.pow(ratio,4.15));}
 function reportEvent(e:any,index:number,seed:number){if(['GOAL_NORMAL','INJURY','SUBSTITUTION','PERIOD_START','PERIOD_END','MATCH_END'].includes(e.type)||e.important)return true;const probability:Record<string,number>={SHOT_NORMAL:.08,GOAL_BASKET:.65,FIGHT_RESULT:.15,SAVE_NORMAL:.10,SAVE_BASKET:.06,UPPKAST:.02,PASS_SUCCESS:.04,RUN_SUCCESS:.07,INTERCEPTION:.06};return new SeededRNG(seed+index*7919).next()<(probability[e.type]??0)}
 
 export function calculateAttendance(home:any,away:any,ticket:number,capacity:number,variation=.5){

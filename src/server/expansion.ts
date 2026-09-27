@@ -119,7 +119,9 @@ export async function tickWorld(now=new Date()){
    const nums=new Set(squad.map((p:any)=>p.shirtNumber));let n=1;while(nums.has(n))n++;
    const p=generateSinglePlayer(0,place.race,club.id,place.name,n);
    const potential=(await record('potential-'+place.id,tx))?.value??place.potential;
-   for(const k of Object.keys(p.attributes) as Array<keyof PlayerAttributes>)p.attributes[k]*=0.7+potential/20*0.3;
+   const talentRng=new SeededRNG(+new Date(event.date)+club.id.split('').reduce((a:number,c:string)=>a+c.charCodeAt(0),0));
+   const quality=.86+potential/20*.24+talentRng.next()*.14;
+   for(const k of Object.keys(p.attributes) as Array<keyof PlayerAttributes>)if(k!=='aggressivitet')p.attributes[k]=Math.round(p.attributes[k]*quality*1000)/1000;
    p.wage=calculateWage(p.attributes);
    const [created]=await tx.insert(players).values({...playerRow(p,null),shirtNumber:0,createdAt:new Date(event.date)}).returning();
    await teamNews(tx,club.id,'scout-'+created.id,'Talangscouten har hittat en spelare',created.name+' väntar på ditt beslut i '+place.name+'.',{kind:'player',id:created.id});
@@ -141,7 +143,7 @@ export function registerExpansion(app:Express){
  route(app,'get','/api/match/:id',async(req)=>{const [m]=await db.select().from(matches).where(eq(matches.id,req.params.id));if(!m){const f=await record(req.params.id);if(f?.homeId&&!f.played){const live=await record('live-'+f.id);if(live)return liveMatchView(live.report,new Date());return {upcoming:true,id:f.id};}if(f?.friendly)return f;throw Error('Matchen saknas.');}return m.matchReport;});
  route(app,'get','/api/series',async()=>DIVISION_NAMES);
  route(app,'get','/api/fixtures',async(req)=>{
-  const all=await db.select().from(clubs);const [world]=await db.select().from(worldState);return (await records('fixture')).filter(f=>(f.season||1)===Number(req.query.season||world.season)).filter(f=>(!req.query.division||f.division===req.query.division)&&(!req.query.clubId||f.homeId===req.query.clubId||f.awayId===req.query.clubId)).sort((a,b)=>a.date.localeCompare(b.date)).map(f=>({...f,homeName:all.find(c=>c.id===f.homeId)?.name,awayName:all.find(c=>c.id===f.awayId)?.name}));
+  const all=await db.select().from(clubs);const [world]=await db.select().from(worldState),live=await records('live-match');return (await records('fixture')).filter(f=>(f.season||1)===Number(req.query.season||world.season)).filter(f=>(!req.query.division||f.division===req.query.division)&&(!req.query.clubId||f.homeId===req.query.clubId||f.awayId===req.query.clubId)).sort((a,b)=>a.date.localeCompare(b.date)).map(f=>{const running=live.find(x=>x.id==='live-'+f.id);const view=running?liveMatchView(running.report,new Date()):null;return {...f,homeName:all.find(c=>c.id===f.homeId)?.name,awayName:all.find(c=>c.id===f.awayId)?.name,...(view?.live?{live:true,liveScore:view.finalScore,elapsedMinute:view.elapsedMinute}:{})}});
  });
  route(app,'get','/api/search',async(req)=>{const q=String(req.query.q||'').trim().toLocaleLowerCase('sv');if(q.length<2)return{players:[],clubs:[],managers:[]};
  const all=await db.select().from(clubs),ps=await db.select().from(players);

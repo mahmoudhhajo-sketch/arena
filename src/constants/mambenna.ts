@@ -34,8 +34,11 @@ export const MAMBENNA_SETTLEMENTS: Settlement[] = [
 export function getRandomSettlementForRace(race: Race): Settlement {
   const valid = MAMBENNA_SETTLEMENTS.filter((s) => s.race === race);
   if (valid.length === 0) return MAMBENNA_SETTLEMENTS[0];
-  const idx = Math.floor(Math.random() * valid.length);
-  return valid[idx];
+  // Folkrika och talangtäta städer kan bära flera lag; små byar förekommer fortfarande.
+  const weights=valid.map(s=>Math.max(1,Math.pow(s.potential,2.4))),total=weights.reduce((a,b)=>a+b,0);
+  let roll=Math.random()*total;
+  for(let i=0;i<valid.length;i++){roll-=weights[i];if(roll<=0)return valid[i]}
+  return valid.at(-1)!;
 }
 
 // Procedural bot club generation for system-filled divisions
