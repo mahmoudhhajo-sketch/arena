@@ -178,13 +178,17 @@ export function simulateMatch(
   const skill=(p:ActivePlayerState,k:string)=>Math.max(0,Number((p.player.attributes as any)[k]))*(.75+p.player.form/64)*Math.max(.55,1-(fatigue.get(p.player.id)||0))*(k==='aggressivitet'||k==='tuffhet'?1:arenaConfidence(p.player.attributes.tuffhet,homeClub.arena?.ara||0,homeClub.arena?.skrack||0,attendance,homeSquad.active.includes(p)).multiplier)*surfaceRaceFactor(p.player.race,underlag);
   const local=(squad:ActivePlayerState[],row:number,col:number)=>squad.filter(p=>p.slotKey!=='goal'&&p.fieldRow===row&&p.fieldCol===col);
   const pickWeighted=(pool:ActivePlayerState[],weights:number[])=>{let roll=rng.next()*weights.reduce((a,b)=>a+b,0);for(let i=0;i<pool.length;i++){roll-=weights[i];if(roll<=0)return pool[i]}return pool[pool.length-1]};
+  // Missing players make every non-violent ball contest harder. Local marking and
+  // support still matter separately, so a superior player can overcome the odds.
+  const playerSide=(p:ActivePlayerState):'home'|'away'=>homeSquad.active.includes(p)?'home':'away';
+  const numberFactor=(side:'home'|'away')=>{const own=(side==='home'?homeSquad:awaySquad).active.length,other=(side==='home'?awaySquad:homeSquad).active.length;return Math.max(.76,Math.min(1.18,1+(own-other)*.045))};
   const distance=(p:ActivePlayerState,row:number,col:number)=>Math.abs(p.fieldRow-row)+Math.abs(p.fieldCol-col);
   const choose=(squad:ActivePlayerState[],row:number,col:number)=>{const out=squad.filter(p=>p.slotKey!=='goal'),pool=out.length?out:squad;return pickWeighted(pool,pool.map(p=>(.3+skill(p,'speluppfattning')*(p.slotKey.endsWith('-1')?.4:.08)+skill(p,'teknik')*.3+skill(p,'snabbhet')*.3)/Math.pow(1+distance(p,row,col),3)))};
   const support=(squad:ActivePlayerState[],actor:ActivePlayerState,k:string)=>cellStrength(local(squad,actor.fieldRow,actor.fieldCol).filter(p=>p!==actor).map(p=>skill(p,k)))*.35;
   const pressure=(squad:ActivePlayerState[],row:number,col:number)=>{const values=squad.filter(p=>p.slotKey!=='goal').map(p=>(skill(p,'markering')+.3*skill(p,'snabbhet')+.15*skill(p,'speluppfattning'))/Math.pow(1+distance(p,row,col),2.7));return cellStrength(values)};
   const lane=(side:'home'|'away',row:number)=>{const tactic=(side==='home'?homeClub:awayClub).lineup?.tactics?.spelvag;const defenders=side==='home'?awaySquad.active:homeSquad.active;const weights=[0,1,2].map(col=>(tactic==='Kant'?(col===1?.4:2):tactic==='Mitten'?(col===1?3:.5):1)/(1+pressure(defenders,row,col)*.05));let roll=rng.next()*weights.reduce((a,b)=>a+b,0);for(let col=0;col<3;col++){roll-=weights[col];if(roll<=0)return col}return 2;};
   const chance=(a:number,b:number)=>rng.next()<contestProbability(a,b);
-  const weighted=(p:ActivePlayerState,key:string,a:number,b:number,other?:ActivePlayerState,otherKey?:string)=>{const probability=contestProbability(a,b);let success=rng.next()<probability;if(success&&other&&luck(other,['skott','korgskott'].includes(key)?'skott':key==='slagsmal'?'duell':'brytning'))success=false;else if(!success&&luck(p,['skott','korgskott'].includes(key)?'avslut':key==='slagsmal'?'duell':'boll'))success=true;individualStats[p.player.id].stats[key].viktat+=(Number(success)-probability)*100;if(other&&otherKey)individualStats[other.player.id].stats[otherKey].viktat+=(Number(!success)-(1-probability))*100;return success;};
+  const weighted=(p:ActivePlayerState,key:string,a:number,b:number,other?:ActivePlayerState,otherKey?:string)=>{if(key!=='slagsmal'){const side=playerSide(p);a*=numberFactor(side);b*=numberFactor(other?playerSide(other):side==='home'?'away':'home')}const probability=contestProbability(a,b);let success=rng.next()<probability;if(success&&other&&luck(other,['skott','korgskott'].includes(key)?'skott':key==='slagsmal'?'duell':'brytning'))success=false;else if(!success&&luck(p,['skott','korgskott'].includes(key)?'avslut':key==='slagsmal'?'duell':'boll'))success=true;individualStats[p.player.id].stats[key].viktat+=(Number(success)-probability)*100;if(other&&otherKey)individualStats[other.player.id].stats[otherKey].viktat+=(Number(!success)-(1-probability))*100;return success;};
   const unavailable=new Set<number>();
   const homeStats = emptyTeamStats();
   const awayStats = emptyTeamStats();
@@ -232,7 +236,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:19,id: `match-${seed}`,
+      engineVersion:20,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -425,10 +429,12 @@ export function simulateMatch(
           const shooter = attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
           const sideBasketCol = leftBasketOwner===possession&&rightBasketOwner!==possession?2:rightBasketOwner===possession&&leftBasketOwner!==possession?0:ballCol===0?0:2;
           // Defender is wing midfielder on that side
-          const defender = defendSquad.active.find((a) => a.fieldRow === 1 && a.fieldCol === sideBasketCol) || defendSquad.active[0];
+          const directDefender = defendSquad.active.find((a) => a.fieldRow === 1 && a.fieldCol === sideBasketCol);
+          const defender = directDefender || choose(defendSquad.active,1,sideBasketCol);
+          const basketReach=distance(defender,1,sideBasketCol);
 
           const shotSkill = skill(shooter,'skott') * .7 - weather.wind*.08 + skill(shooter,'snabbhet') * 0.3 + rng.next() * 5;
-          const saveSkill = skill(defender,'malvakt') * 0.7 + skill(defender,'snabbhet') * 0.3 + rng.next() * 5;
+          const saveSkill = (skill(defender,'malvakt') * 0.7 + skill(defender,'snabbhet') * 0.3 + rng.next() * 5)/(1+basketReach*.45);
 
           inc(shooter,'korgskott');inc(defender,'korgraddningar');effort(shooter,.012);
           if (weighted(shooter,'korgskott',Math.max(.1,shotSkill+support(attackSquad.active,shooter,'speluppfattning')-pressure(defendSquad.active,ballRow,ballCol)*.2),saveSkill*.55+.7+(activeSpells(defender.player.artifacts).some(s=>s.matchEffect==='baskets')?80:0),defender,'korgraddningar')) {
@@ -737,7 +743,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:19,id: `match-${seed}`,
+    engineVersion:20,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',
