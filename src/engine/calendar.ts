@@ -24,7 +24,7 @@ export function weeklyAttributes(attributes:PlayerAttributes,allocation:Record<T
   const positionalMatches=matchesByAttribute?.[key];
   const participation=(positionalMatches===undefined?[0.1,0.55,1]:[0,0.55,1])[Math.min(2,Math.max(0,positionalMatches??matches))];
   const points=Math.min(10,Math.max(0,allocation[key]||0));
-  const gain=0.25*points*participation*(key==='kondition'?2.25:1)/Math.pow(1+Math.max(0,attributes[key])/8,2);
+  const gain=0.25*points*participation*(key==='kondition'?2.25:1)/Math.pow(1.03,Math.max(0,attributes[key]));
   result[key]=Math.max(0,Math.round((attributes[key]+gain-(key==='kondition'&&points===0?0.15:0))*1000)/1000);
  }
  return result;

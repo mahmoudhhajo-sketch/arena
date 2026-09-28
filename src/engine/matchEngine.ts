@@ -391,7 +391,7 @@ export function simulateMatch(
         const injured=!activeSpells(loser.player.artifacts).some(s=>s.immune)&&rng.next()<injuryChance&&!luck(loser,'skada');
         events.push({id:'fight-'+period+'-'+phase,period,minute:currentMinute,type:'FIGHT_RESULT',teamSide:winnerSide,playerName:winner.player.name,playerId:winner.player.id,opponentPlayerName:loser.player.name,opponentPlayerId:loser.player.id,text:injured?`${winner.player.name} vann närkampen. ${loser.player.name} blev liggande och behövde hjälp av bårbärarna.`:`${winner.player.name} fick övertaget mot ${loser.player.name}, men båda kunde fortsätta.`,important:injured} as any);
         if(injured){
-          const old=loser.player,slot=loser.slotKey,severity=rng.nextInt(1,3);unavailable.add(old.id);
+          const old=loser.player,slot=loser.slotKey,severity=injurySeverity(skill(winner,'tuffhet'),skill(loser,'tuffhet'),rng.next());unavailable.add(old.id);
           (loserSide==='home'?homeInjuries:awayInjuries).push({playerId:old.id,playerName:old.name,severity});
           const queue=loserSquad.reservesBySlot.get(slot)||[];let sub:Player|undefined;
           while(queue.length&&!sub){const candidate=queue.shift()!;if(!unavailable.has(candidate.id)&&!loserSquad.active.some(p=>p.player.id===candidate.id))sub=candidate}
@@ -775,6 +775,7 @@ export function simulateMatch(
 }
 
 export function injuryProbability(attack:number,defense:number){const ratio=(Math.max(0,attack)+.5)/(Math.max(0,defense)+.5);return Math.min(.94,.7*Math.pow(ratio,4.7));}
+export function injurySeverity(attack:number,defense:number,roll:number){const ratio=(Math.max(0,attack)+.5)/(Math.max(0,defense)+.5),force=Math.min(1.75,Math.max(.55,Math.pow(ratio,.35))),impact=-Math.log(Math.max(1e-9,1-Math.min(.999999,Math.max(0,roll))))*force;return impact>=6.5?7:impact>=4.8?6:impact>=3.5?5:impact>=2.5?4:impact>=1.6?3:impact>=.8?2:1;}
 function reportEvent(e:any,index:number,seed:number){if(['GOAL_NORMAL','INJURY','SUBSTITUTION','PERIOD_START','PERIOD_END','MATCH_END'].includes(e.type)||e.important)return true;const probability:Record<string,number>={SHOT_NORMAL:.08,GOAL_BASKET:.65,FIGHT_RESULT:.15,SAVE_NORMAL:.10,SAVE_BASKET:.06,UPPKAST:.02,PASS_SUCCESS:.04,RUN_SUCCESS:.07,INTERCEPTION:.06};return new SeededRNG(seed+index*7919).next()<(probability[e.type]??0)}
 
 export function calculateAttendance(home:any,away:any,ticket:number,capacity:number,variation=.5){

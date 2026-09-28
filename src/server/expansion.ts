@@ -110,7 +110,7 @@ export async function tickWorld(now=new Date()){
     if(a.sellerId){await tx.update(clubs).set({gold:sql`${clubs.gold}+${a.price}`}).where(eq(clubs.id,a.sellerId));await put('ledger','sale-'+a.id,{clubId:a.sellerId,category:'Spelarförsäljningar',amount:a.price,date:event.date},tx);}
     const bought=(await tx.select().from(players).where(eq(players.id,a.playerId)))[0],buyer=(await tx.select().from(clubs).where(eq(clubs.id,a.bidderId)))[0];await put('morale-change','morale-'+a.id,{clubId:a.bidderId,date:event.date,penalty:bought.race===buyer.race?0:5},tx);await put('ledger','purchase-'+a.id,{clubId:a.bidderId,category:'Spelarköp',amount:-a.price,date:event.date},tx);
    }
-   await put('auction',a.id,{...a,closed:true},tx);
+   const [world]=await tx.select().from(worldState);await put('auction',a.id,{...a,closed:true,season:a.season||world?.season||1},tx);
   });
  }else if(event.type==='scout'){const scout=event.item;
   await db.transaction(async(tx:any)=>{const s=await record(scout.id,tx);if(!s.destination)return;const [club]=await tx.select().from(clubs).where(eq(clubs.id,s.clubId));const place=PLACES.find(p=>p.id===s.destination)!;
@@ -194,7 +194,8 @@ export function registerExpansion(app:Express){
  });
  route(app,'post','/api/magic/:clubId',async(req)=>{const cost=Number(req.body.cost);if(!Number.isInteger(cost)||cost<0||cost>100000)throw Error('Ogiltig magikostnad.');await db.update(clubs).set({magicInvestment:cost}).where(eq(clubs.id,req.params.clubId));return{success:true};});
  route(app,'get','/api/economy/:clubId',async(req)=>({ledger:(await records('ledger')).filter(r=>r.clubId===req.params.clubId),scout:await record('scout-'+req.params.clubId),reserved:[...(await records('auction')),...(await records('artifact-auction'))].filter(a=>!a.closed&&a.bidderId===req.params.clubId).reduce((s,a)=>s+a.price,0)}));
- route(app,'get','/api/statistics',async(req)=>statistics(req.query.division as string,String(req.query.season||"total")));
+ route(app,'get','/api/statistics',async(req)=>statistics(req.query.division as string,String(req.query.season||"total"),undefined,undefined,req.query.includeBots!=="false"));
+ route(app,'get','/api/completed-transfers',async(req)=>{const teams=await db.select().from(clubs),ps=await db.select().from(players),division=String(req.query.division||''),season=String(req.query.season||'total');return (await records('auction')).filter(a=>a.closed&&!a.cancelled&&a.bidderId&&(season==='total'||Number(a.season||1)===Number(season))&&(!division||[a.sellerId,a.bidderId].some(id=>teams.find(c=>c.id===id)?.division===division))).map(a=>{const p=ps.find(p=>p.id===a.playerId);return {...a,season:a.season||1,date:a.endsAt,name:p?.name||'Tidigare spelare',race:p?.race||'human',fromName:teams.find(c=>c.id===a.sellerId)?.name||'Kejsardömets marknad',toName:teams.find(c=>c.id===a.bidderId)?.name||'Okänt lag'};}).sort((a,b)=>+new Date(b.date)-+new Date(a.date));});
 }
 
 

@@ -30,6 +30,15 @@ export const ARTIFACTS=[
 
 ] as const;
 
+export const ARTIFACT_MARKET_CAP=25;
+/** Relative imperial-market frequency. Consumables are common; permanent boosts are scarce. */
+export const ARTIFACT_MARKET_WEIGHTS:Record<string,number>={
+ 'herbal-brew':38,'black-brew':27,'luck-amulet':7,'keeper-gloves':5,
+ 'speed-boots':4,'thorn-bracer':4,'mithril':3,'seven-mile-boots':2,
+ 'dragon-blood':1,'moon-staff':1
+};
+export const MARKET_ARTIFACTS=ARTIFACTS.filter(a=>ARTIFACT_MARKET_WEIGHTS[a.id]>0);
+
 export function effectiveAttributes(p:{attributes:PlayerAttributes;artifacts?:string[]}):PlayerAttributes{const attrs={...p.attributes};for(const a of ARTIFACTS)if(p.artifacts?.includes(a.id))attrs[a.attribute]+=a.bonus;for(const effect of p.artifacts||[]){const [tag,id,end]=effect.split(":");if(tag!=="effect"||Number(end)<=Date.now())continue;if(id==="dragon-blood")for(const k of Object.keys(attrs) as Array<keyof PlayerAttributes>)attrs[k]+=1.7*Math.min(1,Math.max(0,(Number(end)-Date.now())/(8*86400000)));}for(const spell of activeSpells(p.artifacts))for(const [key,bonus] of Object.entries(spell.bonus))attrs[key as keyof PlayerAttributes]+=Number(bonus);return attrs;}
 
 /** Permanent equipment bonuses, without temporary magic or Drakblod. */
