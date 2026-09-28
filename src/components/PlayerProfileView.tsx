@@ -1,7 +1,7 @@
 import {Meter} from './SquadOverview';
 import {InjuryMark} from './InjuryMark';
 import {SPELLS} from '../constants/spells';
-import {ARTIFACTS,dragonBloodAttributes} from '../constants/market';
+import {ARTIFACTS,dragonBloodAttributes,equippedAttributes} from '../constants/market';
 import React, { useState } from 'react';
 import {Crest} from './Crest';
 import { Player, PlayerAttributes } from '../types';
@@ -33,7 +33,8 @@ export const PlayerProfileView: React.FC<PlayerProfileViewProps> = ({
 }) => {
   const [useForm, setUseForm] = useState(true);
 
-  const shownAttributes=useForm?dragonBloodAttributes(player):player.attributes;
+  const equipped=equippedAttributes(player);
+  const shownAttributes=useForm?dragonBloodAttributes({...player,attributes:equipped}):equipped;
   const ratings = useForm
     ? player.positionRatingsWithForm || calculatePlayerPositionRatings(player, true)
     : player.positionRatingsWithoutForm || calculatePlayerPositionRatings(player, false);

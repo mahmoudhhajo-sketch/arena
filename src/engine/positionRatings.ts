@@ -1,5 +1,5 @@
 import {activeSpells} from '../constants/spells';
-import {effectiveAttributes} from '../constants/market';
+import {effectiveAttributes,equippedAttributes} from '../constants/market';
 import { Player, PlayerAttributes, PositionRatings } from '../types';
 
 export interface PositionWeights {
@@ -122,7 +122,7 @@ function calculateSlotScore(
 }
 
 export function calculatePlayerPositionRatings(player: Player, useForm: boolean): PositionRatings {
-  const attrs = useForm ? effectiveAttributes(player) : player.attributes;
+  const attrs = useForm ? effectiveAttributes(player) : equippedAttributes(player);
   const form = Math.min(16,player.form+activeSpells(player.artifacts).reduce((a,s)=>a+(s.form||0),0));
 
   // Row 0: Attack (wing, center, wing)
