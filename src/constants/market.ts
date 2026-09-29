@@ -39,7 +39,7 @@ export const ARTIFACT_MARKET_WEIGHTS:Record<string,number>={
 };
 export const MARKET_ARTIFACTS=ARTIFACTS.filter(a=>ARTIFACT_MARKET_WEIGHTS[a.id]>0);
 
-export function effectiveAttributes(p:{attributes:PlayerAttributes;artifacts?:string[]}):PlayerAttributes{const attrs={...p.attributes};for(const a of ARTIFACTS)if(p.artifacts?.includes(a.id))attrs[a.attribute]+=a.bonus;for(const effect of p.artifacts||[]){const [tag,id,end]=effect.split(":");if(tag!=="effect"||Number(end)<=Date.now())continue;if(id==="dragon-blood")for(const k of Object.keys(attrs) as Array<keyof PlayerAttributes>)attrs[k]+=1.7*Math.min(1,Math.max(0,(Number(end)-Date.now())/(8*86400000)));}for(const spell of activeSpells(p.artifacts))for(const [key,bonus] of Object.entries(spell.bonus))attrs[key as keyof PlayerAttributes]+=Number(bonus);return attrs;}
+export function effectiveAttributes(p:{attributes:PlayerAttributes;artifacts?:string[]}):PlayerAttributes{const attrs={...p.attributes};for(const a of ARTIFACTS)if(p.artifacts?.includes(a.id))attrs[a.attribute]+=a.bonus;for(const effect of p.artifacts||[]){const [tag,id,end]=effect.split(":");if(tag!=="effect"||Number(end)<=Date.now())continue;if(id==="dragon-blood"){const strength=Math.min(1,Math.max(0,(Number(end)-Date.now())/(8*86400000))),multiplier=1+.7*strength;for(const k of Object.keys(attrs) as Array<keyof PlayerAttributes>)attrs[k]*=multiplier;}}for(const spell of activeSpells(p.artifacts))for(const [key,bonus] of Object.entries(spell.bonus))attrs[key as keyof PlayerAttributes]+=Number(bonus);return attrs;}
 
 /** Permanent equipment bonuses, without temporary magic or Drakblod. */
 export function equippedAttributes(p:{attributes:PlayerAttributes;artifacts?:string[]}):PlayerAttributes{return effectiveAttributes({...p,artifacts:(p.artifacts||[]).filter(id=>!id.includes(':'))});}
@@ -63,4 +63,4 @@ const COACH_BASE=[...ORIGINAL_COACHES,...Array.from({length:80},(_,i)=>{const [f
 
 export const COACHES=COACH_BASE.map(c=>({...c,wage:Math.round(700+80*c.trainingBonus**3+65*c.tacticsBonus**3)}));
 
-export function dragonBloodAttributes(p:{attributes:PlayerAttributes;artifacts?:string[]},now=Date.now()):PlayerAttributes {const until=Math.max(0,...(p.artifacts||[]).filter(a=>a.startsWith("effect:dragon-blood:")).map(a=>Number(a.split(":")[2])||0));const boost=1.7*Math.min(1,Math.max(0,(until-now)/(8*86400000)));return Object.fromEntries(Object.entries(p.attributes).map(([k,v])=>[k,v+boost])) as unknown as PlayerAttributes;}
+export function dragonBloodAttributes(p:{attributes:PlayerAttributes;artifacts?:string[]},now=Date.now()):PlayerAttributes {const until=Math.max(0,...(p.artifacts||[]).filter(a=>a.startsWith("effect:dragon-blood:")).map(a=>Number(a.split(":")[2])||0));const strength=Math.min(1,Math.max(0,(until-now)/(8*86400000))),multiplier=1+.7*strength;return Object.fromEntries(Object.entries(p.attributes).map(([k,v])=>[k,Number(v)*multiplier])) as unknown as PlayerAttributes;}

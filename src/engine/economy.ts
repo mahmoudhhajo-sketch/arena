@@ -23,5 +23,7 @@ export function acquisitionMorale(events:{date:string;penalty:number}[],now=Date
  for(const e of changes){recover(+new Date(e.date));morale=Math.max(0,morale-Math.max(0,e.penalty));}
  recover(now);return morale;
 }
-// Even the full morale range changes effective abilities by at most two percent.
-export function moraleFactor(morale=100){return .98+.02*Math.max(0,Math.min(100,morale))/100;}
+// Morale is deliberately the lightest broad match factor: the complete range
+// changes effective abilities by five percent, while ordinary weekly movement
+// produces a much smaller adjustment.
+export function moraleFactor(morale=100){return .95+.05*Math.max(0,Math.min(100,morale))/100;}
