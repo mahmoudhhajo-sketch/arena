@@ -291,4 +291,4 @@ export function generateStarterSquad(race: Race, clubId: string, hometown: strin
 }
 
 
-export function generateAggression(race:Race,random= Math.random){const u=Math.max(Number.EPSILON,random()),v=random();const normal=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);const mean=({elf:2.2,human:5,dwarf:8,orc:12,goblin:6,troll:10})[race];return Math.round(Math.max(0,mean+normal*(race==='orc'?4.5:3))*1000)/1000;}
+export function generateAggression(race:Race,random= Math.random){const u=Math.max(Number.EPSILON,random()),v=random();const normal=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);const mean=({elf:2.2,human:5,dwarf:7.5,orc:12,goblin:10,troll:8.5})[race];return Math.round(Math.max(0,mean+normal*(race==='orc'?4.5:race==='goblin'?3.6:3))*1000)/1000;}

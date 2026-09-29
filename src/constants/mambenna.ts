@@ -6,26 +6,27 @@ export interface Settlement {
   race: Race;
   potential: number; // 0 - 20
   description: string;
+  capital?: boolean;
 }
 
 // Canonical static geography & settlements of Mambenna
 export const MAMBENNA_SETTLEMENTS: Settlement[] = [
-  { id: 'berunia', name: 'Berunia', race: 'human', potential: 16, description: 'Kejsardömets kosmopolitiska huvudstad vid kusten.' },
+  { id: 'berunia', name: 'Berunia', race: 'human', potential: 16, description: 'Kejsardömets kosmopolitiska säte vid kusten.' },
   { id: 'tvillingstaderna', name: 'Tvillingstäderna', race: 'human', potential: 14, description: 'Två speglade fästen förbundna med massiva broar.' },
   { id: 'bortomgarda', name: 'Bortomgårda', race: 'human', potential: 12, description: 'Ett avlägset jordbruksfäste med segt folk.' },
   { id: 'hillgrunby', name: 'Hillgrunby', race: 'human', potential: 11, description: 'Kuperat handelsområde med livlig idrottsanda.' },
-  { id: 'skeppsvye', name: 'Skeppsvye', race: 'human', potential: 15, description: 'Mambennas största hamnstad mot södra havet.' },
+  { id: 'skeppsvye', name: 'Skeppsvye', race: 'human', potential: 19, capital: true, description: 'Människornas örika huvudstad och största hamn mot södra havet.' },
   { id: 'vastlycke', name: 'Västlycke', race: 'human', potential: 10, description: 'Västra provinsens sömniga marknadsby.' },
 
-  { id: 'alymoon', name: 'Alymoon', race: 'elf', potential: 18, description: 'Alvernas urgamla trädkrona och kulturella hjärta.' },
+  { id: 'alymoon', name: 'Alymoon', race: 'elf', potential: 20, capital: true, description: 'Alvernas urgamla huvudstad i trädkronorna och deras kulturella hjärta.' },
   { id: 'skogskymning', name: 'Skogskymning', race: 'elf', potential: 14, description: 'Skogsbryn där unga alvjägare tränar snabbhet.' },
   { id: 'vemjelsen', name: 'Vemjelsen', race: 'elf', potential: 12, description: 'Avlägsen källsjö med anrika Yaraaz-traditioner.' },
 
-  { id: 'larutappe', name: 'Larutappe', race: 'dwarf', potential: 15, description: 'En djup dvärgakoloni känd för sina stenhuggare.' },
+  { id: 'larutappe', name: 'Larutappe', race: 'dwarf', potential: 19, capital: true, description: 'Dvärgarnas huvudstad, uthuggen kring bergets djupaste och rikaste salar.' },
   { id: 'clamklyte', name: 'Clamklyte', race: 'dwarf', potential: 13, description: 'Klippig dvärgabosättning längs västra bergskedjan.' },
   { id: 'nordstorme', name: 'Nordstorme', race: 'dwarf', potential: 14, description: 'Gränsfäste mot det okända landet i norr.' },
 
-  { id: 'shraknek', name: 'Shraknek', race: 'orc', potential: 17, description: 'Orchernas rykande fästning i bergsdalen.' },
+  { id: 'shraknek', name: 'Shraknek', race: 'orc', potential: 19, capital: true, description: 'Orchernas rykande huvudstad och klanfäste i bergsdalen.' },
   { id: 'stormrade', name: 'Stormråde', race: 'orc', potential: 16, description: 'Vindpinad platå där orchiska krigsklaner samlas.' },
   { id: 'stryxlya', name: 'Stryxlya', race: 'orc', potential: 15, description: 'Mörka skogar befolkade av härdade fribrytare.' },
   { id: 'miltrand', name: 'Miltrand', race: 'orc', potential: 17, description: 'Södra kustens orchkoloni med vilt rykte.' },

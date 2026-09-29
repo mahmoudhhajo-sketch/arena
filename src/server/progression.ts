@@ -18,32 +18,61 @@ function tuneMarketWage(attributes:any,target:number){
  return best;
 }
 
+function specializeMarketPlayer(attributes:any,role:string,random=Math.random){
+ // Most imperial listings are built for a recognisable job. A minority remain
+ // genuine hybrids, so unusual marking/shooting combinations can still exist.
+ if(random()<.16)return attributes;
+ const factors:Record<string,Record<string,number>>={
+  goalkeeper:{skott:.42,markering:.62},
+  defender:{skott:.52,malvakt:.38,passning:.88},
+  midfielder:{malvakt:.35,skott:.86,markering:.86},
+  attacker:{markering:.48,malvakt:.32},
+ };
+ const out={...attributes};
+ for(const [key,factor] of Object.entries(factors[role]||{}))out[key]=Math.round(Number(out[key]||0)*factor*1000)/1000;
+ return out;
+}
+
 export async function releaseMarketPlayers(now:Date){
  const day=weatherFor('',now).date;
  await db.transaction(async(tx:any)=>{
   await tx.execute(sql`SELECT pg_advisory_xact_lock(719082)`);
-  let auctions=(await records('auction',tx)).filter(a=>!a.closed&&+new Date(a.endsAt)>+now);
-  const allPlayers=await tx.select().from(players),wages=new Map(allPlayers.map(p=>[p.id,p.wage])),middle=(a:any)=>{const wage=Number(wages.get(Number(a.playerId))||0);return wage>=1500&&wage<=2000;};
+  const allOpen=(await records('auction',tx)).filter(a=>!a.closed&&+new Date(a.endsAt)>+now);
+  let auctions=allOpen.filter(a=>!a.sellerId);
+  const allPlayers=await tx.select().from(players),playerById=new Map(allPlayers.map(p=>[p.id,p])),wages=new Map(allPlayers.map(p=>[p.id,p.wage])),middle=(a:any)=>{const wage=Number(wages.get(Number(a.playerId))||0);return wage>=1500&&wage<=2000;};
   // During the opening flood, rotate only untouched imperial listings until 40% form a useful middle class.
   const middleTarget=18,middleShortage=Math.max(0,middleTarget-auctions.filter(middle).length);
   const replaceable=auctions.filter(a=>!middle(a)&&!a.bidderId&&!a.sellerId).slice(0,middleShortage);
   for(const auction of replaceable)await put('auction',auction.id,{...auction,closed:true,replaced:true},tx);
   const replaced=new Set(replaceable.map(a=>a.id));auctions=auctions.filter(a=>!replaced.has(a.id));
+  // Keep the four main peoples close to one another while leaving the smaller
+  // goblin and troll supply at its established level. The rotating 8/9/9/10
+  // split prevents the market from looking mechanically identical every day.
+  const main=['human','elf','dwarf','orc'],rotation=Math.abs([...day].reduce((a,c)=>a+c.charCodeAt(0),0))%4;
+  const targets:any={goblin:5,troll:4};main.forEach((race,i)=>targets[race]=i===rotation?10:i===(rotation+2)%4?8:9);
+  const counts=()=>auctions.reduce((m:any,a:any)=>{const race=(playerById.get(Number(a.playerId)) as any)?.race;if(race)m[race]=(m[race]||0)+1;return m;},{});
+  let raceCounts=counts();
+  for(const race of Object.keys(targets))while((raceCounts[race]||0)>targets[race]){
+   const surplus=auctions.find(a=>!a.bidderId&&(playerById.get(Number(a.playerId)) as any)?.race===race);
+   if(!surplus)break;
+   await put('auction',surplus.id,{...surplus,closed:true,replaced:true},tx);auctions=auctions.filter(a=>a.id!==surplus.id);raceCounts=counts();
+  }
   const missing=Math.max(0,45-auctions.length);
   if(!missing){if(!await record('market-day-'+day,tx))await put('system','market-day-'+day,{date:day,active:auctions.length},tx);return;}
   const reference=worldMarketQuality(allPlayers);let middleNeeded=Math.max(0,middleTarget-auctions.filter(middle).length);
-  const races:any[]=['human','elf','dwarf','orc','human','elf','dwarf','orc','goblin','troll'];
   const roles:any[]=['goalkeeper','defender','midfielder','attacker'];
   for(let i=0;i<missing;i++){
-   const race=races[(auctions.length+i)%races.length],homes=PLACES.filter(p=>p.race===race),home=homes[Math.floor(Math.random()*homes.length)];
-   const p=generateSinglePlayer(0,race,'',home.name,1,roles[(auctions.length+i)%roles.length]);
-   p.attributes=marketAttributes(p.attributes,reference);
+   raceCounts=counts();const race=Object.keys(targets).sort((a,b)=>(targets[b]-(raceCounts[b]||0))-(targets[a]-(raceCounts[a]||0))||a.localeCompare(b))[0];
+   const homes=PLACES.filter(p=>p.race===race),home=homes[Math.floor(Math.random()*homes.length)],role=roles[(auctions.length+i)%roles.length];
+   const p=generateSinglePlayer(0,race as any,'',home.name,1,role);
+   p.attributes=specializeMarketPlayer(marketAttributes(p.attributes,reference),role);
    // About two players in five form the useful middle class of the market.
    if(middleNeeded>0){p.attributes=tuneMarketWage(p.attributes,1500+Math.floor(Math.random()*501));middleNeeded--;}
    p.wage=calculateWage(p.attributes);
    const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;
    const [created]=await tx.insert(players).values({...row,clubId:null}).returning();
    await put('auction','auction-'+randomUUID(),{playerId:created.id,sellerId:null,price:Math.max(100,Math.round(p.wage*5)),bidderId:null,endsAt:new Date(+now+7*86400000).toISOString(),closed:false},tx);
+   playerById.set(created.id,created as any);auctions.push({id:'new-'+created.id,playerId:created.id,sellerId:null,bidderId:null});
   }
   await put('system','market-day-'+day,{date:day,added:missing,target:45},tx);
  });

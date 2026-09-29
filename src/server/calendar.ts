@@ -75,8 +75,9 @@ export async function advanceCalendar(until:Date){
     }
    }
    // Recover one potential point every seven full days since the last scout visit/recovery.
-   for(const p of await records('potential',tx))if(+at-+new Date(p.date)>=7*86400000){
-    const place=PLACES.find(x=>'potential-'+x.id===p.id);if(place)await put('potential',p.id,{...p,value:Math.min(20,p.value+1),date:at.toISOString()},tx);
+   for(const p of await records('potential',tx)){
+    const place=PLACES.find(x=>'potential-'+x.id===p.id),recoveryDays=(place as any)?.capital?5:7;
+    if(place&&+at-+new Date(p.date)>=recoveryDays*86400000)await put('potential',p.id,{...p,value:Math.min(20,p.value+1),date:at.toISOString()},tx);
    }
    await tx.update(worldState).set({day:sql`${worldState.day}+1`,updatedAt:at});
    await put('system','calendar-clock',{last:at.toISOString()},tx);
