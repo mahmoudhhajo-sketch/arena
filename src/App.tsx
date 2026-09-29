@@ -19,13 +19,16 @@ function Game(){
  const {state,setTab,selectPlayer,updatePresentation,saveTraining,updateDoctorCost,saveArena,addShoutboxMessage,createNewClub,refetch}=useGameStore();
  const [planning,setPlanning]=useState<string|null>(null);
  const [entity,saveEntity]=useState<Entity|null>(null);const navigationRef=useRef<any>(null);const snapshot=()=>navigationRef.current;const pushView=(view:any,url:string)=>{history.replaceState({...history.state,...snapshot(),scrollY:window.scrollY},'',location.href);history.pushState({...snapshot(),...view,ui:{}},'',url)};const setEntity=(e:Entity|null)=>{pushView({entity:e},e?'#/'+e.kind+'/'+encodeURIComponent(e.id):'#/tab/'+state.currentTab);saveEntity(e);};const goBack=()=>history.state?.arena?history.back():navigate('lag');
- const popupKind=()=>new URLSearchParams(location.hash.split('?')[1]||'').get('window');
- const openWindow=(tab:string,kind:string,name:string,width=1240,height=900)=>{const url=location.origin+location.pathname+'#/tab/'+tab+'?window='+kind;const child=window.open(url,name,`popup=yes,width=${width},height=${height},resizable=yes,scrollbars=yes`);child?.focus();};
- const [overview,setOverview]=useState(popupKind()==='players'),[buildArena,setBuildArena]=useState(false),[match,setMatch]=useState<MatchReport|null>(null),[error,setError]=useState('');
+ const [overviewWindow,setOverviewWindow]=useState<Window|null>(null),[forumWindow,setForumWindow]=useState<Window|null>(null);
+ const [buildArena,setBuildArena]=useState(false),[match,setMatch]=useState<MatchReport|null>(null),[error,setError]=useState('');
+ const createContentWindow=(name:string,title:string,width:number,height:number)=>{const child=window.open('',name,`popup=yes,width=${width},height=${height},resizable=yes,scrollbars=yes`);if(!child)return null;const doc=child.document;doc.open();doc.write(`<!doctype html><html lang="sv"><head><meta charset="UTF-8"><base href="${document.baseURI}"><title>${title}</title></head><body></body></html>`);doc.close();for(const source of document.querySelectorAll('link[rel="stylesheet"],style')){const copy=source.cloneNode(true) as HTMLElement;if(copy instanceof HTMLLinkElement)copy.href=(source as HTMLLinkElement).href;doc.head.appendChild(copy)}doc.body.style.margin='0';doc.body.style.background='#e8e5d6';child.focus();return child;};
+ const showOverview=()=>{if(overviewWindow&&!overviewWindow.closed){overviewWindow.focus();return;}setOverviewWindow(createContentWindow('arena-spelaroversikt','Arenan · Spelaröversikt',1420,920));};
+ const showForum=()=>{if(forumWindow&&!forumWindow.closed){forumWindow.focus();return;}setForumWindow(createContentWindow('arena-forum','Arenan · Forum',1280,920));};
  navigationRef.current={arena:true,tab:state.currentTab,entity,planning,match};
- const navigate=(t:string)=>{if(t==='forum'&&popupKind()!=='forum'){openWindow('forum','forum','arena-forum',1280,920);return;}pushView({entity:null,planning:null,match:null,tab:t},'#/tab/'+t+(t==='forum'?'?window=forum':''));saveEntity(null);selectPlayer(null);setPlanning(null);setMatch(null);setTab(t);setError('')};
+ const navigate=(t:string)=>{if(t==='forum'){showForum();return;}pushView({entity:null,planning:null,match:null,tab:t},'#/tab/'+t);saveEntity(null);selectPlayer(null);setPlanning(null);setMatch(null);setTab(t);setError('')};
  const openMatch=async(id:string)=>{try{const m=await api('/match/'+id);pushView({entity:null,planning:m.upcoming?id:null,match:m.upcoming?null:m},'#/match/'+encodeURIComponent(id));saveEntity(null);if(m.upcoming){setPlanning(id);setMatch(null)}else{setPlanning(null);setMatch(m)}setError('')}catch(e:any){setError(e.message)}};
  const refreshMatch=async(id:string)=>{try{const m=await api('/match/'+id);if(!m.upcoming)setMatch(m);setError('')}catch(e:any){setError(e.message)}};
+ useEffect(()=>{const timer=window.setInterval(()=>{if(overviewWindow?.closed)setOverviewWindow(null);if(forumWindow?.closed)setForumWindow(null)},400);return()=>window.clearInterval(timer)},[overviewWindow,forumWindow]);
  useEffect(()=>{const matchHandle=(e:any)=>openMatch(e.detail);window.addEventListener('arena-match',matchHandle);const handle=(e:any)=>setEntity(e.detail);const pop=()=>{const matchRoute=location.hash.match(/^#\/match\/(.+)$/);if(matchRoute){api('/match/'+decodeURIComponent(matchRoute[1])).then(m=>{saveEntity(null);setPlanning(m.upcoming?m.id:null);setMatch(m.upcoming?null:m)}).catch(e=>setError(e.message));return;}if(history.state?.arena){const v=history.state;saveEntity(v.entity);setPlanning(v.planning);setMatch(v.match);setTab(v.tab);selectPlayer(null);setTimeout(()=>window.scrollTo(0,v.scrollY||0),120);return}const tab=location.hash.match(/^#\/tab\/([^?]+)/);if(tab)setTab(decodeURIComponent(tab[1]));const m=location.hash.match(/^#\/(player|club|squad|manager|place|venue|mail|division)\/(.+)$/);saveEntity(m?{kind:m[1] as any,id:decodeURIComponent(m[2])}:null)};pop();window.addEventListener('popstate',pop);window.addEventListener("arena-entity",handle);return()=>{window.removeEventListener('arena-entity',handle);window.removeEventListener('popstate',pop)}},[]);
  const selected=state.players.find(p=>p.id===state.selectedPlayerId);
  const content=()=>{
@@ -36,7 +39,7 @@ function Game(){
  switch(state.currentTab){
  case 'administration':return <Administration/>;
  case 'lag':return <ClubView club={state.club} players={state.players} onNavigateTab={navigate} onUpdatePresentation={updatePresentation}/>;
- case 'spelare':return <><button onClick={()=>openWindow('spelare','players','arena-spelaroversikt',1420,920)}>Öppna spelaröversikt ↗</button><PlayersListView grouped players={state.players} onSelectPlayer={id=>setEntity({kind:'player',id})} onNavigateTab={navigate}/></>;
+ case 'spelare':return <><button onClick={showOverview}>Öppna spelaröversikt ↗</button><PlayersListView grouped players={state.players} onSelectPlayer={id=>setEntity({kind:'player',id})} onNavigateTab={navigate}/></>;
  case 'uppstallning':return <LineupView club={state.club} players={state.players} onSaveLineup={async(lineup)=>{await api('/clubs/'+state.club.id+'/lineup',{lineup});await refetch()}}/>;
  case 'serier':case 'division':return <SeriesView key={state.currentTab} userClub={state.club} onClub={id=>setEntity({kind:"club",id})} initialDivision={state.currentTab==='division'?state.club.division:undefined} onMatch={openMatch}/>;
  case 'matcher':return <MyMatches clubId={state.club.id} onMatch={openMatch}/>;
@@ -49,7 +52,7 @@ function Game(){
  case 'magi':return <SpellView club={state.club} onRefresh={refetch}/>;
  case 'talangjakt':return <ScoutView club={state.club} onRefresh={refetch}/>;
  case 'kontakta':return <ContactView club={state.club}/>;
- case 'forum':return <Forum club={state.club} onClose={()=>window.opener?window.close():navigate('lag')} initialThread={new URLSearchParams(location.hash.split('?')[1]||'').get('thread')}/>;
+ case 'forum':return <Forum club={state.club} onClose={()=>navigate('lag')} initialThread={new URLSearchParams(location.hash.split('?')[1]||'').get('thread')}/>;
  case 'lakare':return <DoctorView club={state.club} players={state.players} onUpdateDoctorCost={updateDoctorCost}/>;
  case 'traning':return <TrainingView club={state.club} onSaveTraining={saveTraining}/>;
  case 'arena':return buildArena?<><button className="text-link" onClick={()=>setBuildArena(false)}>← Din arena</button><ArenaView club={state.club} onSaveArena={saveArena}/></>:<section><h2>Arena</h2>{state.club.arena?<><h3>{state.club.arena.name}</h3><p>{state.club.arena.capacity.toLocaleString('sv-SE')} platser · {state.club.arena.underlag}</p><ArenaRental club={state.club} onRefresh={refetch}/></>:<p>Du äger ingen arena.</p>}<button onClick={()=>setBuildArena(true)}>{state.club.arena?'Bygg om arena':'Bygg arena'}</button><VenueDirectory/></section>;
@@ -59,7 +62,7 @@ function Game(){
  case 'post':return <MailView/>;
  default:return <NewsView clubId={state.club.id} onOpen={setEntity} onMatch={openMatch}/>;
  }};
- return <><RetroFrame onOpen={setEntity} onMatch={openMatch} club={state.club} currentTab={state.currentTab} onSelectTab={navigate} onOpenNewClub={()=>{}} shoutboxMessages={state.shoutboxMessages} onAddShout={addShoutboxMessage}>{error&&<p className="error">{error}</p>}{content()}</RetroFrame> {overview&&<SquadOverview players={state.players} onSelect={id=>setEntity({kind:'player',id})} onClose={()=>window.opener?window.close():setOverview(false)}/>}<CreateClubModal isOpen={!state.isLoading&&!state.hasClub} onClose={()=>{}} onCreateClub={(name,short,race,owner)=>{createNewClub(name,short,race,owner)}}/></>;
+ return <><RetroFrame onOpen={setEntity} onMatch={openMatch} club={state.club} currentTab={state.currentTab} onSelectTab={navigate} onOpenNewClub={()=>{}} shoutboxMessages={state.shoutboxMessages} onAddShout={addShoutboxMessage}>{error&&<p className="error">{error}</p>}{content()}</RetroFrame>{overviewWindow&&!overviewWindow.closed&&<SquadOverview players={state.players} targetDocument={overviewWindow.document} closeOnSelect={false} onSelect={id=>{setEntity({kind:'player',id});window.focus()}} onClose={()=>{overviewWindow.close();setOverviewWindow(null)}}/>}{forumWindow&&!forumWindow.closed&&<Forum club={state.club} targetDocument={forumWindow.document} onClose={()=>{forumWindow.close();setForumWindow(null)}}/>}<CreateClubModal isOpen={!state.isLoading&&!state.hasClub} onClose={()=>{}} onCreateClub={(name,short,race,owner)=>{createNewClub(name,short,race,owner)}}/></>;
 }
 
 
