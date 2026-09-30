@@ -203,6 +203,7 @@ export interface DetailedFightStats {
 
 export interface TeamMatchStats {
   lopningar: DetailedCategoryStats;
+  brytningar: DetailedCategoryStats;
   passningar: DetailedCategoryStats;
   mottagningar: DetailedCategoryStats;
   skott: DetailedCategoryStats;

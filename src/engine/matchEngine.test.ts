@@ -123,7 +123,17 @@ export function runMatchEngineTests(): { passed: number; failed: number; log: st
   // Test 5: Uppkast events tracked
   assert(report1.homeStats.uppkast.antal > 0, 'Uppkast jump balls are tracked');
 
-  // Test 6: 3x3 Ball distribution generated
+  // Test 6: Defensive pressure is attributed to individual players.
+  for(const side of ['home','away'] as const){
+    const team=side==='home'?report1.homeStats:report1.awayStats;
+    const people=(report1.individualStats||[]).filter(p=>p.side===side);
+    assert(team.brytningar.antal>0, 'Defensive interception attempts are tracked');
+    assert(team.brytningar.lyckade<=team.brytningar.antal, 'Successful interceptions cannot exceed attempts');
+    assert(people.reduce((sum,p)=>sum+p.stats.brytningar.antal,0)===team.brytningar.antal,'Team interception attempts equal player totals');
+    assert(people.reduce((sum,p)=>sum+p.stats.brytningar.lyckade,0)===team.brytningar.lyckade,'Team successful interceptions equal player totals');
+  }
+
+  // Test 7: 3x3 Ball distribution generated
   assert(report1.ballDistribution.length === 3 && report1.ballDistribution[0].length === 3, '3x3 Ball distribution matrix computed');
 
   return { passed, failed, log };

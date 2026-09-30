@@ -330,6 +330,7 @@ export const MatchView: React.FC<MatchViewProps> = ({
           <div className="flex flex-wrap gap-1 bg-[#ede4d4] p-1.5 rounded border border-[#b8a791] text-xs">
             {[
               'Löpningar',
+              'Brytningar',
               'Passningar',
               'Mottagningar',
               'Skott',
@@ -392,6 +393,15 @@ export const MatchView: React.FC<MatchViewProps> = ({
                   <span>{match.homeStats.lopningar.lyckadeProcent}%</span>
                   <span>{match.awayStats.lopningar.lyckadeProcent}%</span>
                 </div>
+              </div>
+
+              {/* Category: Brytningar */}
+              <div className="border border-[#cfbeaa] rounded p-2 bg-white">
+                <h5 className="font-bold text-stone-800 border-b pb-1 mb-1 font-serif text-sm">Brytningar</h5>
+                <div className="grid grid-cols-3 text-center py-0.5"><span className="font-semibold text-left">Mått</span><span className="font-bold text-green-900">H</span><span className="font-bold text-red-900">B</span></div>
+                <div className="grid grid-cols-3 text-center py-0.5 border-t border-stone-100"><span className="text-left text-stone-600">Försök</span><span>{match.homeStats.brytningar?.antal||0}</span><span>{match.awayStats.brytningar?.antal||0}</span></div>
+                <div className="grid grid-cols-3 text-center py-0.5 border-t border-stone-100"><span className="text-left text-stone-600">Lyckade</span><span>{match.homeStats.brytningar?.lyckade||0}</span><span>{match.awayStats.brytningar?.lyckade||0}</span></div>
+                <div className="grid grid-cols-3 text-center py-0.5 border-t border-stone-100"><span className="text-left text-stone-600">Lyckade (%)</span><span>{match.homeStats.brytningar?.lyckadeProcent||0}%</span><span>{match.awayStats.brytningar?.lyckadeProcent||0}%</span></div>
               </div>
 
               {/* Category: Passningar */}

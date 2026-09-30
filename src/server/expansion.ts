@@ -156,7 +156,7 @@ export function registerExpansion(app:Express){
   await tx.execute(sql`SELECT pg_advisory_xact_lock(719084)`);const a=await record(req.params.id,tx),[club]=await tx.select().from(clubs).where(eq(clubs.id,req.body.clubId));
   if(!a||a.closed||new Date(a.endsAt)<=new Date())throw Error('Budgivningen är avslutad.');
   if(!club||club.isBot||club.id===a.sellerId)throw Error('Ogiltig budgivare.');
-  const amount=Number(req.body.amount),minimum=a.bidderId?Math.ceil(a.price*1.03):a.price;
+  const amount=Number(req.body.amount),minimum=a.bidderId?Math.ceil(a.price*1.05):a.price;
   if(!Number.isInteger(amount)||amount<minimum)throw Error('Minsta bud är '+minimum+' guld.');
   await assertBidCapacity(tx,club,amount,a.id);
   const squad=await tx.select().from(players).where(eq(players.clubId,club.id));
