@@ -417,11 +417,19 @@ export function simulateMatch(
       const inAttackingThird = (possession === 'home' && ballRow === 0) || (possession === 'away' && ballRow === 2);
       const isMidfield = ballRow === 1;
 
-      // Shooting Decision (Goal or Basket)
-      if (rng.next() < (inAttackingThird?.8:isMidfield?.38:.06)) {
-        const ownedBaskets=Number(leftBasketOwner===possession)+Number(rightBasketOwner===possession);
-        const basketBias=tactics?.skytte==='Korg'?.68:tactics?.skytte==='Mål'?.32:isMidfield?.56:.44;
-        const wantsBasket = !(weather as any).basketsBlocked && rng.next() < basketBias*(ownedBaskets===2?.5:ownedBaskets===1?.75:1);
+      // Shooting Decision (Goal or Basket). Formation roles guide the decision,
+      // but never forbid an improvised finish from midfield or defence.
+      const decisionHolder=attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
+      const formationRow=decisionHolder.slotKey==='goal'?3:Number(decisionHolder.slotKey[0]);
+      const ownedBaskets=Number(leftBasketOwner===possession)+Number(rightBasketOwner===possession);
+      const basketBias=tactics?.skytte==='Korg'?.68:tactics?.skytte==='Mål'?.32:isMidfield?.56:.44;
+      const wantsBasket = !(weather as any).basketsBlocked && rng.next() < basketBias*(ownedBaskets===2?.5:ownedBaskets===1?.75:1);
+      // Normal goals: attackers about half of attempts, midfielders about a
+      // third and backs about fifteen percent. Inner and outer attackers use
+      // the same factor. Baskets remain chiefly a midfield responsibility.
+      const positionFactor=wantsBasket?[1.2,.9,1.15,.08][formationRow]:[1.55,.44,1.5,.08][formationRow];
+      const shootingChance=Math.min(.96,(inAttackingThird?.8:isMidfield?.38:.06)*positionFactor);
+      if (rng.next() < shootingChance) {
 
         if (wantsBasket) {
           // Basket shot (Korgskott)
@@ -494,7 +502,9 @@ export function simulateMatch(
           const keeperPresent=defendSquad.active.some(a=>a.slotKey==='goal');
           const goalkeeper = defendSquad.active.find((a) => a.slotKey === 'goal') || defendSquad.active[0];
 
-          const shotRating = skill(shooter,'skott') * (weather.condition==='Dimma'?.6:.8) - weather.wind*.06 + skill(shooter,'speluppfattning') * (shooter.slotKey.endsWith('-1')?.25:.04);
+          const shooterFormationRow=shooter.slotKey==='goal'?3:Number(shooter.slotKey[0]);
+          const visionWeight=shooterFormationRow===0?.15:shooter.slotKey.endsWith('-1')?.25:.04;
+          const shotRating = skill(shooter,'skott') * (weather.condition==='Dimma'?.6:.8) - weather.wind*.06 + skill(shooter,'speluppfattning') * visionWeight;
           const saveRating = keeperPresent?skill(goalkeeper,'malvakt')*.8+skill(goalkeeper,'passning')*.2:0;
 
           inc(shooter,'skott');if(keeperPresent){inc(goalkeeper,'raddningar');defendStats.raddningar.antal++;}effort(shooter,.012);
@@ -621,7 +631,8 @@ export function simulateMatch(
         const passer = actor;
         const desiredCol=lane(possession,ballRow),allReceivers=attackSquad.active.filter(p=>p!==passer&&!chainBlocksPass(!!weatherInput?.chainsBlocked,period,possession,ballRow,ballCol,p.fieldRow,p.fieldCol));
         const near=allReceivers.filter(p=>distance(p,ballRow,ballCol)<=1),pool=near.length&&rng.next()<.88?near:allReceivers;
-        const receiver=pool.length?pickWeighted(pool,pool.map(p=>(.5+skill(p,'teknik')+skill(p,'speluppfattning'))*(p.fieldCol===desiredCol?1.8:1)*(p.fieldRow===(ballRow+(possession==='home'?-1:1))?4.5:p.fieldRow===ballRow?1:.6)/Math.pow(1+distance(p,ballRow,ballCol),2))):passer;
+        const passerFormationRow=passer.slotKey==='goal'?3:Number(passer.slotKey[0]);
+        const receiver=pool.length?pickWeighted(pool,pool.map(p=>{const receiverFormationRow=p.slotKey==='goal'?3:Number(p.slotKey[0]);const finisherBonus=inAttackingThird&&passerFormationRow!==0&&receiverFormationRow===0?1.8:1;return (.5+skill(p,'teknik')+skill(p,'speluppfattning'))*(p.fieldCol===desiredCol?1.8:1)*(p.fieldRow===(ballRow+(possession==='home'?-1:1))?4.5:p.fieldRow===ballRow?1:.6)*finisherBonus/Math.pow(1+distance(p,ballRow,ballCol),2)})):passer;
         const passDistance=distance(receiver,ballRow,ballCol),diagonal=receiver.fieldRow!==ballRow&&receiver.fieldCol!==ballCol;
         const interceptor = choose(defendSquad.active,receiver.fieldRow,receiver.fieldCol);
         const passQuality = passer.player.attributes.passning + passer.player.attributes.speluppfattning * 0.4 + rng.next() * 5;
