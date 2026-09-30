@@ -49,7 +49,9 @@ export async function releaseMarketPlayers(now:Date){
  await db.transaction(async(tx:any)=>{
   await tx.execute(sql`SELECT pg_advisory_xact_lock(719082)`);
   const allOpen=(await records('auction',tx)).filter(a=>!a.closed&&+new Date(a.endsAt)>+now);
-  let auctions=allOpen.filter(a=>!a.sellerId);
+  // One-time promotional releases may temporarily sit above the ordinary
+  // 45-player supply and disappear naturally when their auctions end.
+  let auctions=allOpen.filter(a=>!a.sellerId&&!a.promotional);
   const allPlayers=await tx.select().from(players),playerById=new Map<number,any>(allPlayers.map((p:any)=>[p.id,p] as [number,any]));
   // Keep the four main peoples close to one another while leaving the smaller
   // goblin and troll supply at its established level. The rotating 8/9/9/10
