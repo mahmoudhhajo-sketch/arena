@@ -14,6 +14,7 @@ import {initializeRevision21} from './src/server/revision21';
 import {initializeRevision22} from './src/server/revision22';
 import {initializeRevision23} from './src/server/revision23';
 import {initializeRevision24} from './src/server/revision24';
+import {rankedClubs} from './src/server/standings';
 import {initializeMatchMerit} from './src/server/meritRevision';
 import {initializeUnreservedBids} from './src/server/solvency';
 import {registerRevision13,initializeRevision13,clubMorale} from './src/server/revision13';
@@ -541,14 +542,12 @@ app.get('/api/divisions/:divisionName/standings', async (req, res) => {
 
       .from(clubs)
 
-      .where(eq(clubs.division, divisionName))
-
-      .orderBy(desc(clubs.merit), desc(clubs.wins));
+      .where(eq(clubs.division, divisionName));
 
 
 
     const [w]=await db.select().from(worldState);const selected=Number(req.query.season||w.season);
-    const rows=selected===w.season?divisionClubs:(await record('season-history-'+selected))?.tables?.[divisionName]||[];
+    const rows=selected===w.season?rankedClubs(divisionClubs).map((club,position)=>({...club,position:position+1})):(await record('season-history-'+selected))?.tables?.[divisionName]||[];
     res.json(await Promise.all(rows.map(async(c:any)=>({id:c.id,name:c.name,race:c.race,position:c.position,wins:c.wins,draws:c.draws,losses:c.losses,goalsFor:c.goalsFor,goalsAgainst:c.goalsAgainst,image:(await record('club-image-'+c.id))?.data||null}))));
 
   } catch (err: any) {

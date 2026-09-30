@@ -36,6 +36,7 @@ import {simulateMatch} from '../engine/matchEngine';
 import {activeIds} from '../engine/lineup';
 import {Race,PlayerAttributes} from '../types';
 import {randomUUID} from 'node:crypto';
+import {refreshDivisionPositions} from './standings';
 
 const races:Race[]=['human','elf','dwarf','orc'];
 const defaultLineup={slots:{},underlag:'Gräs',intrade:4,tactics:{uppspel:'Normal',spelvag:'Normal',skytte:'Normal'}};
@@ -223,6 +224,7 @@ await db.transaction(async(tx:any)=>{
     await tx.update(clubs).set({wins,draws,losses,goalsFor:c.goalsFor+scored,goalsAgainst:c.goalsAgainst+conceded,recordString:wins+'/'+draws+'/'+losses,gold:c.gold+income,merit:Math.round((c.merit+matchMerit(c.division,scored,conceded))*1000000)/1000000}).where(eq(clubs.id,c.id));
     if(income)await put('ledger','income-'+f.id,{clubId:c.id,amount:income,category:'Matchintäkter',date:f.date},tx);
    }
+   await refreshDivisionPositions(tx,f.division);
    for(const [side,squad,club] of [['home',hs,home],['away',as,away]] as any[]){
     const selected=report.events.some(e=>e.id==='walkover')?[]:[...report.startingLineups[side as 'home'|'away'].map((p:any)=>p.id),...report.events.filter(e=>e.type==='SUBSTITUTION'&&e.teamSide===side).map(e=>e.playerId)];
     for(const p of squad){if(!selected.includes(p.id)||p.isDeceased||p.currentInjury>0)continue;
