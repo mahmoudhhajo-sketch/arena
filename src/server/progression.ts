@@ -7,7 +7,7 @@ import {LOANS} from '../constants/loans';export {LOANS};
 import {progressSolvency} from './solvency';
 export async function initializeRevision8(){if(await record('revision-v8'))return;await db.transaction(async(tx:any)=>{if(await record('revision-v8',tx))return;for(const p of await tx.select().from(players)){const attributes={...p.attributes},rng=new SeededRNG(p.id*197+832);attributes.aggressivitet=generateAggression(p.race,()=>rng.next());await tx.update(players).set({attributes,wage:calculateWage(attributes)}).where(eq(players.id,p.id));}for(const c of await tx.select().from(clubs))if(c.coach){const coach=COACHES.find(p=>p.id===c.coach.id);if(coach)await tx.update(clubs).set({coach}).where(eq(clubs.id,c.id));}await put('system','revision-v8',{date:new Date().toISOString()},tx);});}
 export async function progressEconomy(now:Date){await progressLoanConsequences(now);await progressSolvency(now)}
-function tuneMarketWage(attributes:any,target:number){
+export function tuneMarketWage(attributes:any,target:number){
  let low=.2,high=4,best={...attributes};
  for(let n=0;n<30;n++){
   const factor=(low+high)/2;
@@ -17,6 +17,17 @@ function tuneMarketWage(attributes:any,target:number){
  }
  return best;
 }
+
+type MarketQualityBand='budget'|'middle'|'strong';
+function marketQualityBand(wage:number):MarketQualityBand{return wage<1500?'budget':wage<=2000?'middle':'strong'}
+function marketBandTargets(total:number){const middle=Math.round(total*.4),strong=Math.round(total*.2);return {budget:total-middle-strong,middle,strong}}
+function nextMarketBand(race:string,total:number,auctions:any[],playerById:Map<number,any>,rotation:number):MarketQualityBand{
+ const desired=marketBandTargets(total),counts:{budget:number;middle:number;strong:number}={budget:0,middle:0,strong:0};
+ for(const auction of auctions){const player=playerById.get(Number(auction.playerId));if(player?.race===race)counts[marketQualityBand(Number(player.wage)||0)]++;}
+ const order=(['budget','middle','strong'] as MarketQualityBand[]).slice(rotation%3).concat((['budget','middle','strong'] as MarketQualityBand[]).slice(0,rotation%3));
+ return order.sort((a,b)=>(desired[b]-counts[b])-(desired[a]-counts[a]))[0];
+}
+function marketBandWage(band:MarketQualityBand,random=Math.random){return band==='budget'?700+Math.floor(random()*751):band==='middle'?1500+Math.floor(random()*501):2050+Math.floor(random()*751)}
 
 function specializeMarketPlayer(attributes:any,role:string,random=Math.random){
  // Most imperial listings are built for a recognisable job. A minority remain
@@ -39,12 +50,7 @@ export async function releaseMarketPlayers(now:Date){
   await tx.execute(sql`SELECT pg_advisory_xact_lock(719082)`);
   const allOpen=(await records('auction',tx)).filter(a=>!a.closed&&+new Date(a.endsAt)>+now);
   let auctions=allOpen.filter(a=>!a.sellerId);
-  const allPlayers=await tx.select().from(players),playerById=new Map(allPlayers.map(p=>[p.id,p])),wages=new Map(allPlayers.map(p=>[p.id,p.wage])),middle=(a:any)=>{const wage=Number(wages.get(Number(a.playerId))||0);return wage>=1500&&wage<=2000;};
-  // During the opening flood, rotate only untouched imperial listings until 40% form a useful middle class.
-  const middleTarget=18,middleShortage=Math.max(0,middleTarget-auctions.filter(middle).length);
-  const replaceable=auctions.filter(a=>!middle(a)&&!a.bidderId&&!a.sellerId).slice(0,middleShortage);
-  for(const auction of replaceable)await put('auction',auction.id,{...auction,closed:true,replaced:true},tx);
-  const replaced=new Set(replaceable.map(a=>a.id));auctions=auctions.filter(a=>!replaced.has(a.id));
+  const allPlayers=await tx.select().from(players),playerById=new Map<number,any>(allPlayers.map((p:any)=>[p.id,p] as [number,any]));
   // Keep the four main peoples close to one another while leaving the smaller
   // goblin and troll supply at its established level. The rotating 8/9/9/10
   // split prevents the market from looking mechanically identical every day.
@@ -59,15 +65,17 @@ export async function releaseMarketPlayers(now:Date){
   }
   const missing=Math.max(0,45-auctions.length);
   if(!missing){if(!await record('market-day-'+day,tx))await put('system','market-day-'+day,{date:day,active:auctions.length},tx);return;}
-  const reference=worldMarketQuality(allPlayers);let middleNeeded=Math.max(0,middleTarget-auctions.filter(middle).length);
+  const reference=worldMarketQuality(allPlayers);
   const roles:any[]=['goalkeeper','defender','midfielder','attacker'];
   for(let i=0;i<missing;i++){
    raceCounts=counts();const race=Object.keys(targets).sort((a,b)=>(targets[b]-(raceCounts[b]||0))-(targets[a]-(raceCounts[a]||0))||a.localeCompare(b))[0];
    const homes=PLACES.filter(p=>p.race===race),home=homes[Math.floor(Math.random()*homes.length)],role=roles[(auctions.length+i)%roles.length];
    const p=generateSinglePlayer(0,race as any,'',home.name,1,role);
    p.attributes=specializeMarketPlayer(marketAttributes(p.attributes,reference),role);
-   // About two players in five form the useful middle class of the market.
-   if(middleNeeded>0){p.attributes=tuneMarketWage(p.attributes,1500+Math.floor(Math.random()*501));middleNeeded--;}
+   // Every race receives the same broad quality curve: roughly 40% useful
+   // middle-class players, 20% stronger listings and 40% cheaper prospects.
+   const band=nextMarketBand(race,targets[race],auctions,playerById,rotation+i);
+   p.attributes=tuneMarketWage(p.attributes,marketBandWage(band));
    p.wage=calculateWage(p.attributes);
    const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;
    const [created]=await tx.insert(players).values({...row,clubId:null}).returning();
