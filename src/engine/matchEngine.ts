@@ -421,13 +421,15 @@ export function simulateMatch(
       // but never forbid an improvised finish from midfield or defence.
       const decisionHolder=attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
       const formationRow=decisionHolder.slotKey==='goal'?3:Number(decisionHolder.slotKey[0]);
+      const formationCol=decisionHolder.slotKey==='goal'?1:Number(decisionHolder.slotKey[2]);
       const ownedBaskets=Number(leftBasketOwner===possession)+Number(rightBasketOwner===possession);
       const basketBias=tactics?.skytte==='Korg'?.68:tactics?.skytte==='Mål'?.32:isMidfield?.56:.44;
       const wantsBasket = !(weather as any).basketsBlocked && rng.next() < basketBias*(ownedBaskets===2?.5:ownedBaskets===1?.75:1);
-      // Normal goals: attackers about half of attempts, midfielders about a
-      // third and backs about fifteen percent. Inner and outer attackers use
-      // the same factor. Baskets remain chiefly a midfield responsibility.
-      const positionFactor=wantsBasket?[1.2,.9,1.15,.08][formationRow]:[1.55,.44,1.5,.08][formationRow];
+      // Normal goals are chiefly finished by attackers. Backs instead take a
+      // larger share of basket attempts, especially from their outer lanes.
+      // Inner and outer attackers use the same factor for the large goal.
+      const basketPositionFactor=formationRow===2?(formationCol===1?1.75:2.55):[1.2,.82,0,.08][formationRow];
+      const positionFactor=wantsBasket?basketPositionFactor:[1.55,.44,1,.08][formationRow];
       const shootingChance=Math.min(.96,(inAttackingThird?.8:isMidfield?.38:.06)*positionFactor);
       if (rng.next() < shootingChance) {
 
