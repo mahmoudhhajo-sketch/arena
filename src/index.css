@@ -107,3 +107,7 @@ button:focus-visible,a:focus-visible{outline:2px solid #728654;outline-offset:3p
 
 .series-link{display:block;margin:5px 0;text-align:left}
 .series-group-break{margin-top:18px}
+
+.forum-body{white-space:pre-wrap;line-height:1.55}.forum-signature{border-top:1px solid #8d8064;margin-top:1rem;padding-top:.45rem;font-style:italic;color:#59503f}.forum-editor-tools{display:flex;gap:.45rem;margin:.5rem 0}.forum-editor-tools button{padding:.35rem .7rem}.race-registration-info{display:block;max-width:34rem;margin-top:.35rem;line-height:1.35}
+
+.forum-body{white-space:pre-wrap;line-height:1.55}.forum-signature{border-top:1px solid #8d8064;margin-top:1rem;padding-top:.45rem;font-style:italic;color:#59503f}.forum-editor-tools{display:flex;gap:.45rem;margin:.5rem 0}.forum-editor-tools button{padding:.35rem .7rem}.race-registration-info{display:block;max-width:34rem;margin-top:.35rem;line-height:1.35}

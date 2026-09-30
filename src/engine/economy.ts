@@ -4,7 +4,7 @@ export function attendanceDemand(home:any,away:any,ticket:number,variation=.5){
  const tier=home.division==='Kejsarserien'?0:Number(home.division?.match(/Division (\d)/)?.[1]||3);
  const base=[62000,41000,29000,20000,15000,11500][Math.min(5,tier)];
  const merit=1+.35*(1-Math.exp(-Math.max(0,home.merit||0)/15));
- const form=1+Math.max(-.15,Math.min(.18,((home.recentForm??.5)-.5)*.36));
+ const form=1+Math.max(-.07,Math.min(.07,((home.recentForm??.5)-.5)*.14));
  const history=1+Math.min(.12,(home.wins+home.draws+home.losses||0)*.005);
  const visiting=1.05+Math.min(.08,Math.max(0,away.merit||0)*.002);
  const derby=home.hometown&&away.hometown&&home.hometown===away.hometown?1.13:1;

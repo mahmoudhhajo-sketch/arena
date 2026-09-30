@@ -178,7 +178,7 @@ export async function initializeSeason1World(forceReset = false) {
 // 1. Manager chooses username, club name, short name, race
 // 2. Hometown is randomly assigned from valid settlements of chosen race (NOT user selectable)
 // 3. 20 new players of that race generated
-// 4. Starts with 200,000 gold, 0 merit, 0 matches, 0 wins/draws/losses, no coach, no owned arena
+// 4. Starts with 200,000 gold, 0 merit, no coach and no owned arena, while inheriting the replaced club's current table record
 // 5. Assigned to the highest available division slot (replacing a bot club to maintain structure)
 export async function createHumanClub(params: {
   userId: string;
@@ -243,12 +243,7 @@ export async function createHumanClub(params: {
         gold: 200000,
         merit: 0,
         marathonPoints: 0,
-        wins: 0,
-        draws: 0,
-        losses: 0,
-        goalsFor: 0,
-        goalsAgainst: 0,
-        recordString: '0/0/0',
+        // Laget tar över botlagets redan spelade serieresultat och tabelläge.
         presentation: '',
         ownerName: managerName,
         ownerEmail: '',
