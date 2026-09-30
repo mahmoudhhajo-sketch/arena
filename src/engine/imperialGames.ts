@@ -1,9 +1,11 @@
 import {legendName} from '../constants/legendNames';
 import {Player} from '../types';
-import {effectiveAttributes} from '../constants/market';
+import {equippedAttributes} from '../constants/market';
 import {SeededRNG} from './matchEngine';
 
-export function imperialAttributes(p:Player){return effectiveAttributes({...p,artifacts:(p.artifacts||[]).filter(a=>!a.startsWith('effect:dragon-blood:'))});}
+// Kejsarspelen tillåter permanent utrustning, men inga tillfälliga effekter
+// som Drakblod eller aktiva besvärjelser.
+export function imperialAttributes(p:Player){return equippedAttributes(p);}
 
 // A test uses copies and returns results; no prizes, injuries or league state are written.
 export function simulateImperialGames(players:Player[], seed:number, legendIds:Set<number>=new Set()) {
