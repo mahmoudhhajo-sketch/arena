@@ -20,7 +20,7 @@ export const MAMBENNA_SETTLEMENTS: Settlement[] = [
 
   { id: 'alymoon', name: 'Alymoon', race: 'elf', potential: 20, capital: true, description: 'Alvernas urgamla huvudstad i trädkronorna och deras kulturella hjärta.' },
   { id: 'skogskymning', name: 'Skogskymning', race: 'elf', potential: 14, description: 'Skogsbryn där unga alvjägare tränar snabbhet.' },
-  { id: 'vemjelsen', name: 'Vemjelsen', race: 'elf', potential: 12, description: 'Avlägsen källsjö med anrika Yaraaz-traditioner.' },
+  { id: 'vemjelsen', name: 'Vemjelsen', race: 'elf', potential: 12, description: 'Avlägsen källsjö med anrika traditioner från Yaraaz Vigil.' },
 
   { id: 'larutappe', name: 'Larutappe', race: 'dwarf', potential: 19, capital: true, description: 'Dvärgarnas huvudstad, uthuggen kring bergets djupaste och rikaste salar.' },
   { id: 'clamklyte', name: 'Clamklyte', race: 'dwarf', potential: 13, description: 'Klippig dvärgabosättning längs västra bergskedjan.' },
@@ -77,7 +77,7 @@ export const LORE_SNIPPETS: string[] = [
   'Ett Didjuei Sing-torn gör att hemmalagets magiker är immun mot Antimagi.',
   'Enligt kejsarens dekret ska varje fäste i Yaraaz Vigil fostra krigare, trollkarlar och skyttar till riket.',
   'Mitrilförstärkta korgringar på arenorna har monterats ned i tider av nöd för att smidas om till svärd.',
-  'Yaraaz-bollen är traditionellt tillverkad av härdat läder från ödemarkens oxar, med blytyngd mitt.',
+  'Bollen i Yaraaz Vigil är traditionellt tillverkad av härdat läder från ödemarkens oxar, med blytyngd mitt.',
   'De ursprungliga Mambenna-reglerna skrevs i runor på en stenhäll utanför Berunias citadel.',
   'Sjumilastövlar och magiska drycker får endast bäras av spelare som godkänts av ligans fogdar.',
 ];
@@ -93,6 +93,6 @@ export const RETRO_ADS = [
   },
   {
     title: 'Mambenna Smidesgille',
-    body: 'Mitrilrustningar, spikskor och förstärkta hjälmar för Yaraaz-spelare i alla serier.',
+    body: 'Mitrilrustningar, spikskor och förstärkta hjälmar för spelare i Yaraaz Vigil i alla serier.',
   },
 ];

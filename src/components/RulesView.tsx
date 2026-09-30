@@ -8,7 +8,7 @@ export const RulesView: React.FC = () => {
           Nybörjarguide &amp; Officiella Spelregler
         </h2>
         <span className="text-xs text-stone-600 block mt-1 font-sans">
-          Mambennas Högsta Yaraaz-Råd &bull; Kodifierad upplaga
+          Mambennas högsta råd för Yaraaz Vigil &bull; Kodifierad upplaga
         </span>
       </div>
 
