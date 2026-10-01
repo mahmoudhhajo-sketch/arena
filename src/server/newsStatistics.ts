@@ -1,7 +1,15 @@
 import {and,eq,or,sql} from 'drizzle-orm';
-import {worldState} from '../db/schema';
+import {worldState,gameRecords} from '../db/schema';
 import {Express} from 'express';import {db} from '../db';import {clubs,players,matches} from '../db/schema';import {records,record,put} from './records';
 export async function teamNews(tx:any,clubId:string,id:string,title:string,body:string,entity?:any){await put('team-news','news-'+id+'-'+clubId,{clubId,title,body,date:new Date().toISOString(),entity},tx)}
+export async function replaceTeamNews(tx:any,clubId:string,key:string,title:string,body:string,entity?:any){
+ const auctionId=key.startsWith('overbid-')?key.slice('overbid-'.length):'';
+ const old=(await records('team-news',tx)).filter((news:any)=>news.clubId===clubId&&(news.replaceKey===key||(auctionId&&news.id.startsWith('news-'+auctionId+'-'))));
+ for(const news of old)await tx.delete(gameRecords).where(eq(gameRecords.id,news.id));
+ const newsId='news-'+key+'-'+clubId;
+ await tx.delete(gameRecords).where(eq(gameRecords.id,'news-read-'+clubId+'-'+newsId));
+ await put('team-news',newsId,{clubId,title,body,date:new Date().toISOString(),entity,replaceKey:key},tx);
+}
 export async function statisticSeasons(){const [w]=await db.select({season:worldState.season}).from(worldState);const rows=await db.selectDistinct({season:matches.season}).from(matches);return [...new Set([w?.season||1,...rows.map(r=>r.season)])].sort((a,b)=>b-a)}
 export async function statistics(division?:string,season="total",forClub?:string,forPlayer?:number,includeBots=true){
  const teams=await db.select({id:clubs.id,name:clubs.name,merit:clubs.merit,division:clubs.division,isBot:clubs.isBot}).from(clubs),ps=await db.select({id:players.id,name:players.name,race:players.race,isDeceased:players.isDeceased,clubId:players.clubId}).from(players).where(forPlayer?eq(players.id,forPlayer):undefined),seasons=await statisticSeasons();

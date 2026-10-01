@@ -8,7 +8,7 @@ export {botLineup} from '../engine/botLineup';
 import {clubMorale} from './revision13';
 import {assertBidCapacity} from './solvency';
 import {overdueEffects} from './loanConsequences';
-import {statistics,teamNews} from './newsStatistics';
+import {statistics,teamNews,replaceTeamNews} from './newsStatistics';
 import {SeededRNG} from '../engine/matchEngine';
 import {matchMerit,postMatchForm} from '../engine/matchEngine';
 import {progressEconomy,releaseMarketPlayers,awardSeason} from './progression';
@@ -166,7 +166,7 @@ export function registerExpansion(app:Express){
   
   const endsAt=+new Date(a.endsAt)-Date.now()<600000?new Date(+new Date(a.endsAt)+60000).toISOString():a.endsAt;
   await put('auction',a.id,{...a,price:amount,bidderId:club.id,endsAt,unreserved:true},tx);
-  if(a.bidderId&&a.bidderId!==club.id)await teamNews(tx,a.bidderId,a.id+'-'+amount,'Du har blivit överbjuden','Ett nytt bud på '+amount+' guld har lagts. Inga pengar har dragits för ditt bud.',{kind:'player',id:a.playerId});if(a.sellerId)await teamNews(tx,a.sellerId,a.id+'-'+amount,'Din spelare har fått ett bud','Högsta budet är nu '+amount+' guld.',{kind:'player',id:a.playerId});
+  if(a.bidderId&&a.bidderId!==club.id)await replaceTeamNews(tx,a.bidderId,'overbid-'+a.id,'Du har blivit överbjuden','Ett nytt bud på '+amount+' guld har lagts. Inga pengar har dragits för ditt bud.',{kind:'player',id:a.playerId});if(a.sellerId)await teamNews(tx,a.sellerId,a.id+'-'+amount,'Din spelare har fått ett bud','Högsta budet är nu '+amount+' guld.',{kind:'player',id:a.playerId});
   await put('bid','bid-'+randomUUID(),{auctionId:a.id,playerId:a.playerId,clubId:club.id,amount,date:new Date().toISOString()},tx);
   return{success:true};
  }));
