@@ -40,7 +40,7 @@ function Game(){
  case 'administration':return <Administration/>;
  case 'lag':return <ClubView club={state.club} players={state.players} onNavigateTab={navigate} onUpdatePresentation={updatePresentation}/>;
  case 'spelare':return <><button onClick={showOverview}>Öppna spelaröversikt ↗</button><PlayersListView grouped players={state.players} onSelectPlayer={id=>setEntity({kind:'player',id})} onNavigateTab={navigate}/></>;
- case 'uppstallning':return <LineupView club={state.club} players={state.players} onSaveLineup={async(lineup)=>{await api('/clubs/'+state.club.id+'/lineup',{lineup});await refetch()}}/>;
+ case 'uppstallning':return <MyMatches clubId={state.club.id} onMatch={openMatch}/>;
  case 'serier':case 'division':return <SeriesView key={state.currentTab} userClub={state.club} onClub={id=>setEntity({kind:"club",id})} initialDivision={state.currentTab==='division'?state.club.division:undefined} onMatch={openMatch}/>;
  case 'matcher':return <MyMatches clubId={state.club.id} onMatch={openMatch}/>;
  case 'varlden':case 'varden':return <WorldView/>;

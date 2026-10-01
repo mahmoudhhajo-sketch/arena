@@ -115,3 +115,5 @@ button:focus-visible,a:focus-visible{outline:2px solid #728654;outline-offset:3p
 @media(max-width:760px){.race-choice-guide,.club-fixtures-grid{grid-template-columns:1fr}.club-match-browser>header{align-items:start;flex-direction:column}}
 
 .forum-body{white-space:pre-wrap;line-height:1.55}.forum-signature{border-top:1px solid #8d8064;margin-top:1rem;padding-top:.45rem;font-style:italic;color:#59503f}.forum-editor-tools{display:flex;gap:.45rem;margin:.5rem 0}.forum-editor-tools button{padding:.35rem .7rem}.race-registration-info{display:block;max-width:34rem;margin-top:.35rem;line-height:1.35}
+
+.bid-box{display:grid;grid-template-columns:minmax(95px,1fr) minmax(85px,1fr);gap:5px;min-width:205px}.bid-box button{grid-column:1/-1}.bid-box input,.bid-box select{min-width:0;width:100%}
