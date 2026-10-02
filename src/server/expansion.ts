@@ -35,6 +35,8 @@ import {generateStarterSquad,generateSinglePlayer,calculateWage} from '../engine
 import {generateProceduralBotClubName} from '../constants/mambenna';
 import {simulateMatch} from '../engine/matchEngine';
 import {activeIds} from '../engine/lineup';
+import {completeReserves} from '../engine/testLineup';
+import {shouldAutofillInactiveLineup} from './inactiveLineups';
 import {Race,PlayerAttributes} from '../types';
 import {randomUUID} from 'node:crypto';
 import {refreshDivisionPositions} from './standings';
@@ -211,6 +213,9 @@ await db.transaction(async(tx:any)=>{
    if(!Object.values(home.lineup?.slots||{}).some((slot:any)=>activeIds(slot).length))home.lineup=botLineup(hs);
    if(!Object.values(away.lineup?.slots||{}).some((slot:any)=>activeIds(slot).length))away.lineup=botLineup(as);
    if(home.isBot&&!await record('match-lineup-'+f.id+'-'+home.id,tx))home.lineup=variedBotLineup(hs,f.id+home.id,home.lineup);if(away.isBot&&!await record('match-lineup-'+f.id+'-'+away.id,tx))away.lineup=variedBotLineup(as,f.id+away.id,away.lineup);
+   const loginEvents=await records('login-event',tx),playedMatches=await tx.select().from(matches);
+   if(shouldAutofillInactiveLineup(home,f,loginEvents,playedMatches))home.lineup=completeReserves(home.lineup,hs);
+   if(shouldAutofillInactiveLineup(away,f,loginEvents,playedMatches))away.lineup=completeReserves(away.lineup,as);
    const recent=await tx.select({homeClubId:matches.homeClubId,awayClubId:matches.awayClubId,homeScore:matches.homeScore,awayScore:matches.awayScore,playedAt:matches.playedAt}).from(matches);for(const c of [home,away]){const past=recent.filter((m:any)=>m.homeClubId===c.id||m.awayClubId===c.id).sort((a:any,b:any)=>+new Date(b.playedAt)-+new Date(a.playedAt)).slice(0,5);(c as any).recentForm=past.length?past.reduce((n:number,m:any)=>{const h=m.homeClubId===c.id;const a=h?m.homeScore:m.awayScore,b=h?m.awayScore:m.homeScore;return n+(a>b?1:a===b?.5:0)},0)/past.length:.5;}(home as any).morale=await clubMorale(home.id,tx,+new Date(f.date));(away as any).morale=await clubMorale(away.id,tx,+new Date(f.date));home.arena=fixtureVenue(f,await tx.select().from(clubs));
    home.lineup={...home.lineup,underlag:home.arena.underlag==='Nimonimbus'?home.lineup.underlag:home.arena.underlag};
    const ward=await record('ward-'+f.id,tx);const originalSpells=new Map<number,string[]>(pending?.originalSpells||[...hs,...as].map(p=>[p.id,p.artifacts]));const currentArtifacts=new Map([...hs,...as].map(p=>[p.id,[...p.artifacts]]));if(ward)for(const p of [...hs,...as])p.artifacts=p.artifacts.filter((a:string)=>!a.startsWith('magic:')&&!a.startsWith('spell:'));const enchantment=ward?null:await record('weather-'+f.id,tx);const effect=enchantment?.effect;const weather=effect?{temp:effect==='rain'?8:15,condition:effect==='rain'?'Regn':effect==='fog'?'Dimma':'Klart',wind:effect==='wind'?(enchantment.spellId==='stormcall'?14:0):3}:weatherFor(home.hometown,new Date(f.date));
