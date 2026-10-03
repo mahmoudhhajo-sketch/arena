@@ -1,7 +1,7 @@
 import {weeklyMagicThresholds} from './magicPrices';
 import {earnedMagicLevel,regenerateMana} from '../engine/magicEconomy';
 import {Express} from 'express';import {db} from '../db';import {clubs,players,worldState} from '../db/schema';import {eq} from 'drizzle-orm';import {record,put,records} from './records';import {SPELLS,spellById,activeSpells} from '../constants/spells';
-async function hasStaff(id:string,tx:any=db){const [world]=await tx.select().from(worldState);return (await records('artifact-item',tx)).some(i=>i.clubId===id&&i.artifactId==='moon-staff'&&!i.listed&&i.expiresSeason>=world.season)}
+async function hasStaff(id:string,tx:any=db){return (await records('artifact-item',tx)).some(i=>i.clubId===id&&i.artifactId==='moon-staff'&&!i.listed&&i.expiresAt&&+new Date(i.expiresAt)>Date.now())}
 export function registerMagic(app:Express){
  const route=(m:'get'|'post',path:string,fn:(r:any)=>Promise<any>)=>app[m](path,async(req,res)=>{try{res.json(await fn(req))}catch(e:any){res.status(400).json({error:e.message})}});
  route('get','/api/magic-state/:clubId',async req=>db.transaction(async(tx:any)=>{
