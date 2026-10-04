@@ -22,7 +22,8 @@ export function weeklyAttributes(attributes:PlayerAttributes,allocation:Record<T
  const result={...attributes};
  for(const key of TRAINABLE_ATTRIBUTES){
   const positionalMatches=matchesByAttribute?.[key];
-  const participation=(positionalMatches===undefined?[0.1,0.55,1]:[0,0.55,1])[Math.min(2,Math.max(0,positionalMatches??matches))];
+  const load=Math.min(2,Math.max(0,positionalMatches??matches));
+  const participation=positionalMatches===undefined?[0.1,0.55,1][Math.round(load)]:load<=1?0.55*load:0.55+0.45*(load-1);
   const points=Math.min(10,Math.max(0,allocation[key]||0));
   const gain=0.25*points*participation*(key==='kondition'?2.25:1)/Math.pow(1.03,Math.max(0,attributes[key]));
   result[key]=Math.max(0,Math.round((attributes[key]+gain-(key==='kondition'&&points===0?0.15:0))*1000)/1000);
@@ -30,18 +31,18 @@ export function weeklyAttributes(attributes:PlayerAttributes,allocation:Record<T
  return result;
 }
 
-const trainingSlots:Record<TrainableAttribute,string[]>={
- snabbhet:['0-0','0-1','0-2','1-0','1-1','1-2','2-0','2-1','2-2'],
- kondition:['0-0','0-1','0-2','1-0','1-1','1-2','2-0','2-1','2-2'],
- markering:['1-0','1-1','1-2','2-0','2-1','2-2'],
- passning:['0-0','0-1','0-2','1-0','1-1','1-2','2-0','2-1','2-2'],
- teknik:['0-0','0-1','0-2','1-0','1-1','1-2','2-0','2-1','2-2'],
- speluppfattning:['0-0','0-1','0-2','1-0','1-1','1-2','2-0','2-1','2-2'],
- skott:['0-0','0-1','0-2','1-0','1-1','1-2'],
- malvakt:['goal','1-0','1-2'],
- tuffhet:['goal','0-0','0-1','0-2','1-0','1-1','1-2','2-0','2-1','2-2']
+const trainingSlotWeights:Record<TrainableAttribute,Record<string,number>>={
+ snabbhet:{'0-0':1,'0-2':1,'1-0':1,'1-2':1,'2-0':1,'2-2':1},
+ kondition:{'0-0':1,'0-1':1,'0-2':1,'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1},
+ markering:{'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1},
+ passning:{'0-0':0.5,'0-1':0.5,'0-2':0.5,'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1},
+ teknik:{'0-0':1,'0-1':1,'0-2':1,'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1},
+ speluppfattning:{'0-0':0.2,'0-1':1,'0-2':0.2,'1-0':0.2,'1-1':1,'1-2':0.2,'2-0':0.2,'2-1':1,'2-2':0.2},
+ skott:{'0-0':1,'0-1':1,'0-2':1,'1-0':1,'1-1':1,'1-2':1},
+ malvakt:{goal:1,'1-0':1,'1-2':1},
+ tuffhet:{goal:1,'0-0':1,'0-1':1,'0-2':1,'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1}
 };
-export function positionalTrainingMatches(appearances:Array<{date:string;slots:string[]}>,key:TrainableAttribute,after:number,before:number){return appearances.filter(a=>+new Date(a.date)>before&&+new Date(a.date)<=after&&a.slots.some(slot=>trainingSlots[key].includes(slot))).length;}
+export function positionalTrainingMatches(appearances:Array<{date:string;slots:string[]}>,key:TrainableAttribute,after:number,before:number){return appearances.filter(a=>+new Date(a.date)>before&&+new Date(a.date)<=after).reduce((sum,a)=>sum+Math.max(0,...a.slots.map(slot=>trainingSlotWeights[key][slot]||0)),0);}
 export function weeklyPositionAttributes(attributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,appearances:Array<{date:string;slots:string[]}>,after:number,before:number):PlayerAttributes{
  const matchesByAttribute=Object.fromEntries(TRAINABLE_ATTRIBUTES.map(key=>[key,positionalTrainingMatches(appearances,key,after,before)])) as Record<TrainableAttribute,number>;
  return weeklyAttributes(attributes,allocation,0,matchesByAttribute);
