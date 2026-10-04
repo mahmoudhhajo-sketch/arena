@@ -9,6 +9,7 @@ import {db} from '../db';import {clubs,players,matches,worldState} from '../db/s
 import {record,records,put} from './records';import {PLACES,nearbyPlaces} from '../constants/geography';import {ARTIFACTS,COACHES} from '../constants/market';
 import {generateSinglePlayer,calculateWage} from '../engine/playerGenerator';import {randomUUID} from 'node:crypto';
 import {rankedClubs} from './standings';
+import {ATTRIBUTE_NAMES_SV} from '../constants/attributes';
 function visible(p:any,reveal=false){const {attributes,...rest}=p;return {...rest,...((p.isMercenary||reveal)?{attributes:Object.fromEntries(Object.entries(attributes).map(([k,v])=>[k,Math.round(Number(v)*1000)/1000]))}:{})};}
 export async function initializeFeatures(){
  if(!await record('recruitment-v4'))await db.transaction(async(tx:any)=>{
@@ -62,7 +63,23 @@ export function registerFeatures(app:Express){
  route('get','/api/player-detail/:id',async req=>{const [p]=await db.select().from(players).where(eq(players.id,Number(req.params.id)));if(!p)throw Error('Spelaren saknas.');const [c]=p.clubId?await db.select().from(clubs).where(eq(clubs.id,p.clubId)):[];if(p.isMercenary&&p.clubId&&c?.userId!==req.query.viewerUserId)throw Error('Spelaren saknas.');const awaitAuction=(await records('auction')).find(a=>a.playerId===p.id&&!a.closed);const listed=(await records('auction')).some(a=>a.playerId===p.id&&!a.closed&&+new Date(a.endsAt)>Date.now());return {...visible(p,p.isMercenary||listed||!!(req.query.viewerUserId&&c?.userId===req.query.viewerUserId)),bidderName:(await db.select().from(clubs)).find(t=>t.id===(awaitAuction?.bidderId))?.name,clubName:c?.name||'Inget lag',owned:c?.userId===req.arenaUser.userId,listed,auction:(await records('auction')).find(a=>a.playerId===p.id&&!a.closed&&+new Date(a.endsAt)>Date.now())||null};});
  route('get','/api/club-detail/:id',async req=>{const [c]=await db.select().from(clubs).where(eq(clubs.id,req.params.id));if(!c)throw Error('Laget saknas.');const currentPosition=rankedClubs(await db.select().from(clubs).where(eq(clubs.division,c.division))).findIndex(team=>team.id===c.id)+1;const {id,name,shortName,race,hometown,division,merit,marathonPoints,wins,draws,losses,goalsFor,goalsAgainst,recordString,presentation,ownerName,isBot,arena,coach}=c;const publicClub={id,name,shortName,race,hometown,division,position:currentPosition||c.position,merit,marathonPoints,wins,draws,losses,goalsFor,goalsAgainst,recordString,presentation,ownerName,isBot,arena:arena?{name:(arena as any).name,capacity:(arena as any).capacity}:null,coach:coach?{name:(coach as any).name}:null};const squad=(await db.select().from(players).where(eq(players.clubId,c.id))).filter((p:any)=>!p.isMercenary||c.userId===req.query.viewerUserId);return {...publicClub,bankruptcy:await record('bankruptcy-'+c.id),morale:Math.round(await clubMorale(c.id)*10)/10,players:squad.map(p=>visible(p))};});
  route('get','/api/club-statistics/:id',async req=>{const games=await db.select().from(matches).where(eitherClub(eq(matches.homeClubId,req.params.id),eq(matches.awayClubId,req.params.id)));const [world]=await db.select().from(worldState);const seasons=[...new Set([world?.season||1,...games.map(g=>g.season)])].sort((a,b)=>b-a);const chosen=req.query.season&&req.query.season!=='total'?games.filter(g=>g.season===Number(req.query.season)):games;let wins=0,draws=0,losses=0,forPoints=0,against=0,attendance=0;const totals:Record<string,number>={};for(const g of chosen){const home=g.homeClubId===req.params.id,a=home?g.homeScore:g.awayScore,b=home?g.awayScore:g.homeScore;wins+=Number(a>b);draws+=Number(a===b);losses+=Number(a<b);forPoints+=a;against+=b;const report:any=g.matchReport;attendance+=home?report.attendance:0;totals.assists=(totals.assists||0)+(report.individualStats||[]).filter((p:any)=>p.side===(home?'home':'away')).reduce((sum:number,p:any)=>sum+(p.assists||0),0);for(const [key,val] of Object.entries(report[home?'homeStats':'awayStats']||{}))totals[key]=(totals[key]||0)+Number((val as any).antal||0);}return {seasons,matches:chosen.length,wins,draws,losses,forPoints,against,attendance:Math.round(attendance/Math.max(1,chosen.filter(g=>g.homeClubId===req.params.id).length)),totals};});
- route('get','/api/training-gains/:clubId',async req=>(await records('training-gain')).filter(g=>g.clubId===req.params.clubId&&Date.now()-+new Date(g.date)<7*86400000));
+ route('get','/api/training-gains/:clubId',async req=>{
+  const clubId=req.params.clubId,cutoff=Date.now()-7*86400000;
+  const saved=(await records('training-gain')).filter(g=>g.clubId===clubId&&+new Date(g.date)>cutoff);
+  const merged=new Map<number,{playerId:number;clubId:string;date:string;attributes:string[]}>();
+  for(const gain of saved){const playerId=Number(gain.playerId),attributes=[...new Set<string>((gain.attributes||[]) as string[])];merged.set(playerId,{playerId,clubId,date:gain.date,attributes});}
+  const report=(await records('team-news')).filter(n=>n.clubId===clubId&&n.title==='Veckans träning är genomförd'&&+new Date(n.date)>cutoff).sort((a,b)=>+new Date(b.date)-+new Date(a.date))[0];
+  if(report){
+   const squad=await db.select().from(players).where(eq(players.clubId,clubId));
+   for(const line of String(report.body||'').split('\n').map(line=>line.trim()).filter(Boolean)){
+    const player=squad.find(p=>line.startsWith(p.name+':'));if(!player)continue;
+    const detail=line.slice(player.name.length+1).trim(),attribute=Object.entries(ATTRIBUTE_NAMES_SV).find(([,label])=>detail.startsWith(label+' '))?.[0];if(!attribute)continue;
+    const current=merged.get(player.id)||{playerId:player.id,clubId,date:report.date,attributes:[]};
+    if(!current.attributes.includes(attribute))current.attributes.push(attribute);merged.set(player.id,current);
+   }
+  }
+  return [...merged.values()].filter(g=>g.attributes.length);
+ });
  route('get','/api/recruitment',async()=>{const teams=await db.select().from(clubs);return ({coaches:COACHES.map(c=>({...c,hiredBy:teams.find(t=>(t.coach as any)?.id===c.id)?{id:teams.find(t=>(t.coach as any)?.id===c.id)!.id,name:teams.find(t=>(t.coach as any)?.id===c.id)!.name}:null})),artifacts:ARTIFACTS,mercenaries:(await db.select().from(players)).filter(p=>p.isMercenary&&!p.clubId&&!p.isDeceased).map(p=>({...visible(p),fee:mercenaryFee(p.attributes as any)}))});});
  route('post','/api/recruitment/:kind',async req=>db.transaction(async(tx:any)=>{
   const [club]=await tx.select().from(clubs).where(eq(clubs.id,req.body.clubId)).for('update');if(!club||club.isBot)throw Error('Laget saknas.');
