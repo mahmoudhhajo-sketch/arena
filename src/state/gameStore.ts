@@ -170,7 +170,7 @@ export function useGameStore() {
     fetchClubAndWorld();
   }, [fetchClubAndWorld]);
 
-  useEffect(()=>{let alive=true;const poll=async()=>{try{const response=await fetch('/api/shoutbox');if(!response.ok)return;const messages=await response.json();if(alive)setState(prev=>({...prev,shoutboxMessages:messages.map((m:any)=>({id:m.id,user:m.authorName,text:m.content,time:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Stockholm',hour:'2-digit',minute:'2-digit'}).format(new Date(m.createdAt))}))}));}catch{}};const timer=setInterval(poll,5000);return()=>{alive=false;clearInterval(timer)}},[]);
+  useEffect(()=>{let alive=true,busy=false;const poll=async()=>{if(busy||document.visibilityState!=='visible')return;busy=true;try{const response=await fetch('/api/shoutbox');if(!response.ok)return;const messages=await response.json();const next=messages.map((m:any)=>({id:m.id,user:m.authorName,text:m.content,time:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Stockholm',hour:'2-digit',minute:'2-digit'}).format(new Date(m.createdAt))}));if(alive)setState(prev=>{const old=prev.shoutboxMessages,same=old.length===next.length&&old.every((m,i)=>m.id===next[i].id&&m.text===next[i].text);return same?prev:{...prev,shoutboxMessages:next}});}catch{}finally{busy=false}};const timer=setInterval(poll,10000);document.addEventListener('visibilitychange',poll);return()=>{alive=false;clearInterval(timer);document.removeEventListener('visibilitychange',poll)}},[]);
   const setTab = useCallback((tab: string) => {
     setState((prev) => ({ ...prev, currentTab: tab }));
   }, []);

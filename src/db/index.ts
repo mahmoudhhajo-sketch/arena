@@ -52,6 +52,14 @@ export async function initializeDatabase() {
   }
   await db.execute(sql`ALTER TABLE players ALTER COLUMN current_injury TYPE double precision`);
   await db.execute(sql`ALTER TABLE clubs ALTER COLUMN merit TYPE double precision`);
+  // Hot paths used by almost every page and by the world clock.
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS game_records_kind_idx ON game_records (kind)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS clubs_user_id_idx ON clubs (user_id)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS players_club_id_idx ON players (club_id)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS matches_division_season_idx ON matches (division, season)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS matches_home_club_idx ON matches (home_club_id)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS matches_away_club_idx ON matches (away_club_id)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS shoutbox_created_at_idx ON shoutbox_messages (created_at DESC)`);
 }
 
 export async function withInitializationLock(fn:()=>Promise<void>){

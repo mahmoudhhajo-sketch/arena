@@ -5,7 +5,8 @@ import {Express} from 'express';import {db} from '../db';import {clubs,players,g
 import {LOANS} from '../constants/loans';export {LOANS};
 import {progressSolvency} from './solvency';
 export async function initializeRevision8(){if(await record('revision-v8'))return;await db.transaction(async(tx:any)=>{if(await record('revision-v8',tx))return;for(const p of await tx.select().from(players)){const attributes={...p.attributes},rng=new SeededRNG(p.id*197+832);attributes.aggressivitet=generateAggression(p.race,()=>rng.next());await tx.update(players).set({attributes,wage:calculateWage(attributes)}).where(eq(players.id,p.id));}for(const c of await tx.select().from(clubs))if(c.coach){const coach=COACHES.find(p=>p.id===c.coach.id);if(coach)await tx.update(clubs).set({coach}).where(eq(clubs.id,c.id));}await put('system','revision-v8',{date:new Date().toISOString()},tx);});}
-export async function progressEconomy(now:Date){await progressLoanConsequences(now);await progressSolvency(now)}
+let lastEconomyCheck=0;
+export async function progressEconomy(now:Date){if(+now-lastEconomyCheck<5*60000)return;lastEconomyCheck=+now;await progressLoanConsequences(now);await progressSolvency(now)}
 const IMPERIAL_PLAYER_MARKET_TARGET=32;
 const IMPERIAL_MARKET_MAX_WAGE=2800;
 const IMPERIAL_MARKET_MAX_ATTRIBUTE=8;
@@ -46,7 +47,9 @@ function specializeMarketPlayer(attributes:any,role:string,random=Math.random){
  return out;
 }
 
+let lastMarketCheck=0;
 export async function releaseMarketPlayers(now:Date){
+ if(+now-lastMarketCheck<5*60000)return;lastMarketCheck=+now;
  const day=weatherFor('',now).date;
  await db.transaction(async(tx:any)=>{
   await tx.execute(sql`SELECT pg_advisory_xact_lock(719082)`);
