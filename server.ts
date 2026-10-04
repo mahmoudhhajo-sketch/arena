@@ -20,6 +20,7 @@ import {initializeRevision27} from './src/server/revision27';
 import {initializeRevision28} from './src/server/revision28';
 import {initializeRevision29} from './src/server/revision29';
 import {initializeRevision30} from './src/server/revision30';
+import {initializeRevision31} from './src/server/revision31';
 import {rankedClubs} from './src/server/standings';
 import {initializeMatchMerit} from './src/server/meritRevision';
 import {initializeUnreservedBids} from './src/server/solvency';
@@ -859,7 +860,7 @@ async function startServer() {
   await initializeExpansion();
 
   await initializeFeatures();
-  await initializeRevision8();await initializeUnreservedBids();await initializeMatchMerit();await initializeRevision13();await initializeRevision14();await initializeRevision15();await initializeRevision16();await initializeRevision17();await initializeRevision18();await initializeRevision19();await initializeRevision20();await initializeRevision21();await initializeRevision22();await initializeRevision23();await initializeRevision24();await initializeRevision25();await initializeRevision26();await initializeRevision27();await initializeRevision28();await initializeRevision29();await initializeRevision30();
+  await initializeRevision8();await initializeUnreservedBids();await initializeMatchMerit();await initializeRevision13();await initializeRevision14();await initializeRevision15();await initializeRevision16();await initializeRevision17();await initializeRevision18();await initializeRevision19();await initializeRevision20();await initializeRevision21();await initializeRevision22();await initializeRevision23();await initializeRevision24();await initializeRevision25();await initializeRevision26();await initializeRevision27();await initializeRevision28();await initializeRevision29();await initializeRevision30();await initializeRevision31();
 
   });
   await tickWorld();
