@@ -32,18 +32,26 @@ function nextMarketBand(race:string,total:number,auctions:any[],playerById:Map<n
 }
 function marketBandWage(band:MarketQualityBand,random=Math.random){return band==='budget'?700+Math.floor(random()*751):band==='middle'?1500+Math.floor(random()*501):2050+Math.floor(random()*(IMPERIAL_MARKET_MAX_WAGE-2049))}
 
-function specializeMarketPlayer(attributes:any,role:string,random=Math.random){
- // Most imperial listings are built for a recognisable job. A minority remain
- // genuine hybrids, so unusual marking/shooting combinations can still exist.
- if(random()<.16)return attributes;
- const factors:Record<string,Record<string,number>>={
-  goalkeeper:{skott:.42,markering:.62},
-  defender:{skott:.52,malvakt:.38,passning:.88},
-  midfielder:{malvakt:.35,skott:.86,markering:.86},
-  attacker:{markering:.48,malvakt:.32},
- };
+const MARKET_ROLE_FACTORS:Record<string,Record<string,number>>={
+ goalkeeper:{snabbhet:.45,kondition:.55,markering:.38,passning:.72,teknik:.48,speluppfattning:.82,skott:.22,malvakt:1,tuffhet:.70},
+ defender:{snabbhet:.68,kondition:.72,markering:1,passning:.62,teknik:.62,speluppfattning:.78,skott:.32,malvakt:.20,tuffhet:.92},
+ midfielder:{snabbhet:.76,kondition:.82,markering:.56,passning:1,teknik:.95,speluppfattning:1,skott:.55,malvakt:.18,tuffhet:.58},
+ attacker:{snabbhet:.92,kondition:.72,markering:.25,passning:.55,teknik:.88,speluppfattning:.78,skott:1,malvakt:.15,tuffhet:.56},
+};
+
+export function specializeMarketPlayer(attributes:any,role:string,random=Math.random){
+ const primary=MARKET_ROLE_FACTORS[role]||MARKET_ROLE_FACTORS.midfielder;
+ // About one player in ten is a genuine two-role hybrid. Even those players
+ // keep clear weak sides instead of receiving a high value in nearly every
+ // attribute merely because their target wage is high.
+ const hybrid=random()<.10;
+ const partner=hybrid?MARKET_ROLE_FACTORS[role==='goalkeeper'?'defender':role==='defender'?'midfielder':role==='midfielder'?'attacker':'midfielder']:null;
  const out={...attributes};
- for(const [key,factor] of Object.entries(factors[role]||{}))out[key]=Math.round(Number(out[key]||0)*factor*1000)/1000;
+ for(const [key,value] of Object.entries(attributes)){
+  if(key==='aggressivitet')continue;
+  const factor=Math.max(primary[key]??.45,partner?(partner[key]??.45)*.84:0);
+  out[key]=Math.round(Number(value||0)*factor*1000)/1000;
+ }
  return out;
 }
 

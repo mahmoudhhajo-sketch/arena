@@ -7,7 +7,7 @@ import {equippedAttributes} from '../constants/market';
 export function imperialAttributes(p:Player){return equippedAttributes(p);}
 
 // A test uses copies and returns results; no prizes, injuries or league state are written.
-export function simulateImperialGames(players:Player[], seed:number, legendIds:Set<number>=new Set()) {
+export function simulateImperialGames(players:Player[], seed:number, legendIds:Set<number>=new Set(), leaderLimit=100) {
  const entrants=players.filter(p=>!p.isDeceased&&p.clubId&&!p.isMercenary);
  const events=[{name:'Snabbhet',day:'Måndag',weights:{snabbhet:.8,kondition:.2}},{name:'Passning',day:'Tisdag',weights:{passning:1}},{name:'Skytte',day:'Onsdag',weights:{skott:1}},{name:'Målvakt',day:'Torsdag',weights:{malvakt:1}},{name:'Tvekamp',day:'Fredag',weights:{tuffhet:.8,aggressivitet:.2}}];
  const score=(p:Player,weights:Record<string,number>)=>{const a=imperialAttributes(p);return Object.entries(weights).reduce((s,[k,w])=>s+(a as any)[k]*w,0)*(.85+p.form/80)};
@@ -21,9 +21,9 @@ export function simulateImperialGames(players:Player[], seed:number, legendIds:S
     if(winners.length!==target){throw Error('Ogiltig tävlingslottning');}
     rounds.push({entrants:field.length,name:field.length===2?'Final':field.length===4?'Semifinal':field.length===8?'Kvartsfinal':field.length+' deltagare',bouts});field=winners;
    }
-   return {...event,weights:undefined,winner:field[0]?champion(field[0],event.name):null,rounds,leaders:[...ranked].sort((a,b)=>(duelWins.get(b.p.id)||0)-(duelWins.get(a.p.id)||0)||b.score-a.score).slice(0,100).map((x,i)=>({...identity(x.p),place:i+1,score:duelWins.get(x.p.id)||0}))};
+   return {...event,weights:undefined,winner:field[0]?champion(field[0],event.name):null,rounds,leaders:[...ranked].sort((a,b)=>(duelWins.get(b.p.id)||0)-(duelWins.get(a.p.id)||0)||b.score-a.score).slice(0,leaderLimit).map((x,i)=>({...identity(x.p),place:i+1,score:duelWins.get(x.p.id)||0}))};
   }
-  return {...event,weights:undefined,winner:ranked[0]?champion(ranked[0].p,event.name):null,rounds,leaders:ranked.slice(0,100).map((x,i)=>({...identity(x.p),place:i+1,score:event.name==='Snabbhet'?Math.round(x.score):x.score}))};
+  return {...event,weights:undefined,winner:ranked[0]?champion(ranked[0].p,event.name):null,rounds,leaders:ranked.slice(0,leaderLimit).map((x,i)=>({...identity(x.p),place:i+1,score:event.name==='Snabbhet'?Math.round(x.score):x.score}))};
  })};
 }
 
