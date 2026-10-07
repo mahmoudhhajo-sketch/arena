@@ -8,7 +8,7 @@ export async function initializeRevision8(){if(await record('revision-v8'))retur
 let lastEconomyCheck=0;
 export async function progressEconomy(now:Date){if(+now-lastEconomyCheck<5*60000)return;lastEconomyCheck=+now;await progressLoanConsequences(now);await progressSolvency(now)}
 const IMPERIAL_PLAYER_MARKET_TARGET=32;
-const IMPERIAL_MARKET_MAX_WAGE=2800;
+const IMPERIAL_MARKET_MAX_WAGE=2250;
 const IMPERIAL_MARKET_MAX_ATTRIBUTE=8;
 export function tuneMarketWage(attributes:any,target:number){
  let low=.2,high=4,best={...attributes};
@@ -55,6 +55,35 @@ export function specializeMarketPlayer(attributes:any,role:string,random=Math.ra
  return out;
 }
 
+const MARKET_ROLE_PRIMARY:Record<string,string[]>={
+ goalkeeper:['malvakt','speluppfattning','passning','tuffhet'],
+ defender:['markering','tuffhet','speluppfattning','snabbhet'],
+ midfielder:['passning','teknik','speluppfattning','kondition','snabbhet'],
+ attacker:['skott','snabbhet','teknik','speluppfattning'],
+};
+const MARKET_ROLE_CEILINGS:Record<string,Record<string,number>>={
+ goalkeeper:{snabbhet:5.5,kondition:6,markering:4.5,passning:7,teknik:5.5,speluppfattning:8,skott:3,malvakt:8,tuffhet:7},
+ defender:{snabbhet:7,kondition:7,markering:8,passning:6.5,teknik:6.5,speluppfattning:8,skott:4,malvakt:3,tuffhet:8},
+ midfielder:{snabbhet:8,kondition:8,markering:6.5,passning:8,teknik:8,speluppfattning:8,skott:6.5,malvakt:3,tuffhet:6.5},
+ attacker:{snabbhet:8,kondition:7,markering:4.5,passning:6.5,teknik:8,speluppfattning:8,skott:8,malvakt:3,tuffhet:6.5},
+};
+
+export function tuneSpecializedMarketWage(attributes:any,target:number,role:string,random=Math.random){
+ const shaped=specializeMarketPlayer(attributes,role,random),primary=new Set(MARKET_ROLE_PRIMARY[role]||MARKET_ROLE_PRIMARY.midfielder),ceilings=MARKET_ROLE_CEILINGS[role]||MARKET_ROLE_CEILINGS.midfielder;
+ let low=.35,high=6,best={...shaped};
+ for(let n=0;n<36;n++){
+  const factor=(low+high)/2,candidate:any={...shaped};
+  for(const [key,value] of Object.entries(shaped)){
+   if(key==='aggressivitet')continue;
+   const growth=primary.has(key)?factor:1+Math.max(0,factor-1)*.15;
+   candidate[key]=Math.round(Math.min(ceilings[key]??6.5,Number(value)*growth)*1000)/1000;
+  }
+  best=candidate;
+  if(calculateLegacyWage(candidate)<Math.min(target,IMPERIAL_MARKET_MAX_WAGE))low=factor;else high=factor;
+ }
+ return best;
+}
+
 let lastMarketCheck=0;
 export async function releaseMarketPlayers(now:Date){
  if(+now-lastMarketCheck<5*60000)return;lastMarketCheck=+now;
@@ -88,11 +117,10 @@ export async function releaseMarketPlayers(now:Date){
    raceCounts=counts();const race=Object.keys(targets).sort((a,b)=>(targets[b]-(raceCounts[b]||0))-(targets[a]-(raceCounts[a]||0))||a.localeCompare(b))[0];
    const homes=PLACES.filter(p=>p.race===race),home=homes[Math.floor(Math.random()*homes.length)],role=roles[(auctions.length+i)%roles.length];
    const p=generateSinglePlayer(0,race as any,'',home.name,1,role,false,wageSeason);
-   p.attributes=specializeMarketPlayer(p.attributes,role);
    // Every race receives the same broad quality curve: roughly 40% useful
    // middle-class players, 20% stronger listings and 40% cheaper prospects.
    const band=nextMarketBand(race,targets[race],auctions,playerById,rotation+i);
-   p.attributes=tuneMarketWage(p.attributes,marketBandWage(band));
+   p.attributes=tuneSpecializedMarketWage(p.attributes,marketBandWage(band),role);
    p.wage=calculateWage(p.attributes,wageSeason);
    const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;
    const [created]=await tx.insert(players).values({...row,clubId:null}).returning();
