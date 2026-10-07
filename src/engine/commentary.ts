@@ -256,6 +256,70 @@ export function describeEvent(event: MatchEvent, index: number): string {
         `Kampen om mitten var vunnen för stunden.`,
       ]);
 
+    case 'INJURY':
+      return compose(event, index, [
+        `${p} försökte resa sig efter den hårda närkampen men benet bar inte.`,
+        `När trängseln skingrades satt ${p} kvar i den sönderrivna marken.`,
+        `${p} tog några stapplande steg mot spelet innan smärtan satte stopp.`,
+        `Lagkamraterna vinkade genast mot bänken när ${p} blev liggande.`,
+        `${p} reste sig först, men tvingades snart ned på knä igen.`,
+      ], [
+        `Läkarna tog sig fram mellan spelarna och gjorde snabbt tecken för byte.`,
+        `Bårbärarna kallades in medan domaren lät bollen föras bort från platsen.`,
+        `Efter en kort undersökning stod det klart att matchen var över för spelaren.`,
+        `Försöket att fortsätta övergavs när nästa rörelse fick smärtan att blossa upp.`,
+        `Bänken insåg allvaret och började genast söka efter en ersättare.`,
+      ], [
+        `${p} lämnade planen till publikens blandade rop.`,
+        `Laget tvingades ordna om sina led inför nästa avkast.`,
+        `En plats i formationen stod plötsligt tom.`,
+        `Arenans dån sjönk medan spelaren bars mot sidlinjen.`,
+        `Matchen fortsatte, men förlusten märktes genast i uppställningen.`,
+      ]);
+
+    case 'SUBSTITUTION':
+      return compose(event, index, [
+        `${q} kunde inte fortsätta och tecknet kom omedelbart från bänken.`,
+        `Medan ${q} fördes mot sidlinjen gjorde sig ${p} redo vid markeringen.`,
+        `Formationens tomma plats fylldes när ${p} kallades fram från reserverna.`,
+        `Bänken reagerade snabbt på förlusten av ${q}.`,
+        `${p} kastade av sig manteln när lagkamraterna ropade efter förstärkning.`,
+      ], [
+        `Ersättaren sprang in genom dammet och sökte genast sin ruta.`,
+        `${p} fick några snabba ord på vägen in och tog plats utan dröjsmål.`,
+        `Lagkamraterna flyttade sig ett halvt steg och slöt leden kring den nye spelaren.`,
+        `Bytet genomfördes medan motståndarna redan samlades inför nästa anfall.`,
+        `${p} pekade ut markeringen och tog över uppgiften som lämnats efter ${q}.`,
+      ], [
+        `Spelet blåstes igång igen innan läktarna hunnit tystna.`,
+        `Laget var åter fulltaligt i rutan, men prövningen hade lämnat spår.`,
+        `Nästa boll blev genast ett test för den nyinsatte.`,
+        `Bänken följde spänt hur den förändrade formationen satte sig.`,
+        `Ett nytt kapitel i periodens strid tog sin början.`,
+      ]);
+
+    case 'PERIOD_START': {
+      const lines = [
+        `Domarens horn skar genom sorlet och period ${event.period} tog sin början.`,
+        `Facklorna fladdrade längs muren när domaren blåste igång period ${event.period}.`,
+        `Spelarna slöt leden kring mittpunkten. Ett skarpt tecken inledde period ${event.period}.`,
+        `Läktarna reste sig på nytt när period ${event.period} blåstes igång.`,
+        `Den kedjade bollen bars till mitten och domaren kallade fram lagen till period ${event.period}.`,
+      ];
+      return lines[(hash(`${event.id}:${index}`) + index) % lines.length];
+    }
+
+    case 'PERIOD_END': {
+      const lead = [
+        `Hornet ljöd över arenan och spelarna sänkte armarna.`,
+        `Domarens signal bröt igenom oväsendet och striden stannade upp.`,
+        `Kedjan föll mot marken när perioden blåstes av.`,
+        `Läktarnas rop levde kvar medan lagen drog sig mot sina bänkar.`,
+        `Ett långt hornstöt satte punkt för periodens kamp.`,
+      ];
+      return `${lead[(hash(`${event.id}:${index}`) + index) % lead.length]} ${event.text}`;
+    }
+
     case 'RESTART':
       return compose(event, index, [
         `Bollen slets ur klungan och studsade fri mot mittzonen.`,

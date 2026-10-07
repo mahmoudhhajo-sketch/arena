@@ -5,6 +5,7 @@ import { liveMatchView } from '../src/server/liveMatch.ts';
 const eventTypes = [
   'GOAL_NORMAL', 'GOAL_BASKET', 'SAVE_NORMAL', 'SAVE_BASKET', 'SHOT_NORMAL',
   'RUN_SUCCESS', 'PASS_SUCCESS', 'INTERCEPTION', 'UPPKAST', 'RESTART',
+  'INJURY', 'SUBSTITUTION',
 ] as const;
 
 for (const type of eventTypes) {
