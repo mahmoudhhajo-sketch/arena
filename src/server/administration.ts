@@ -1,7 +1,7 @@
 import {Express} from 'express';
 import {eq,desc,sql} from 'drizzle-orm';
 import {db} from '../db';
-import {clubs,players,gameRecords,shoutboxMessages} from '../db/schema';
+import {clubs,players,gameRecords,shoutboxMessages,worldState} from '../db/schema';
 import {record,records,put} from './records';
 import {teamNews} from './newsStatistics';
 import {ARTIFACTS} from '../constants/market';
@@ -45,7 +45,8 @@ export function registerAdministration(app:Express){
      if(!['human','elf','dwarf','orc'].includes(race)||!PLACES.some(p=>p.name===hometown&&p.race===race))throw Error('Välj en hemort som tillhör lagets nya ras.');
      const former=await tx.select().from(players).where(eq(players.clubId,c.id)).for('update');
      await tx.update(players).set({clubId:null}).where(eq(players.clubId,c.id));
-     const rows=generateNewClubSquad(race as any,c.id,hometown).map((p:any)=>{const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;return {...row,clubId:c.id};});
+     const [currentWorld]=await tx.select().from(worldState);
+     const rows=generateNewClubSquad(race as any,c.id,hometown,currentWorld?.season||1).map((p:any)=>{const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;return {...row,clubId:c.id};});
      const squad=await tx.insert(players).values(rows).returning(),lineup=botLineup(squad);
      await tx.update(clubs).set({race,hometown,lineup}).where(eq(clubs.id,c.id));
      before={race:c.race,hometown:c.hometown,squadSize:former.length};after={race,hometown,squadSize:squad.length,newPlayers:squad.map((p:any)=>p.name)};

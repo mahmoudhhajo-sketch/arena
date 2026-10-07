@@ -6,10 +6,34 @@ import { calculatePlayerPositionRatings } from './positionRatings';
 
 
 
-export function calculateWage(attrs: PlayerAttributes): number {
+export function calculateLegacyWage(attrs: PlayerAttributes): number {
   const values=Object.entries(attrs).filter(([key])=>key!=='aggressivitet').map(([,v])=>Math.max(0,v)).sort((a,b)=>b-a);
   const quality=values[0]*.5+values[1]*.25+values[2]*.15+values.slice(3).reduce((a,b)=>a+b,0)/6*.1;
   return Math.round(60+10*Math.pow(quality,2.65));
+}
+
+// Activated for the whole world at the season change after the first official
+// Imperial Games. The power curve makes elite specialists expensive without a cap.
+export function calculateSeasonWage(attrs: PlayerAttributes): number {
+  const weights: Partial<Record<keyof PlayerAttributes, number>> = {
+    tuffhet: 1,
+    skott: .85,
+    malvakt: .85,
+    snabbhet: .65,
+    markering: .65,
+    passning: .65,
+    teknik: .65,
+    speluppfattning: .65,
+    kondition: .45,
+    aggressivitet: 0,
+  };
+  const power = (Object.keys(weights) as Array<keyof PlayerAttributes>).reduce((sum, key) =>
+    sum + (weights[key] || 0) * Math.pow(Math.max(0, attrs[key]), 2.35), 0);
+  return Math.round(200 + 18 * power);
+}
+
+export function calculateWage(attrs: PlayerAttributes, season = 1): number {
+  return season >= 2 ? calculateSeasonWage(attrs) : calculateLegacyWage(attrs);
 }
 
 function triangular(min: number, max: number): number {
@@ -36,7 +60,9 @@ export function generateSinglePlayer(
 
   bonusBias: 'goalkeeper' | 'defender' | 'midfielder' | 'attacker' | 'general' = 'general',
 
-  isMercenary = false
+  isMercenary = false,
+
+  wageSeason = 1
 
 ): Player {
 
@@ -226,7 +252,7 @@ export function generateSinglePlayer(
 
   tempPlayer.nominalPosition = isMercenary ? 'Fribrytare' : bonusBias === 'goalkeeper' ? 'Målvakt' : bestPos;
 
-  tempPlayer.wage = calculateWage(attrs);
+  tempPlayer.wage = calculateWage(attrs, wageSeason);
 
   return tempPlayer;
 
@@ -234,7 +260,7 @@ export function generateSinglePlayer(
 
 
 
-export function generateStarterSquad(race: Race, clubId: string, hometown: string): Player[] {
+export function generateStarterSquad(race: Race, clubId: string, hometown: string, wageSeason = 1): Player[] {
 
   const squad: Player[] = [];
 
@@ -244,9 +270,9 @@ export function generateStarterSquad(race: Race, clubId: string, hometown: strin
 
   // 2-3 Goalkeepers
 
-  squad.push(generateSinglePlayer(nextId++, race, clubId, hometown, 1, 'goalkeeper'));
+  squad.push(generateSinglePlayer(nextId++, race, clubId, hometown, 1, 'goalkeeper', false, wageSeason));
 
-  squad.push(generateSinglePlayer(nextId++, race, clubId, hometown, 18, 'goalkeeper'));
+  squad.push(generateSinglePlayer(nextId++, race, clubId, hometown, 18, 'goalkeeper', false, wageSeason));
 
 
 
@@ -256,7 +282,7 @@ export function generateStarterSquad(race: Race, clubId: string, hometown: strin
 
   for (const num of defNumbers) {
 
-    squad.push(generateSinglePlayer(nextId++, race, clubId, hometown, num, 'defender'));
+    squad.push(generateSinglePlayer(nextId++, race, clubId, hometown, num, 'defender', false, wageSeason));
 
   }
 
@@ -268,7 +294,7 @@ export function generateStarterSquad(race: Race, clubId: string, hometown: strin
 
   for (const num of midNumbers) {
 
-    squad.push(generateSinglePlayer(nextId++, race, clubId, hometown, num, 'midfielder'));
+    squad.push(generateSinglePlayer(nextId++, race, clubId, hometown, num, 'midfielder', false, wageSeason));
 
   }
 
@@ -280,7 +306,7 @@ export function generateStarterSquad(race: Race, clubId: string, hometown: strin
 
   for (const num of atkNumbers) {
 
-    squad.push(generateSinglePlayer(nextId++, race, clubId, hometown, num, 'attacker'));
+    squad.push(generateSinglePlayer(nextId++, race, clubId, hometown, num, 'attacker', false, wageSeason));
 
   }
 

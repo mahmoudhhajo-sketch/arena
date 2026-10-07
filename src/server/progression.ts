@@ -1,7 +1,7 @@
 import {seasonPrizeNotice} from './seasonPrizeNotice';
 import {seasonPrize} from '../constants/prizes';
 import {progressLoanConsequences,overdueEffects} from './loanConsequences';
-import {Express} from 'express';import {db} from '../db';import {clubs,players,gameRecords,worldState} from '../db/schema';import {eq,sql} from 'drizzle-orm';import {records,record,put} from './records';import {PLACES} from '../constants/geography';import {venueCatalog} from '../constants/venues';import {weatherFor} from '../engine/weather';import {generateSinglePlayer,calculateWage,generateAggression} from '../engine/playerGenerator';import {SeededRNG} from '../engine/matchEngine';import {COACHES} from '../constants/market';import {randomUUID} from 'node:crypto';
+import {Express} from 'express';import {db} from '../db';import {clubs,players,gameRecords,worldState} from '../db/schema';import {eq,sql} from 'drizzle-orm';import {records,record,put} from './records';import {PLACES} from '../constants/geography';import {venueCatalog} from '../constants/venues';import {weatherFor} from '../engine/weather';import {generateSinglePlayer,calculateWage,calculateLegacyWage,generateAggression} from '../engine/playerGenerator';import {SeededRNG} from '../engine/matchEngine';import {COACHES} from '../constants/market';import {randomUUID} from 'node:crypto';
 import {LOANS} from '../constants/loans';export {LOANS};
 import {progressSolvency} from './solvency';
 export async function initializeRevision8(){if(await record('revision-v8'))return;await db.transaction(async(tx:any)=>{if(await record('revision-v8',tx))return;for(const p of await tx.select().from(players)){const attributes={...p.attributes},rng=new SeededRNG(p.id*197+832);attributes.aggressivitet=generateAggression(p.race,()=>rng.next());await tx.update(players).set({attributes,wage:calculateWage(attributes)}).where(eq(players.id,p.id));}for(const c of await tx.select().from(clubs))if(c.coach){const coach=COACHES.find(p=>p.id===c.coach.id);if(coach)await tx.update(clubs).set({coach}).where(eq(clubs.id,c.id));}await put('system','revision-v8',{date:new Date().toISOString()},tx);});}
@@ -16,7 +16,7 @@ export function tuneMarketWage(attributes:any,target:number){
   const factor=(low+high)/2;
   const candidate=Object.fromEntries(Object.entries(attributes).map(([key,value])=>[key,key==='aggressivitet'?value:Math.round(Math.min(IMPERIAL_MARKET_MAX_ATTRIBUTE,Number(value)*factor)*1000)/1000]));
   best=candidate;
-  if(calculateWage(candidate as any)<target)low=factor;else high=factor;
+  if(calculateLegacyWage(candidate as any)<target)low=factor;else high=factor;
  }
  return best;
 }
@@ -26,7 +26,7 @@ function marketQualityBand(wage:number):MarketQualityBand{return wage<1500?'budg
 function marketBandTargets(total:number){const middle=Math.round(total*.4),strong=Math.round(total*.2);return {budget:total-middle-strong,middle,strong}}
 function nextMarketBand(race:string,total:number,auctions:any[],playerById:Map<number,any>,rotation:number):MarketQualityBand{
  const desired=marketBandTargets(total),counts:{budget:number;middle:number;strong:number}={budget:0,middle:0,strong:0};
- for(const auction of auctions){const player=playerById.get(Number(auction.playerId));if(player?.race===race)counts[marketQualityBand(Number(player.wage)||0)]++;}
+ for(const auction of auctions){const player=playerById.get(Number(auction.playerId));if(player?.race===race)counts[marketQualityBand(calculateLegacyWage(player.attributes))]++;}
  const order=(['budget','middle','strong'] as MarketQualityBand[]).slice(rotation%3).concat((['budget','middle','strong'] as MarketQualityBand[]).slice(0,rotation%3));
  return order.sort((a,b)=>(desired[b]-counts[b])-(desired[a]-counts[a]))[0];
 }
@@ -53,6 +53,7 @@ export async function releaseMarketPlayers(now:Date){
  const day=weatherFor('',now).date;
  await db.transaction(async(tx:any)=>{
   await tx.execute(sql`SELECT pg_advisory_xact_lock(719082)`);
+  const [currentWorld]=await tx.select().from(worldState);const wageSeason=currentWorld?.season||1;
   const allOpen=(await records('auction',tx)).filter(a=>!a.closed&&+new Date(a.endsAt)>+now);
   // One-time promotional releases may temporarily sit above the ordinary
   // supply and disappear naturally when their auctions end.
@@ -78,13 +79,13 @@ export async function releaseMarketPlayers(now:Date){
   for(let i=0;i<missing;i++){
    raceCounts=counts();const race=Object.keys(targets).sort((a,b)=>(targets[b]-(raceCounts[b]||0))-(targets[a]-(raceCounts[a]||0))||a.localeCompare(b))[0];
    const homes=PLACES.filter(p=>p.race===race),home=homes[Math.floor(Math.random()*homes.length)],role=roles[(auctions.length+i)%roles.length];
-   const p=generateSinglePlayer(0,race as any,'',home.name,1,role);
+   const p=generateSinglePlayer(0,race as any,'',home.name,1,role,false,wageSeason);
    p.attributes=specializeMarketPlayer(p.attributes,role);
    // Every race receives the same broad quality curve: roughly 40% useful
    // middle-class players, 20% stronger listings and 40% cheaper prospects.
    const band=nextMarketBand(race,targets[race],auctions,playerById,rotation+i);
    p.attributes=tuneMarketWage(p.attributes,marketBandWage(band));
-   p.wage=calculateWage(p.attributes);
+   p.wage=calculateWage(p.attributes,wageSeason);
    const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;
    const [created]=await tx.insert(players).values({...row,clubId:null}).returning();
    await put('auction','auction-'+randomUUID(),{playerId:created.id,sellerId:null,price:Math.max(100,Math.round(p.wage*5)),bidderId:null,endsAt:new Date(+now+7*86400000).toISOString(),closed:false},tx);

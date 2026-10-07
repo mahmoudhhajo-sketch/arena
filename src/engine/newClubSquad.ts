@@ -11,13 +11,13 @@ const profiles: { index: number; position: NominalPosition; strengths: (keyof Pl
 ];
 
 // Registration only: existing squads, market players and world seeding retain their own balance.
-export function generateNewClubSquad(race: Race, clubId: string, hometown: string) {
-  const squad = generateStarterSquad(race, clubId, hometown);
+export function generateNewClubSquad(race: Race, clubId: string, hometown: string, wageSeason = 1) {
+  const squad = generateStarterSquad(race, clubId, hometown, wageSeason);
   for (const player of squad) {
     for (const key of Object.keys(player.attributes) as (keyof PlayerAttributes)[]) {
       if (key !== 'aggressivitet') player.attributes[key] = Math.round((player.attributes[key] + .35) * 1000) / 1000;
     }
-    player.wage = calculateWage(player.attributes);
+    player.wage = calculateWage(player.attributes, wageSeason);
   }
 
   const profile = profiles[Math.floor(Math.random() * profiles.length)];
@@ -40,7 +40,7 @@ export function generateNewClubSquad(race: Race, clubId: string, hometown: strin
     if (calculateWage(scaled(middle)) < targetWage) low = middle; else high = middle;
   }
   standout.attributes = scaled((low + high) / 2);
-  standout.wage = calculateWage(standout.attributes);
+  standout.wage = calculateWage(standout.attributes, wageSeason);
   standout.nominalPosition = profile.position;
   return squad;
 }

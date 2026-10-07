@@ -301,7 +301,8 @@ export async function createHumanClub(params: {
   }
 
   // 4. Generate 20 new players for human club
-  const squad = generateNewClubSquad(race, clubId, settlement.name);
+  const [currentWorld] = await tx.select().from(worldState);
+  const squad = generateNewClubSquad(race, clubId, settlement.name, currentWorld?.season || 1);
 
   const createdPlayers = [];
   for (let i = 0; i < squad.length; i++) {

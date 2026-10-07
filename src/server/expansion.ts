@@ -123,11 +123,12 @@ export async function tickWorld(now=new Date()){
    const nums=new Set(squad.map((p:any)=>p.shirtNumber));let n=1;while(nums.has(n))n++;
    const talentRng=new SeededRNG(+new Date(event.date)+club.id.split('').reduce((a:number,c:string)=>a+c.charCodeAt(0),0));
    const talentRace:Race=place.name==='Berunia'?races[Math.floor(talentRng.next()*races.length)]:place.race;
-   const p=generateSinglePlayer(0,talentRace,club.id,place.name,n);
+   const [currentWorld]=await tx.select().from(worldState),wageSeason=currentWorld?.season||1;
+   const p=generateSinglePlayer(0,talentRace,club.id,place.name,n,'general',false,wageSeason);
    const potential=(await record('potential-'+place.id,tx))?.value??place.potential;
    const quality=.86+potential/20*.24+talentRng.next()*.14+(s.searchMode==='deep'?.22:0);
    for(const k of Object.keys(p.attributes) as Array<keyof PlayerAttributes>)if(k!=='aggressivitet')p.attributes[k]=Math.round(p.attributes[k]*quality*1000)/1000;
-   p.wage=calculateWage(p.attributes);
+   p.wage=calculateWage(p.attributes,wageSeason);
    const [created]=await tx.insert(players).values({...playerRow(p,null),shirtNumber:0,createdAt:new Date(event.date)}).returning();
    await teamNews(tx,club.id,'scout-'+created.id,'Talangscouten har hittat en spelare',created.name+' väntar på ditt beslut i '+place.name+'.',{kind:'player',id:created.id});
    await put('scout',s.id,{...s,destination:null,completedSearchMode:s.searchMode||'travel',searchMode:null,locationId:place.id,returnsAt:null,message:'Talangscouten hittade '+created.name+' i '+place.name+'. Granska spelaren och välj om du vill värva honom.',candidatePlayerId:created.id,lastPlayerId:null},tx);
