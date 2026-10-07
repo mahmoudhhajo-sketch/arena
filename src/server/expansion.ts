@@ -40,6 +40,7 @@ import {shouldAutofillInactiveLineup} from './inactiveLineups';
 import {Race,PlayerAttributes} from '../types';
 import {randomUUID} from 'node:crypto';
 import {refreshDivisionPositions} from './standings';
+import {fixtureLockKey,runPartitionedBatch} from './partitionedBatch';
 
 const races:Race[]=['human','elf','dwarf','orc'];
 const defaultLineup={slots:{},underlag:'Gräs',intrade:4,tactics:{uppspel:'Normal',spelvag:'Normal',skytte:'Normal'}};
@@ -101,11 +102,22 @@ export async function tickWorld(now=new Date()){
  const matchesStarted=await prepareLaunch(now);
  if(!await record('calendar-clock'))await advanceCalendar(now);
  const due=[...(await records('artifact-auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'artifact',date:item.endsAt,item})),...(await records('auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'auction',date:item.endsAt,item})),...(await records('scout')).filter(s=>s.destination&&new Date(s.returnsAt)<=now).map(item=>({type:'scout',date:item.returnsAt,item})),...(await records('fixture')).filter(f=>matchesStarted&&!f.played&&new Date(f.date)<=now).map(item=>({type:'fixture',date:item.date,item}))].sort((a,b)=>a.date.localeCompare(b.date));
+ const handledFixtures=new Set<string>();
  for(const event of due){
+  if(event.type==='fixture'&&handledFixtures.has(event.item.id))continue;
   await advanceCalendar(new Date(event.date));
   if(event.type==='artifact'){await finishArtifactAuction(event.item.id,event.date);}
-  else if(event.type==='fixture'){const fixture=event.item;
-  await playFixture(fixture,now);if(process.env.ARENA_STRESS_LOG==='1'&&++stressPlayed%25===0)console.log('Provspelade matcher: '+stressPlayed);
+  else if(event.type==='fixture'){
+  // A whole round can contain 200 matches at the same kickoff. Processing them
+  // one by one made the last divisions appear live minutes after the first.
+  // Different divisions are independent, while matches inside one division are
+  // kept ordered because finalization recalculates their shared table.
+  const round=[...due.filter(candidate=>candidate.type==='fixture'&&candidate.date===event.date&&!handledFixtures.has(candidate.item.id))];
+  round.forEach(candidate=>handledFixtures.add(candidate.item.id));
+  await runPartitionedBatch(round,candidate=>candidate.item.division,async candidate=>{
+   await playFixture(candidate.item,now);
+   if(process.env.ARENA_STRESS_LOG==='1'&&++stressPlayed%25===0)console.log('Provspelade matcher: '+stressPlayed);
+  });
  }else if(event.type==='auction'){const auction=event.item;
   await db.transaction(async(tx:any)=>{await tx.execute(sql`SELECT pg_advisory_xact_lock(719084)`);const a=await record(auction.id,tx);if(a.closed||+new Date(a.endsAt)>+now)return;
    if(a.bidderId){if(a.unreserved)await tx.update(clubs).set({gold:sql`${clubs.gold}-${a.price}`}).where(eq(clubs.id,a.bidderId));const squad=await tx.select().from(players).where(eq(players.clubId,a.bidderId));const nums=new Set(squad.map((p:any)=>p.shirtNumber));let number=1;while(nums.has(number))number++;
@@ -170,7 +182,7 @@ export function registerExpansion(app:Express){
   await put('auction',a.id,{...result.auction,endsAt,unreserved:true},tx);
   if(result.previousBidderId&&result.auction.bidderId!==result.previousBidderId)await replaceTeamNews(tx,result.previousBidderId,'overbid-'+a.id,'Du har blivit överbjuden','Högsta budet på spelaren är nu '+result.auction.price+' guld. Inga pengar har dragits för ditt bud.',{kind:'player',id:a.playerId});if(a.sellerId)await teamNews(tx,a.sellerId,a.id+'-'+result.auction.price,'Din spelare har fått ett bud','Högsta budet är nu '+result.auction.price+' guld.',{kind:'player',id:a.playerId});
   await put('bid','bid-'+randomUUID(),{auctionId:a.id,playerId:a.playerId,clubId:club.id,amount,bidType:mode,displayedPrice:result.auction.price,date:new Date().toISOString()},tx);
-  return{success:true,leading:result.leading,price:result.auction.price};
+  return{success:true,leading:result.leading,price:result.auction.price,replacedOwnMax:result.replacedOwnMax};
  }));
  route(app,'get','/api/bids/:clubId',async(req)=>{const auctions=[...(await records('auction')),...(await records('artifact-auction'))],ps=await db.select().from(players),teams=await db.select().from(clubs),maxBids=await records('max-bid'),active=await activeMaxBids(db,req.params.clubId);return {activeMaxBids:active.length,maxBidLimit:3,bids:[...(await records('bid')),...(await records('artifact-bid'))].filter(b=>b.clubId===req.params.clubId).sort((a,b)=>b.date.localeCompare(a.date)).filter((b,i,all)=>all.findIndex(x=>x.auctionId===b.auctionId)===i).map(b=>{const a=auctions.find(a=>a.id===b.auctionId),maxBid=maxBids.find((m:any)=>m.auctionId===b.auctionId&&m.clubId===b.clubId)?.maxAmount;return {...b,maxBid,kind:a?.artifactId?'Artefakt':'Spelare',playerName:a?.artifactId?ARTIFACTS.find(x=>x.id===a.artifactId)?.name:ps.find(p=>p.id===b.playerId)?.name||'Spelare #'+b.playerId,highestBid:a?.price,bidderName:teams.find(c=>c.id===a?.bidderId)?.name||'Inga bud',status:!a?'Historiskt bud':a.cancelled?'Återbetalat':a.closed?(a.bidderId===b.clubId?'Vunnet':'Avslutat'):a.bidderId===b.clubId?'Ledande':'Överbjudet',endsAt:a?.endsAt||b.date}}).sort((a,b)=>b.date.localeCompare(a.date))};});
  route(app,'post','/api/market/list',async(req)=>db.transaction(async(tx:any)=>{
@@ -204,7 +216,9 @@ export function registerExpansion(app:Express){
 
 export async function playFixture(fixture:any,now:Date,early=false){
 await db.transaction(async(tx:any)=>{
-   await tx.execute(sql`SELECT pg_advisory_xact_lock(719086)`);const stored=await record(fixture.id,tx);if(!stored||stored.played)return;const pending=await record('live-'+stored.id,tx);if(!early&&pending&&+now<+new Date(stored.date)+75*60000)return;const f=early?{...stored,scheduledDate:stored.date,date:now.toISOString()}:stored;
+   // Lock only this fixture. A single global match lock forced an otherwise
+   // parallel round back into the same several-minute queue.
+   await tx.execute(sql`SELECT pg_advisory_xact_lock(719086, ${fixtureLockKey(fixture.id)})`);const stored=await record(fixture.id,tx);if(!stored||stored.played)return;const pending=await record('live-'+stored.id,tx);if(!early&&pending&&+now<+new Date(stored.date)+75*60000)return;const f=early?{...stored,scheduledDate:stored.date,date:now.toISOString()}:stored;
    const [home]=await tx.select().from(clubs).where(eq(clubs.id,f.homeId)),[away]=await tx.select().from(clubs).where(eq(clubs.id,f.awayId));
    const hs=await tx.select().from(players).where(pending?.homeIds?.length?inArray(players.id,pending.homeIds):eq(players.clubId,home.id)),as=await tx.select().from(players).where(pending?.awayIds?.length?inArray(players.id,pending.awayIds):eq(players.clubId,away.id));
    const homeSaved=await record('match-lineup-'+f.id+'-'+home.id,tx),awaySaved=await record('match-lineup-'+f.id+'-'+away.id,tx),homePreset=(await record('presets-'+home.id,tx))?.presets?.[0]?.lineup,awayPreset=(await record('presets-'+away.id,tx))?.presets?.[0]?.lineup;
