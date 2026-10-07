@@ -776,7 +776,7 @@ export function simulateMatch(
     periodScores,
     finalScore: forfeit?{home:forfeit==='home'?5:0,away:forfeit==='away'?5:0}:{ home: totalHomeMatchPoints, away: totalAwayMatchPoints },
     underlag, individualStats:Object.values(individualStats),
-    events:events.map((e,i)=>({...e,playerId:e.playerId||(e.teamSide==='home'?homePlayers:awayPlayers).find(p=>p.name===e.playerName)?.id,opponentPlayerId:e.opponentPlayerId||(e.type==='PASS_SUCCESS'?(e.teamSide==='home'?homePlayers:awayPlayers):(e.teamSide==='home'?awayPlayers:homePlayers)).find(p=>p.name===e.opponentPlayerName)?.id,id:e.id+'-'+i,text:(e as any).important||['SUBSTITUTION','INJURY'].includes(e.type)?e.text:describeEvent(e,i)+((e as any).assistPlayerName?' Framspelningen kom från '+(e as any).assistPlayerName+'.':''),reported:reportEvent(e,i,seed)})),
+    events:events.map((e,i)=>({...e,playerId:e.playerId||(e.teamSide==='home'?homePlayers:awayPlayers).find(p=>p.name===e.playerName)?.id,opponentPlayerId:e.opponentPlayerId||(e.type==='PASS_SUCCESS'?(e.teamSide==='home'?homePlayers:awayPlayers):(e.teamSide==='home'?awayPlayers:homePlayers)).find(p=>p.name===e.opponentPlayerName)?.id,id:e.id+'-'+i,text:((e as any).important&&!['FIGHT_RESULT','ATMOSPHERE','RESTART'].includes(e.type))||['SUBSTITUTION','INJURY'].includes(e.type)?e.text:describeEvent(e,i)+((e as any).assistPlayerName?' Framspelningen kom från '+(e as any).assistPlayerName+'.':''),reported:reportEvent(e,i,seed)})),
     homeStats,
     awayStats,
     tactics: {
