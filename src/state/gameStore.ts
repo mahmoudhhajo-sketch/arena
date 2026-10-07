@@ -151,7 +151,7 @@ export function useGameStore() {
         selectedMatchId: matchesHistory[0]?.id || null,
         shoutboxMessages: (shoutData || []).map((m: any) => {
           const date = new Date(m.createdAt || Date.now());
-          const time = new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Stockholm',hour:'2-digit',minute:'2-digit'}).format(date);
+          const time = new Intl.DateTimeFormat('sv-SE',{hour:'2-digit',minute:'2-digit'}).format(date);
           return {
             id: m.id,
             user: m.authorName,
@@ -170,7 +170,7 @@ export function useGameStore() {
     fetchClubAndWorld();
   }, [fetchClubAndWorld]);
 
-  useEffect(()=>{let alive=true,busy=false;const poll=async()=>{if(busy||document.visibilityState!=='visible')return;busy=true;try{const response=await fetch('/api/shoutbox');if(!response.ok)return;const messages=await response.json();const next=messages.map((m:any)=>({id:m.id,user:m.authorName,text:m.content,time:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Stockholm',hour:'2-digit',minute:'2-digit'}).format(new Date(m.createdAt))}));if(alive)setState(prev=>{const old=prev.shoutboxMessages,same=old.length===next.length&&old.every((m,i)=>m.id===next[i].id&&m.text===next[i].text);return same?prev:{...prev,shoutboxMessages:next}});}catch{}finally{busy=false}};const timer=setInterval(poll,10000);document.addEventListener('visibilitychange',poll);return()=>{alive=false;clearInterval(timer);document.removeEventListener('visibilitychange',poll)}},[]);
+  useEffect(()=>{let alive=true,busy=false;const poll=async()=>{if(busy||document.visibilityState!=='visible')return;busy=true;try{const response=await fetch('/api/shoutbox');if(!response.ok)return;const messages=await response.json();const next=messages.map((m:any)=>({id:m.id,user:m.authorName,text:m.content,time:new Intl.DateTimeFormat('sv-SE',{hour:'2-digit',minute:'2-digit'}).format(new Date(m.createdAt))}));if(alive)setState(prev=>{const old=prev.shoutboxMessages,same=old.length===next.length&&old.every((m,i)=>m.id===next[i].id&&m.text===next[i].text);return same?prev:{...prev,shoutboxMessages:next}});}catch{}finally{busy=false}};const timer=setInterval(poll,10000);document.addEventListener('visibilitychange',poll);return()=>{alive=false;clearInterval(timer);document.removeEventListener('visibilitychange',poll)}},[]);
   const setTab = useCallback((tab: string) => {
     setState((prev) => ({ ...prev, currentTab: tab }));
   }, []);
@@ -254,7 +254,7 @@ export function useGameStore() {
       const response=await fetch('/api/shoutbox',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:text})});
       const message=await response.json();
       if(!response.ok)throw new Error(message.error||'Meddelandet kunde inte skickas.');
-      setState(prev=>({...prev,shoutboxMessages:[...prev.shoutboxMessages.filter(m=>m.id!==message.id),{id:message.id,user:message.authorName,text:message.content,time:new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Stockholm',hour:'2-digit',minute:'2-digit'}).format(new Date(message.createdAt))}].slice(-500)}));
+      setState(prev=>({...prev,shoutboxMessages:[...prev.shoutboxMessages.filter(m=>m.id!==message.id),{id:message.id,user:message.authorName,text:message.content,time:new Intl.DateTimeFormat('sv-SE',{hour:'2-digit',minute:'2-digit'}).format(new Date(message.createdAt))}].slice(-500)}));
     },
     [state.club?.ownerName, userId]
   );

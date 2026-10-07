@@ -1,5 +1,6 @@
 import React from 'react';
 import { Club } from '../types';
+import { localWeeklyTimeFromSweden } from '../lib/localTime';
 
 interface EconomicsViewProps {
   club: Club;
@@ -26,7 +27,7 @@ export const EconomicsView: React.FC<EconomicsViewProps> = ({ club }) => {
           Ekonomi
         </h2>
         <span className="text-xs text-stone-600 block mt-1 font-sans">
-          Säsong 1 &bull; Veckoavräkning sker natten mot måndag 04:00
+          Säsong 1 &bull; Veckoavräkning: {localWeeklyTimeFromSweden(1, 4)} lokal tid
         </span>
       </div>
 

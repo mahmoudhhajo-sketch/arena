@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TipsetMatch } from '../types';
+import { localWeeklyTimeFromSweden } from '../lib/localTime';
 
 interface TipsetViewProps {
   roundMatches: TipsetMatch[];
@@ -67,7 +68,7 @@ export const TipsetView: React.FC<TipsetViewProps> = ({
           <strong className="text-green-800">✓ Din rad har uppdaterats och sparats hos Tipskommittén!</strong>
         ) : (
           <span>
-            <strong>Status:</strong> Du kan lämna och ändra dina tips fram till och med tisdag 18:59:00.
+            <strong>Status:</strong> Du kan lämna och ändra dina tips till {localWeeklyTimeFromSweden(2, 18, 59)} lokal tid.
           </span>
         )}
       </div>
