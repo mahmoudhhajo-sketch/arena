@@ -425,9 +425,8 @@ export function simulateMatch(
       const decisionHolder=attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
       const formationRow=decisionHolder.slotKey==='goal'?3:Number(decisionHolder.slotKey[0]);
       const formationCol=decisionHolder.slotKey==='goal'?1:Number(decisionHolder.slotKey[2]);
-      const ownedBaskets=Number(leftBasketOwner===possession)+Number(rightBasketOwner===possession);
       const basketBias=tactics?.skytte==='Korg'?.68:tactics?.skytte==='Mål'?.32:isMidfield?.56:.44;
-      const wantsBasket = !(weather as any).basketsBlocked && rng.next() < basketBias*(ownedBaskets===2?.5:ownedBaskets===1?.75:1);
+      const wantsBasket = !(weather as any).basketsBlocked && rng.next() < basketBias;
       // Normal goals are chiefly finished by attackers. Backs instead take a
       // larger share of basket attempts, especially from their outer lanes.
       // Inner and outer attackers use the same factor for the large goal.
@@ -443,15 +442,10 @@ export function simulateMatch(
           attackStats.korgskott.antal++;
           defendStats.korgraddningar.antal++;
           const shooter = attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
-          const leftOwned=leftBasketOwner===possession,rightOwned=rightBasketOwner===possession;
-          // An unowned basket is strategically more valuable, but players may
-          // still use the nearer basket they already control for its raw point.
-          // Previously the engine forced every second successful basket to the
-          // opposite side whenever exactly one basket was owned.
+          // Sidokorgen väljs efter läget på planen. Vem som för tillfället äger
+          // korgarna påverkar varken spelarens skottbeslut eller valet av sida.
           const nearerBasket=ballCol===0?0:ballCol===2?2:rng.next()<.5?0:2;
-          const sideBasketCol=leftOwned!==rightOwned
-            ?(rng.next()<.68?(leftOwned?2:0):(leftOwned?0:2))
-            :nearerBasket;
+          const sideBasketCol=nearerBasket;
           // Defender is wing midfielder on that side
           const directDefender = defendSquad.active.find((a) => a.fieldRow === 1 && a.fieldCol === sideBasketCol);
           const defender = directDefender || choose(defendSquad.active,1,sideBasketCol);

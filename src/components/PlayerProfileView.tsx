@@ -77,7 +77,7 @@ export const PlayerProfileView: React.FC<PlayerProfileViewProps> = ({
             <tbody>
               {[
                 ['Ras', RACE_DISPLAY_NAMES[player.race]],
-                ['Lag', player.isMercenary ? 'Inget lag (Fribrytare)' : clubName],
+                ['Lag', player.isMercenary ? (clubName && clubName !== 'Inget lag' ? `Tillfälligt inhyrd av ${clubName}` : 'Inget lag (Fribrytare)') : clubName],
                 ['Hemort', player.hometown],
                 ['Position', player.nominalPosition],
                 ['ID-nummer', player.id],

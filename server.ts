@@ -25,6 +25,7 @@ import {initializeRevision32} from './src/server/revision32';
 import {initializeRevision34} from './src/server/revision34';
 import {initializeRevision35} from './src/server/revision35';
 import {initializeRevision36} from './src/server/revision36';
+import {initializeRevision37} from './src/server/revision37';
 import {rankedClubs} from './src/server/standings';
 import {initializeMatchMerit} from './src/server/meritRevision';
 import {initializeUnreservedBids} from './src/server/solvency';
@@ -864,7 +865,7 @@ async function startServer() {
   await initializeExpansion();
 
   await initializeFeatures();
-  await initializeRevision8();await initializeUnreservedBids();await initializeMatchMerit();await initializeRevision13();await initializeRevision14();await initializeRevision15();await initializeRevision16();await initializeRevision17();await initializeRevision18();await initializeRevision19();await initializeRevision20();await initializeRevision21();await initializeRevision22();await initializeRevision23();await initializeRevision24();await initializeRevision25();await initializeRevision26();await initializeRevision27();await initializeRevision28();await initializeRevision29();await initializeRevision30();await initializeRevision31();await initializeRevision32();await initializeRevision34();await initializeRevision35();await initializeRevision36();
+  await initializeRevision8();await initializeUnreservedBids();await initializeMatchMerit();await initializeRevision13();await initializeRevision14();await initializeRevision15();await initializeRevision16();await initializeRevision17();await initializeRevision18();await initializeRevision19();await initializeRevision20();await initializeRevision21();await initializeRevision22();await initializeRevision23();await initializeRevision24();await initializeRevision25();await initializeRevision26();await initializeRevision27();await initializeRevision28();await initializeRevision29();await initializeRevision30();await initializeRevision31();await initializeRevision32();await initializeRevision34();await initializeRevision35();await initializeRevision36();await initializeRevision37();
 
   });
   await tickWorld();
