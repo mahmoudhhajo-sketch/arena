@@ -27,7 +27,7 @@ export const EconomicsView: React.FC<EconomicsViewProps> = ({ club }) => {
           Ekonomi
         </h2>
         <span className="text-xs text-stone-600 block mt-1 font-sans">
-          Säsong 1 &bull; Veckoavräkning: {localWeeklyTimeFromSweden(1, 4)} lokal tid
+          Säsong 1 &bull; Veckoavräkning: {localWeeklyTimeFromSweden(1, 6)} lokal tid
         </span>
       </div>
 

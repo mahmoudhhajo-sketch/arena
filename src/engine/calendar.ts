@@ -2,6 +2,7 @@ import {PlayerAttributes,TrainableAttribute} from '../types';
 import {TRAINABLE_ATTRIBUTES} from '../constants/attributes';
 
 const zone='Europe/Stockholm';
+export const TRAINING_GAIN_SCALE=.85;
 // Use local noon to determine the offset; all updates are at 06:00, outside DST's repeated hour.
 export function dailyUpdates(after:Date,until:Date):Date[]{
  const local=new Intl.DateTimeFormat('sv-SE',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(after);
@@ -18,14 +19,14 @@ export function dailyUpdates(after:Date,until:Date):Date[]{
 // Reconstructed balance: no doctor heals one plus per three days; investment relative to
 // the league-wide average increases this to at most one plus per daily update.
 export function healingProgress(investment:number,average:number){return Math.min(1,1/3+Math.max(0,investment)/Math.max(1000,average)*2/3);}
-export function weeklyAttributes(attributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,matches:number,matchesByAttribute?:Partial<Record<TrainableAttribute,number>>):PlayerAttributes{
+export function weeklyAttributes(attributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,matches:number,matchesByAttribute?:Partial<Record<TrainableAttribute,number>>,gainScale=TRAINING_GAIN_SCALE):PlayerAttributes{
  const result={...attributes};
  for(const key of TRAINABLE_ATTRIBUTES){
   const positionalMatches=matchesByAttribute?.[key];
   const load=Math.min(2,Math.max(0,positionalMatches??matches));
   const participation=positionalMatches===undefined?[0.1,0.55,1][Math.round(load)]:load<=1?0.55*load:0.55+0.45*(load-1);
   const points=Math.min(10,Math.max(0,allocation[key]||0));
-  const gain=0.25*points*participation*(key==='kondition'?2.25:1)/Math.pow(1.03,Math.max(0,attributes[key]));
+  const gain=gainScale*0.25*points*participation*(key==='kondition'?2.25:1)/Math.pow(1.03,Math.max(0,attributes[key]));
   result[key]=Math.max(0,Math.round((attributes[key]+gain-(key==='kondition'&&points===0?0.15:0))*1000)/1000);
  }
  return result;
@@ -43,9 +44,29 @@ const trainingSlotWeights:Record<TrainableAttribute,Record<string,number>>={
  tuffhet:{goal:1,'0-0':1,'0-1':1,'0-2':1,'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1}
 };
 export function positionalTrainingMatches(appearances:Array<{date:string;slots:string[]}>,key:TrainableAttribute,after:number,before:number){return appearances.filter(a=>+new Date(a.date)>before&&+new Date(a.date)<=after).reduce((sum,a)=>sum+Math.max(0,...a.slots.map(slot=>trainingSlotWeights[key][slot]||0)),0);}
-export function weeklyPositionAttributes(attributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,appearances:Array<{date:string;slots:string[]}>,after:number,before:number):PlayerAttributes{
+export function weeklyPositionAttributes(attributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,appearances:Array<{date:string;slots:string[]}>,after:number,before:number,gainScale=TRAINING_GAIN_SCALE):PlayerAttributes{
  const matchesByAttribute=Object.fromEntries(TRAINABLE_ATTRIBUTES.map(key=>[key,positionalTrainingMatches(appearances,key,after,before)])) as Record<TrainableAttribute,number>;
- return weeklyAttributes(attributes,allocation,0,matchesByAttribute);
+ return weeklyAttributes(attributes,allocation,0,matchesByAttribute,gainScale);
+}
+
+// Recover the three-decimal base values that produced an already applied
+// weekly update. This is used only by data corrections; ordinary training
+// always moves forward through weeklyPositionAttributes.
+export function reverseWeeklyPositionAttributes(afterAttributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,appearances:Array<{date:string;slots:string[]}>,after:number,before:number,gainScale=1):PlayerAttributes{
+ const result={...afterAttributes};
+ for(const key of TRAINABLE_ATTRIBUTES){
+  let low=Math.max(0,afterAttributes[key]-7),high=afterAttributes[key]+1;
+  for(let n=0;n<55;n++){
+   const mid=(low+high)/2,input={...afterAttributes,[key]:mid};
+   const value=weeklyPositionAttributes(input,allocation,appearances,after,before,gainScale)[key];
+   if(value<afterAttributes[key])low=mid;else high=mid;
+  }
+  const center=Math.round(((low+high)/2)*1000)/1000;
+  const candidates=Array.from({length:21},(_,i)=>Math.max(0,Math.round((center+(i-10)/1000)*1000)/1000));
+  const exact=candidates.filter(value=>weeklyPositionAttributes({...afterAttributes,[key]:value},allocation,appearances,after,before,gainScale)[key]===afterAttributes[key]);
+  result[key]=(exact.sort((a,b)=>Math.abs(a-center)-Math.abs(b-center))[0]??center);
+ }
+ return result;
 }
 
 export function trainingStepGains(before:PlayerAttributes,after:PlayerAttributes){return TRAINABLE_ATTRIBUTES.filter(k=>Math.floor(after[k])>Math.floor(before[k]));}

@@ -20,7 +20,7 @@ export async function advanceCalendar(until:Date){
    const managed=all.filter((c:any)=>!c.isBot),average=managed.reduce((sum:number,c:any)=>sum+c.doctorInvestment,0)/Math.max(1,managed.length);
    const recovery=new Map((await records('recovery',tx)).map(r=>[r.playerId,r]));
    const participation=new Map((await records('participation',tx)).map(r=>[r.playerId,r]));
-   const sunday=at.getUTCDay()===0,weekStart=at.getTime()-7*86400000;
+   const sunday=at.getUTCDay()===0,monday=at.getUTCDay()===1,weekStart=at.getTime()-7*86400000;
    const trainingReports=new Map<string,string[]>();
    if(sunday)await refreshMagicPrices(all,at,tx);
    const byClub=new Map(all.map((c:any)=>[c.id,c]));
@@ -33,13 +33,13 @@ export async function advanceCalendar(until:Date){
      update.currentInjury=Math.max(0,p.currentInjury-healed);
      await put('recovery','recovery-'+p.id,{playerId:p.id,credit:update.currentInjury?credit-healed:0},tx);
     }
-    if(sunday&&c){
+    if(sunday&&c&&!p.isMercenary){
      const dates=(participation.get(p.id)?.dates||[]).filter((d:string)=>+new Date(d)>weekStart&&+new Date(d)<=+at);
      const appearances=participation.get(p.id)?.appearances||[];
      update.attributes=weeklyPositionAttributes(p.attributes,c.trainingPoints,appearances,+at,weekStart);
      if(p.artifacts?.includes('seven-mile-boots')&&c.trainingPoints.kondition===0)update.attributes.kondition=p.attributes.kondition;
      const gains=trainingStepGains(p.attributes,update.attributes);
-     await put('training-gain','gain-'+p.id,{playerId:p.id,clubId:p.clubId,date:at.toISOString(),attributes:gains},tx);
+     await put('training-gain','gain-'+p.id,{playerId:p.id,clubId:p.clubId,date:at.toISOString(),attributes:gains,before:p.attributes,after:update.attributes},tx);
      for(const key of gains){const from=Math.min(16,Math.floor(p.attributes[key])),to=Math.min(16,Math.floor(update.attributes[key]));if(from!==to){const rows=trainingReports.get(p.clubId)||[];rows.push(`${p.name}: ${ATTRIBUTE_NAMES_SV[key]} ${QUALITATIVE_ATTRIBUTE_LABELS[from]} → ${QUALITATIVE_ATTRIBUTE_LABELS[to]}`);trainingReports.set(p.clubId,rows)}}
      // Match participation and performance now adjust form immediately after
      // each match. The weekly clock only penalizes complete inactivity.
@@ -48,7 +48,22 @@ export async function advanceCalendar(until:Date){
     }
     if(Object.keys(update).length)await tx.update(players).set(update).where(eq(players.id,p.id));
    }
-   const magicBills=new Map<string,number>();
+   if(monday){
+    const scouts=new Map((await records('scout',tx)).map(s=>[s.clubId,s]));
+    for(const c of all){
+     if(c.createdAt>at)continue;
+     const billing=await record('magic-billing-'+c.id,tx),magicCost=Math.round(Number(billing?.accrued||0));
+     const costs:Array<[string,number]>=[['Spelarlöner',squad.filter((p:any)=>p.clubId===c.id&&!p.isDeceased&&!p.isMercenary&&p.createdAt<=at).reduce((s:number,p:any)=>s+p.wage,0)],['Tränare',c.coach?.wage||0],['Läkare',c.doctorInvestment],['Talangscout',scouts.get(c.id)?.hired?3000:0],['Arenadrift',c.arena?.weeklyRent||0],['Magi',magicCost]];
+     const total=costs.reduce((s,[,v])=>s+v,0),thresholds=await weeklyMagicThresholds(c.id,tx),progress=await record('magic-progress-'+c.id,tx),qualified=c.magicInvestment>=thresholds.level3&&c.gold>=total;
+     // A deployment immediately after the old Sunday debit may move the same
+     // bill to Monday. Do not count that paid premium week twice.
+     const alreadyCounted=progress?.lastPayment&&+at-+new Date(progress.lastPayment)<2*86400000;
+     await put('magic-progress','magic-progress-'+c.id,{weeks:alreadyCounted?(progress?.weeks||0):qualified?(progress?.weeks||0)+1:0,lastPayment:at.toISOString(),premium:thresholds.level3,paid:c.magicInvestment},tx);
+     await tx.update(clubs).set({gold:sql`${clubs.gold}-${total}`}).where(eq(clubs.id,c.id));
+     for(const [category,amount] of costs)if(amount)await put('ledger','week-'+at.toISOString()+'-'+c.id+'-'+category,{clubId:c.id,category,amount:-amount,date:at.toISOString()},tx);
+     await put('magic-billing','magic-billing-'+c.id,{clubId:c.id,accrued:0,updatedAt:at.toISOString(),lastPaid:magicCost},tx);
+    }
+   }
    // Credit mana and remember the daily share of the budget that produced it.
    // A later budget change therefore cannot erase an already earned charge.
    for(const snapshot of all){
@@ -59,21 +74,11 @@ export async function advanceCalendar(until:Date){
     await put('mana','mana-'+c.id,state,tx);
     const prior=await record('magic-billing-'+c.id,tx),accrued=Number(prior?.accrued||0)+Number(c.magicInvestment||0)/7;
     await put('magic-billing','magic-billing-'+c.id,{clubId:c.id,accrued,updatedAt:at.toISOString()},tx);
-    magicBills.set(c.id,accrued);
    }
    if(sunday){
-    const scouts=new Map((await records('scout',tx)).map(s=>[s.clubId,s]));
     for(const c of all){
      if(c.createdAt>at)continue;
      if(!c.isBot){const changes=trainingReports.get(c.id)||[];await teamNews(tx,c.id,'training-'+at.toISOString(),'Veckans träning är genomförd',changes.length?'Följande synliga egenskapsnivåer ökade:\n\n'+changes.join('\n'):'Träningen är genomförd. Ingen spelare passerade en ny synlig egenskapsnivå denna vecka.');}
-     const magicCost=Math.round(magicBills.get(c.id)||0);
-     const costs:Array<[string,number]>=[['Spelarlöner',squad.filter((p:any)=>p.clubId===c.id&&!p.isDeceased&&!p.isMercenary&&p.createdAt<=at).reduce((s:number,p:any)=>s+p.wage,0)],['Tränare',c.coach?.wage||0],['Läkare',c.doctorInvestment],['Talangscout',scouts.get(c.id)?.hired?3000:0],['Arenadrift',c.arena?.weeklyRent||0],['Magi',magicCost]];
-     const total=costs.reduce((s,[,v])=>s+v,0);
-     const thresholds=await weeklyMagicThresholds(c.id,tx),progress=await record('magic-progress-'+c.id,tx);const qualified=c.magicInvestment>=thresholds.level3&&c.gold>=total;
-     await put('magic-progress','magic-progress-'+c.id,{weeks:qualified?(progress?.weeks||0)+1:0,lastPayment:at.toISOString(),premium:thresholds.level3,paid:c.magicInvestment},tx);
-     await tx.update(clubs).set({gold:sql`${clubs.gold}-${total}`}).where(eq(clubs.id,c.id));
-     for(const [category,amount] of costs)if(amount)await put('ledger','week-'+at.toISOString()+'-'+c.id+'-'+category,{clubId:c.id,category,amount:-amount,date:at.toISOString()},tx);
-     await put('magic-billing','magic-billing-'+c.id,{clubId:c.id,accrued:0,updatedAt:at.toISOString(),lastPaid:magicCost},tx);
     }
    }
    // Recover one potential point every seven full days since the last scout visit/recovery.
