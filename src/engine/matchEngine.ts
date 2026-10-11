@@ -432,7 +432,9 @@ export function simulateMatch(
       // larger share of basket attempts, especially from their outer lanes.
       // Inner and outer attackers use the same factor for the large goal.
       const basketPositionFactor=formationRow===2?(formationCol===1?1.75:2.55):[1.2,.82,0,.08][formationRow];
-      const positionFactor=wantsBasket?basketPositionFactor:[1.55,.44,1,.08][formationRow];
+      // Normal goals belong chiefly to the attacking line. Backs instead get
+      // their larger attacking contribution through the nearby side baskets.
+      const positionFactor=wantsBasket?basketPositionFactor:[1.55,.62,.16,.03][formationRow];
       const shootingChance=Math.min(.96,(inAttackingThird?.8:isMidfield?.38:.06)*positionFactor);
       if (rng.next() < shootingChance) {
 
@@ -441,7 +443,15 @@ export function simulateMatch(
           attackStats.korgskott.antal++;
           defendStats.korgraddningar.antal++;
           const shooter = attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
-          const sideBasketCol = leftBasketOwner===possession&&rightBasketOwner!==possession?2:rightBasketOwner===possession&&leftBasketOwner!==possession?0:ballCol===0?0:2;
+          const leftOwned=leftBasketOwner===possession,rightOwned=rightBasketOwner===possession;
+          // An unowned basket is strategically more valuable, but players may
+          // still use the nearer basket they already control for its raw point.
+          // Previously the engine forced every second successful basket to the
+          // opposite side whenever exactly one basket was owned.
+          const nearerBasket=ballCol===0?0:ballCol===2?2:rng.next()<.5?0:2;
+          const sideBasketCol=leftOwned!==rightOwned
+            ?(rng.next()<.68?(leftOwned?2:0):(leftOwned?0:2))
+            :nearerBasket;
           // Defender is wing midfielder on that side
           const directDefender = defendSquad.active.find((a) => a.fieldRow === 1 && a.fieldCol === sideBasketCol);
           const defender = directDefender || choose(defendSquad.active,1,sideBasketCol);
@@ -803,4 +813,8 @@ export function calculateAttendance(home:any,away:any,ticket:number,capacity:num
     return Math.max(0,Math.min(capacity,attendanceDemand(home,away,ticket,variation)));
 }
 export function matchMerit(division:string,scored:number,conceded:number){const tier=division==='Kejsarserien'?0:Number(division.match(/Division (\d)/)?.[1]||3);return scored<conceded?0:.2/2**tier*(scored===conceded?.5:1)}
-export function postMatchForm(form:number,won:boolean,injured:boolean,random:number){const drift=(9-form)*.08+(won?.12:0)-(injured?.22:0),roll=random+drift;return Math.max(0,Math.min(16,form+(roll>.72?1:roll<.22?-1:0)))}
+export function postMatchForm(form:number,_won:boolean,injured:boolean,random:number,performance=0){
+ const played=.08,performanceEffect=Math.max(-.18,Math.min(.20,performance));
+ const drift=(9-form)*.06+played+performanceEffect-(injured?.20:0),roll=random+drift;
+ return Math.max(0,Math.min(16,form+(roll>.72?1:roll<.22?-1:0)));
+}

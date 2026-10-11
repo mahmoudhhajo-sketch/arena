@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import {record,records,put} from './records';
 import {db} from '../db';
 import {sql} from 'drizzle-orm';
+import {createHash} from 'node:crypto';
 export const gameMailbox='mahmoudhhajo@gmail.com';
 export function mailConfigured(){return !!process.env.GMAIL_APP_PASSWORD||!!(process.env.GMAIL_CLIENT_ID&&process.env.GMAIL_CLIENT_SECRET&&process.env.GMAIL_REFRESH_TOKEN);}
 export async function queueMail(id:string,to:string,subject:string,text:string,tx:any=db,replyTo?:string){
@@ -9,10 +10,17 @@ export async function queueMail(id:string,to:string,subject:string,text:string,t
  await put('mail-outbox',id,{to,subject,text,replyTo,attempts:0,createdAt:new Date().toISOString(),sentAt:null},tx);
 }
 export async function queueWelcome(account:any,tx:any){
- const text='Välkommen till Arenan, '+(account.managerName||account.name)+'!\n\nDitt konto och lag är skapade. Logga in och lär känna din trupp:\n'+process.env.PUBLIC_ORIGIN+'\n\nLär känna spelarna och gör din första uppställning. Marknaden, talangjakten, magin och läkaren finns redan till hands. Seriematcherna börjar först när spelledningen ger startsignalen.\n\nNybörjarguiden hjälper dig med de första stegen. Har du frågor kan du svara på det här brevet.\n\nVi ses i Mambenna!\nSpelledningen';
+ const text='Välkommen till Arenan, '+(account.managerName||account.name)+'!\n\nTack för att du vill vara med och testa spelet. Ditt konto och lag är nu skapade:\n'+process.env.PUBLIC_ORIGIN+'\n\nBörja gärna med Nybörjarguiden. Där ser du hur du lär känna truppen, öppnar en kommande match och gör din uppställning. Seriematcher spelas på tisdagar och fredagar, så gå gärna in redan nu och förbered nästa match. Marknaden, träningen, talangjakten, magin och läkaren är också öppna.\n\nDet finns en WhatsApp-grupp där jag lägger ut uppdateringar om spelet. Svara på mejlet eller skicka post till Zagge inne på Arenan om du vill bli tillagd eller om du har frågor.\n\nVi ses i Mambenna!\nZagge och spelledningen';
  await queueMail('welcome-'+account.userId,account.email,'Välkommen till Arenan!',text,tx);
- await queueMail('signup-notice-'+account.userId,gameMailbox,'[Arenan] Ny manager registrerad',account.name+' har registrerat ett konto.\nMejl: '+account.email,tx,account.email);
+ await queueMail('signup-notice-'+account.userId,gameMailbox,'[Arenan] Ny manager registrerad',account.name+' har registrerat ett konto.\nMejl: '+account.email+'\nTelefon: '+(account.phone||'Ej angivet'),tx,account.email);
 }
+export async function queuePasswordReset(account:any,rawToken:string,tx:any){
+ const origin=(process.env.PUBLIC_ORIGIN||'https://arenanspelet.com').replace(/\/$/,'');
+ const link=origin+'/#/reset-password?token='+encodeURIComponent(rawToken);
+ const text='Hej '+(account.managerName||account.name)+'!\n\nNågon har bett om ett nytt lösenord till ditt konto i Arenan. Öppna länken nedan inom en timme:\n'+link+'\n\nOm du inte gjorde begäran kan du bortse från mejlet. Ditt nuvarande lösenord fungerar tills en återställning genomförs.\n\nSpelledningen';
+ await queueMail('password-reset-mail-'+randomResetMailId(rawToken),account.email,'Återställ ditt lösenord i Arenan',text,tx);
+}
+function randomResetMailId(token:string){return createHash('sha256').update(token).digest('hex')}
 export async function sendQueuedMessage(m:any){
  const subject=m.subject||'Välkommen till Arenan!';
  const text=m.text||'Välkommen till Arenan, '+m.name+'!\nLogga in på '+process.env.PUBLIC_ORIGIN+' och anmäl ditt lag.\nSpelledningen';

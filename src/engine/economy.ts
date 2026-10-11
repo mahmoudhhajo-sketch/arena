@@ -27,3 +27,12 @@ export function acquisitionMorale(events:{date:string;penalty:number}[],now=Date
 // changes effective abilities by five percent, while ordinary weekly movement
 // produces a much smaller adjustment.
 export function moraleFactor(morale=100){return .95+.05*Math.max(0,Math.min(100,morale))/100;}
+
+// A club always accepts players of its founding race. If another people has
+// become a strict majority of the current squad, that race is established in
+// the dressing room as well and no longer causes an integration penalty.
+export function acquisitionMoralePenalty(clubRace:string,newRace:string,squad:{race:string;isDeceased?:boolean}[]){
+ if(newRace===clubRace)return 0;
+ const living=squad.filter(player=>!player.isDeceased),count=living.filter(player=>player.race===newRace).length;
+ return living.length>0&&count>living.length/2?0:5;
+}

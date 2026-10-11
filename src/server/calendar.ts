@@ -41,7 +41,9 @@ export async function advanceCalendar(until:Date){
      const gains=trainingStepGains(p.attributes,update.attributes);
      await put('training-gain','gain-'+p.id,{playerId:p.id,clubId:p.clubId,date:at.toISOString(),attributes:gains},tx);
      for(const key of gains){const from=Math.min(16,Math.floor(p.attributes[key])),to=Math.min(16,Math.floor(update.attributes[key]));if(from!==to){const rows=trainingReports.get(p.clubId)||[];rows.push(`${p.name}: ${ATTRIBUTE_NAMES_SV[key]} ${QUALITATIVE_ATTRIBUTE_LABELS[from]} → ${QUALITATIVE_ATTRIBUTE_LABELS[to]}`);trainingReports.set(p.clubId,rows)}}
-     update.form=Math.min(16,Math.max(0,p.form+(dates.length>=2?1:dates.length===0?-1:0)));
+     // Match participation and performance now adjust form immediately after
+     // each match. The weekly clock only penalizes complete inactivity.
+     update.form=Math.min(16,Math.max(0,p.form+(dates.length===0?-1:0)));
      await put('participation','participation-'+p.id,{playerId:p.id,dates:[],appearances:[]},tx);
     }
     if(Object.keys(update).length)await tx.update(players).set(update).where(eq(players.id,p.id));

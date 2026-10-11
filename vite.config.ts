@@ -2,7 +2,10 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
+import {fileURLToPath} from 'url';
 import {defineConfig, Plugin} from 'vite';
+
+const projectRoot=path.dirname(fileURLToPath(import.meta.url));
 
 // LINT.IfChange(aistudio_media_plugin)
 function aistudioMediaPlugin(): Plugin {
@@ -16,12 +19,12 @@ function aistudioMediaPlugin(): Plugin {
             const decodedPath = decodeURIComponent(rawPath);
             const relativePath = decodedPath.replace(/^\//, '');
             const aistudioDir = path.resolve(
-              __dirname,
+              projectRoot,
               'public',
               'assets',
               'aistudio',
             );
-            const filePath = path.resolve(__dirname, 'public', relativePath);
+            const filePath = path.resolve(projectRoot, 'public', relativePath);
             if (
               filePath.startsWith(aistudioDir + path.sep) &&
               fs.existsSync(filePath) &&
@@ -69,7 +72,7 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss(), aistudioMediaPlugin()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': projectRoot,
       },
     },
     server: {
