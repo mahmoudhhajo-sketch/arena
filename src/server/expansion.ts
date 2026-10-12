@@ -1,4 +1,5 @@
 import {prepareLaunch} from './launch';
+import {matchParticipation,accumulatedMatchInjury} from '../engine/matchParticipation';
 import {deliverWelcomeMail} from './welcomeMail';
 import {replenishArtifacts} from './artifactSupply';
 import {transitionSeason} from './seasonTransition';
@@ -249,14 +250,15 @@ await db.transaction(async(tx:any)=>{
    }
    await refreshDivisionPositions(tx,f.division);
    for(const [side,squad,club] of [['home',hs,home],['away',as,away]] as any[]){
-    const selected=report.events.some(e=>e.id==='walkover')?[]:[...report.startingLineups[side as 'home'|'away'].map((p:any)=>p.id),...report.events.filter(e=>e.type==='SUBSTITUTION'&&e.teamSide===side).map(e=>e.playerId)];
-    for(const p of squad){if(!selected.includes(p.id)||p.isDeceased||p.currentInjury>0)continue;
+    const participationCredit=matchParticipation(report,side);
+    for(const p of squad){if(!participationCredit.slots.has(p.id)||p.isDeceased||p.currentInjury>0)continue;
+     const participation=await record('participation-'+p.id,tx),slots=[...participationCredit.slots.get(p.id)!];
+     if(!p.isMercenary)await put('participation','participation-'+p.id,{playerId:p.id,dates:[...(participation?.dates||[]).filter((d:string)=>+new Date(d)>+new Date(f.date)-14*86400000),f.date],appearances:[...(participation?.appearances||[]).filter((a:any)=>+new Date(a.date)>+new Date(f.date)-14*86400000),{date:f.date,slots}]},tx);
+     if(!participationCredit.started)continue;
      const injury=report.injuries[side].find((i:any)=>i.playerId===p.id);
      const goals=report.events.filter(e=>e.playerId===p.id&&e.type==='GOAL_NORMAL').length,baskets=report.events.filter(e=>e.playerId===p.id&&e.type==='GOAL_BASKET').length;
       const performance=report.individualStats.find((row:any)=>row.id===p.id),statRows=Object.values(performance?.stats||{}) as any[],attempts=statRows.reduce((sum:number,stat:any)=>sum+Number(stat.antal||0),0),weighted=statRows.reduce((sum:number,stat:any)=>sum+Number(stat.viktat||0),0)+Number(performance?.assistWeighted||0),performanceEffect=weighted/Math.max(100,attempts*22);
-     await tx.update(players).set({form:postMatchForm(p.form,side==='home'?report.finalScore.home>report.finalScore.away:report.finalScore.away>report.finalScore.home,!!injury,new SeededRNG(p.id+Number(new Date(f.date))).next(),performanceEffect),assists:p.assists+report.events.filter((e:any)=>e.assistPlayerId===p.id).length,seasonAssists:p.seasonAssists+report.events.filter((e:any)=>e.assistPlayerId===p.id).length,artifacts:[...consumeMatchSpells(originalSpells.get(p.id)||p.artifacts),...(currentArtifacts.get(p.id)||[]).filter((a:string)=>!(originalSpells.get(p.id)||p.artifacts).includes(a))],matches:p.matches+1,seasonMatches:p.seasonMatches+1,goals:p.goals+goals,seasonGoals:p.seasonGoals+goals,basketGoals:p.basketGoals+baskets,seasonBasketGoals:p.seasonBasketGoals+baskets,currentInjury:injury?injury.severity:p.currentInjury,totalInjury:Math.min(9,p.totalInjury+0.015+(injury?0.2:0)),isDeceased:p.totalInjury+0.015+(injury?0.2:0)>=9}).where(eq(players.id,p.id));
-     const participation=await record('participation-'+p.id,tx),slots=[...report.startingLineups[side as 'home'|'away'].filter((x:any)=>x.id===p.id).map((x:any)=>x.slot),...report.events.filter((e:any)=>e.type==='SUBSTITUTION'&&e.teamSide===side&&e.playerId===p.id).map((e:any)=>e.slot)].filter(Boolean);
-     await put('participation','participation-'+p.id,{playerId:p.id,dates:[...(participation?.dates||[]).filter((d:string)=>+new Date(d)>+new Date(f.date)-14*86400000),f.date],appearances:[...(participation?.appearances||[]).filter((a:any)=>+new Date(a.date)>+new Date(f.date)-14*86400000),{date:f.date,slots:[...new Set(slots)]}]},tx);
+     await tx.update(players).set({form:postMatchForm(p.form,side==='home'?report.finalScore.home>report.finalScore.away:report.finalScore.away>report.finalScore.home,!!injury,new SeededRNG(p.id+Number(new Date(f.date))).next(),performanceEffect),assists:p.assists+report.events.filter((e:any)=>e.assistPlayerId===p.id).length,seasonAssists:p.seasonAssists+report.events.filter((e:any)=>e.assistPlayerId===p.id).length,artifacts:[...consumeMatchSpells(originalSpells.get(p.id)||p.artifacts),...(currentArtifacts.get(p.id)||[]).filter((a:string)=>!(originalSpells.get(p.id)||p.artifacts).includes(a))],matches:p.matches+1,seasonMatches:p.seasonMatches+1,goals:p.goals+goals,seasonGoals:p.seasonGoals+goals,basketGoals:p.basketGoals+baskets,seasonBasketGoals:p.seasonBasketGoals+baskets,currentInjury:injury?injury.severity:p.currentInjury,totalInjury:accumulatedMatchInjury(p.totalInjury,participationCredit.started,!!injury,p.attributes.tuffhet),isDeceased:accumulatedMatchInjury(p.totalInjury,participationCredit.started,!!injury,p.attributes.tuffhet)>=9}).where(eq(players.id,p.id));
     }
    }
    for(const contract of (await records('mercenary-contract',tx)).filter(c=>[home.id,away.id].includes(c.clubId)&&!c.completed&&+new Date(c.hiredAt)<=+new Date(f.date))){await tx.update(players).set({clubId:null}).where(eq(players.id,contract.playerId));await put('mercenary-contract',contract.id,{...contract,completed:true},tx);}

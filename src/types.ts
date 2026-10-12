@@ -166,12 +166,15 @@ export type MatchEventType =
   | 'SAVE_BASKET'
   | 'FIGHT_START'
   | 'FIGHT_RESULT'
+  | 'ARTIFACT'
   | 'INJURY'
   | 'SUBSTITUTION'
   | 'PERIOD_END'
   | 'MATCH_END';
 
 export interface MatchEvent {
+  important?: boolean;
+  slot?: string;
   id: string;
   period: number;
   minute: number;

@@ -1,3 +1,4 @@
+import {clubEras,belongsToManager} from './clubOwnership';
 import {Express} from 'express';
 import {db} from '../db';
 import {players,clubs,matches} from '../db/schema';
@@ -13,9 +14,10 @@ let cache:{until:number;entries:Entry[]}|null=null;
 export function registerLore(app:Express){app.get('/api/lore',async(_req,res)=>{try{
  if(cache&&cache.until>Date.now())return res.json(cache.entries[Math.floor(Math.random()*cache.entries.length)]);
  const [allPlayers,allTeams,games,playerSales,artifactSales]=await Promise.all([db.select().from(players),db.select().from(clubs),db.select().from(matches),records('auction'),records('artifact-auction')]);
+ const eras=await clubEras();
  const humanTeams=allTeams.filter(team=>!team.isBot),humanIds=new Set(humanTeams.map(team=>team.id));
  const teamById=new Map(allTeams.map(team=>[team.id,team])),playerById=new Map(allPlayers.map(player=>[player.id,player]));
- const humanGames=games.filter(game=>humanIds.has(game.homeClubId)&&humanIds.has(game.awayClubId));
+ const humanGames=games.filter(game=>belongsToManager(eras.get(game.homeClubId),game.playedAt)&&belongsToManager(eras.get(game.awayClubId),game.playedAt));
  const entries:Entry[]=[
   {category:'Ur krönikorna',label:'Berunias första arena var en handelsgård. När den tredje korgen förstörde tullhuset förbjöd kejsaren fler än två sidokorgar.'},
   {category:'Ur krönikorna',label:'Skogsbyarnas alver syr löv på lagets resmantlar. Ett silverlöv betyder en bortaseger som ingen väntade sig.'},
@@ -54,7 +56,7 @@ export function registerLore(app:Express){app.get('/api/lore',async(_req,res)=>{
 
  const streaks={historicLoss:{id:'',value:0},currentLoss:{id:'',value:0},historicWin:{id:'',value:0},currentWin:{id:'',value:0},unbeaten:{id:'',value:0}};
  const woWins=new Map<string,number>();
- for(const team of humanTeams){const ownGames=games.filter(game=>game.homeClubId===team.id||game.awayClubId===team.id).sort((a,b)=>played(a)-played(b));let losses=0,wins=0,unbeaten=0,maxLoss=0,maxWin=0,maxUnbeaten=0;for(const game of ownGames){const home=game.homeClubId===team.id,own=home?game.homeScore:game.awayScore,other=home?game.awayScore:game.homeScore;losses=own<other?losses+1:0;wins=own>other?wins+1:0;unbeaten=own>=other?unbeaten+1:0;maxLoss=Math.max(maxLoss,losses);maxWin=Math.max(maxWin,wins);maxUnbeaten=Math.max(maxUnbeaten,unbeaten);if(own>other&&isWalkover(game))woWins.set(team.id,(woWins.get(team.id)||0)+1);}if(maxLoss>streaks.historicLoss.value)streaks.historicLoss={id:team.id,value:maxLoss};if(losses>streaks.currentLoss.value)streaks.currentLoss={id:team.id,value:losses};if(maxWin>streaks.historicWin.value)streaks.historicWin={id:team.id,value:maxWin};if(wins>streaks.currentWin.value)streaks.currentWin={id:team.id,value:wins};if(maxUnbeaten>streaks.unbeaten.value)streaks.unbeaten={id:team.id,value:maxUnbeaten};}
+ for(const team of humanTeams){const ownGames=games.filter(game=>(game.homeClubId===team.id||game.awayClubId===team.id)&&belongsToManager(eras.get(team.id),game.playedAt)).sort((a,b)=>played(a)-played(b));let losses=0,wins=0,unbeaten=0,maxLoss=0,maxWin=0,maxUnbeaten=0;for(const game of ownGames){const home=game.homeClubId===team.id,own=home?game.homeScore:game.awayScore,other=home?game.awayScore:game.homeScore;losses=own<other?losses+1:0;wins=own>other?wins+1:0;unbeaten=own>=other?unbeaten+1:0;maxLoss=Math.max(maxLoss,losses);maxWin=Math.max(maxWin,wins);maxUnbeaten=Math.max(maxUnbeaten,unbeaten);if(own>other&&isWalkover(game))woWins.set(team.id,(woWins.get(team.id)||0)+1);}if(maxLoss>streaks.historicLoss.value)streaks.historicLoss={id:team.id,value:maxLoss};if(losses>streaks.currentLoss.value)streaks.currentLoss={id:team.id,value:losses};if(maxWin>streaks.historicWin.value)streaks.historicWin={id:team.id,value:maxWin};if(wins>streaks.currentWin.value)streaks.currentWin={id:team.id,value:wins};if(maxUnbeaten>streaks.unbeaten.value)streaks.unbeaten={id:team.id,value:maxUnbeaten};}
  const pushClubRecord=(before:string,row:{id:string;value:number},after:string,category='Lagrekord')=>{const team=teamById.get(row.id);if(team&&row.value>0)entries.push({category,before,label:team.name,entity:linkClub(team.id),after});};
  pushClubRecord('Längsta förlustsviten genom tiderna bland managerlagen har ',streaks.historicLoss,': '+streaks.historicLoss.value+' matcher.');
  pushClubRecord('Längsta pågående förlustsviten har ',streaks.currentLoss,': '+streaks.currentLoss.value+' matcher.');
@@ -63,15 +65,15 @@ export function registerLore(app:Express){app.get('/api/lore',async(_req,res)=>{
  pushClubRecord('Längsta sviten utan förlust bland managerlagen har ',streaks.unbeaten,': '+streaks.unbeaten.value+' matcher.');
  const woChampion=[...woWins].sort((a,b)=>b[1]-a[1])[0];if(woChampion)pushClubRecord('Flest segrar på walkover har ',{id:woChampion[0],value:woChampion[1]},': '+woChampion[1]+' segrar.');
 
- const completedPlayers=playerSales.filter((sale:any)=>sale.closed&&!sale.cancelled&&sale.bidderId),completedArtifacts=artifactSales.filter((sale:any)=>sale.closed&&!sale.cancelled&&sale.bidderId);
+ const completedPlayers=playerSales.filter((sale:any)=>sale.closed&&!sale.cancelled&&belongsToManager(eras.get(sale.bidderId),sale.endsAt)),completedArtifacts=artifactSales.filter((sale:any)=>sale.closed&&!sale.cancelled&&belongsToManager(eras.get(sale.bidderId),sale.endsAt));
  const totalSold=new Map<string,number>(),totalBought=new Map<string,number>();
- for(const sale of [...completedPlayers,...completedArtifacts]){if(sale.sellerId&&humanIds.has(sale.sellerId))totalSold.set(sale.sellerId,(totalSold.get(sale.sellerId)||0)+Number(sale.price||0));if(humanIds.has(sale.bidderId))totalBought.set(sale.bidderId,(totalBought.get(sale.bidderId)||0)+Number(sale.price||0));}
+ for(const sale of [...completedPlayers,...completedArtifacts]){if(sale.sellerId&&belongsToManager(eras.get(sale.sellerId),sale.endsAt))totalSold.set(sale.sellerId,(totalSold.get(sale.sellerId)||0)+Number(sale.price||0));if(humanIds.has(sale.bidderId))totalBought.set(sale.bidderId,(totalBought.get(sale.bidderId)||0)+Number(sale.price||0));}
  const bestSeller=[...totalSold].sort((a,b)=>b[1]-a[1])[0],bestBuyer=[...totalBought].sort((a,b)=>b[1]-a[1])[0];
  if(bestSeller)pushClubRecord('Mest guld genom försäljningar har ',{id:bestSeller[0],value:bestSeller[1]},' fått in: '+number(bestSeller[1])+' guld.','Transferrekord');
  if(bestBuyer)pushClubRecord('Mest guld på spelare och artefakter har ',{id:bestBuyer[0],value:bestBuyer[1]},' lagt: '+number(bestBuyer[1])+' guld.','Transferrekord');
- const recordSale=completedPlayers.filter((sale:any)=>!sale.sellerId||humanIds.has(sale.sellerId)).sort((a:any,b:any)=>b.price-a.price)[0];
+ const recordSale=completedPlayers.filter((sale:any)=>!sale.sellerId||belongsToManager(eras.get(sale.sellerId),sale.endsAt)).sort((a:any,b:any)=>b.price-a.price)[0];
  if(recordSale){const player=playerById.get(recordSale.playerId);entries.push({category:'Transferrekord',before:'Rikets dyraste spelarförsäljning är ',label:player?.name||'en tidigare spelare',entity:player?{kind:'player',id:player.id}:undefined,after:': '+number(recordSale.price)+' guld.'});}
- const artifactSale=completedArtifacts.filter((sale:any)=>!sale.sellerId||humanIds.has(sale.sellerId)).sort((a:any,b:any)=>b.price-a.price)[0];
+ const artifactSale=completedArtifacts.filter((sale:any)=>!sale.sellerId||belongsToManager(eras.get(sale.sellerId),sale.endsAt)).sort((a:any,b:any)=>b.price-a.price)[0];
  if(artifactSale){const buyer=humanIds.has(artifactSale.bidderId)?teamById.get(artifactSale.bidderId):null;entries.push({category:'Artefaktrekord',before:'Dyraste artefakten som sålts är ',label:ARTIFACTS.find(item=>item.id===artifactSale.artifactId)?.name||'en okänd artefakt',after:' för '+number(artifactSale.price)+' guld'+(buyer?' till '+buyer.name:'')+'.'});}
  cache={until:Date.now()+5*60_000,entries};
  res.json(entries[Math.floor(Math.random()*entries.length)]);

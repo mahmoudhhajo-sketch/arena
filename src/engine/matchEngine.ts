@@ -1,3 +1,4 @@
+import {cantaniringRetaliation,cantaniringCommentary} from './cantaniring';
 import {moraleFactor} from './economy';
 import {attendanceDemand,arenaConfidence} from './economy';
 import {describeEvent} from './commentary';
@@ -240,7 +241,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:21,id: `match-${seed}`,
+      engineVersion:22,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -365,7 +366,7 @@ export function simulateMatch(
     for (let phase = 1; phase <= 30; phase++) {
       const currentMinute = (period - 1) * 15 + Math.min(15, Math.floor((phase / 30) * 15));
       luckPeriod=period;luckMinute=currentMinute;
-      if(homeSquad.active.length<6||awaySquad.active.length<6){forfeit=homeSquad.active.length<6?'away':'home';events.push({id:'walkover-during',period,minute:currentMinute,type:'MATCH_END',teamSide:'neutral',text:`Domaren avbryter matchen: ${forfeit==='home'?awayClub.name:homeClub.name} har färre än sex spelbara spelare. ${forfeit==='home'?homeClub.name:awayClub.name} vinner på WO med 5–0.`,important:true} as any);break;}
+      if(homeSquad.active.length<6||awaySquad.active.length<6){forfeit=forfeit??(homeSquad.active.length<6?'away':'home');events.push({id:'walkover-during',period,minute:currentMinute,type:'MATCH_END',teamSide:'neutral',text:`Domaren avbryter matchen: ${forfeit==='home'?awayClub.name:homeClub.name} har färre än sex spelbara spelare. ${forfeit==='home'?homeClub.name:awayClub.name} vinner på WO med 5–0.`,important:true} as any);break;}
       if(phase>1&&rng.next()<.09){possession=possession==='home'?'away':'home';ballHolder=undefined;lastPass=null;ballRow=1;ballCol=rng.nextInt(0,2);if(phase%3===0)events.push({id:'restart-'+period+'-'+phase,period,minute:currentMinute,type:'RESTART',teamSide:'neutral',text:'Bollen slits ur trängseln och studsar tillbaka mot mittzonen. Motståndarna kastar sig fram och tar hand om den lösa kedjan.',important:true} as any);}
       if(phase===8||phase===22){const side=possession,squad=side==='home'?homeSquad:awaySquad;const p=squad.active[rng.nextInt(0,squad.active.length-1)];const mood=arenaConfidence(p.player.attributes.tuffhet,homeClub.arena?.ara||0,homeClub.arena?.skrack||0,attendance,side==='home');if(rng.next()<mood.fear){fatigue.set(p.player.id,(fatigue.get(p.player.id)||0)+.015);events.push({id:'fear-'+period+'-'+phase,period,minute:currentMinute,type:'ATMOSPHERE',teamSide:side,playerId:p.player.id,playerName:p.player.name,text:p.player.name+' kastar en orolig blick mot arenans mörka portar. Stegen blir tveksamma när läktarnas dån rullar över planen.',important:true} as any)}else if(rng.next()<mood.courage+mood.support){events.push({id:'courage-'+period+'-'+phase,period,minute:currentMinute,type:'ATMOSPHERE',teamSide:side,playerId:p.player.id,playerName:p.player.name,text:p.player.name+' rätar på ryggen under arenans segerbaner. Med nytt mod vågar spelaren söka en öppning i motståndarnas uppställning.',important:true} as any)}}
       cellTouches[ballRow][ballCol]++;
@@ -394,17 +395,25 @@ export function simulateMatch(
         const injuryChance=injuryProbability(skill(winner,'tuffhet'),skill(loser,'tuffhet'));
         const injured=!activeSpells(loser.player.artifacts).some(s=>s.immune)&&rng.next()<injuryChance&&!luck(loser,'skada');
         events.push({id:'fight-'+period+'-'+phase,period,minute:currentMinute,type:'FIGHT_RESULT',teamSide:winnerSide,playerName:winner.player.name,playerId:winner.player.id,opponentPlayerName:loser.player.name,opponentPlayerId:loser.player.id,text:injured?`${winner.player.name} vann närkampen. ${loser.player.name} blev liggande och behövde hjälp av bårbärarna.`:`${winner.player.name} fick övertaget mot ${loser.player.name}, men båda kunde fortsätta.`,important:injured} as any);
-        if(injured){
-          const old=loser.player,slot=loser.slotKey,severity=injurySeverity(skill(winner,'tuffhet'),skill(loser,'tuffhet'),rng.next());unavailable.add(old.id);
-          (loserSide==='home'?homeInjuries:awayInjuries).push({playerId:old.id,playerName:old.name,severity});
-          const queue=loserSquad.reservesBySlot.get(slot)||[];let sub:Player|undefined;
-          while(queue.length&&!sub){const candidate=queue.shift()!;if(!unavailable.has(candidate.id)&&!loserSquad.active.some(p=>p.player.id===candidate.id))sub=candidate}
-          if(sub){const reserveMorale=moraleFactor(((loserSide==='home'?homeClub:awayClub) as any).morale??100);loser.player={...sub,form:Math.min(16,sub.form+activeSpells(sub.artifacts).reduce((a,s)=>a+(s.form||0),0)),attributes:Object.fromEntries(Object.entries(effectiveAttributes(sub)).map(([k,v])=>[k,v*reserveMorale])) as any};
-            events.push({id:'sub-'+period+'-'+phase,period,minute:currentMinute,type:'SUBSTITUTION',teamSide:loserSide,playerId:sub.id,playerName:sub.name,opponentPlayerId:old.id,opponentPlayerName:old.name,text:`${sub.name} sprang in när ${old.name} lämnade planen.`,slot,shirtNumber:sub.shirtNumber} as any);
-          }else{loserSquad.active.splice(loserSquad.active.indexOf(loser),1);events.push({id:'inj-'+period+'-'+phase,period,minute:currentMinute,type:'INJURY',teamSide:loserSide,playerId:old.id,playerName:old.name,text:`${old.name} lämnade planen skadad. Laget fortsätter med en spelare mindre.`,slot} as any)}
+        const wound=(target:ActivePlayerState,squad:typeof homeSquad,side:'home'|'away',severity:number,suffix:string)=>{
+          const old=target.player,slot=target.slotKey;unavailable.add(old.id);
+          (side==='home'?homeInjuries:awayInjuries).push({playerId:old.id,playerName:old.name,severity});
+          const queue=squad.reservesBySlot.get(slot)||[];let sub:Player|undefined;
+          while(queue.length&&!sub){const candidate=queue.shift()!;if(!unavailable.has(candidate.id)&&!squad.active.some(p=>p.player.id===candidate.id))sub=candidate}
+          if(sub){const reserveMorale=moraleFactor(((side==='home'?homeClub:awayClub) as any).morale??100);target.player={...sub,form:Math.min(16,sub.form+activeSpells(sub.artifacts).reduce((a,s)=>a+(s.form||0),0)),attributes:Object.fromEntries(Object.entries(effectiveAttributes(sub)).map(([k,v])=>[k,v*reserveMorale])) as any};
+            events.push({id:'sub-'+period+'-'+phase+suffix,period,minute:currentMinute,type:'SUBSTITUTION',teamSide:side,playerId:sub.id,playerName:sub.name,opponentPlayerId:old.id,opponentPlayerName:old.name,text:`${sub.name} sprang in när ${old.name} lämnade planen.`,slot,shirtNumber:sub.shirtNumber} as any);
+          }else{squad.active.splice(squad.active.indexOf(target),1);events.push({id:'inj-'+period+'-'+phase+suffix,period,minute:currentMinute,type:'INJURY',teamSide:side,playerId:old.id,playerName:old.name,text:`${old.name} lämnade planen skadad. Laget fortsätter med en spelare mindre.`,slot} as any)}
+          // Resolve simultaneous ring retaliation by the first team to lose its sixth player.
+          if(squad.active.length<6&&!forfeit)forfeit=side==='home'?'away':'home';
+        };
+        const bearer=loser.player,retaliation=cantaniringRetaliation(bearer.artifacts);
+        if(injured)wound(loser,loserSquad,loserSide,injurySeverity(skill(winner,'tuffhet'),skill(loser,'tuffhet'),rng.next()),'');
+        if(retaliation){
+          events.push({id:'cantaniring-'+period+'-'+phase,period,minute:currentMinute,type:'ARTIFACT',teamSide:loserSide,playerId:bearer.id,playerName:bearer.name,opponentPlayerId:winner.player.id,opponentPlayerName:winner.player.name,text:cantaniringCommentary(bearer.name,winner.player.name,period*31+phase+bearer.id),important:true});
+          wound(winner,attackingWins?fightSquad:opponentSquad,winnerSide,retaliation,'-cantaniring');
         }
       }
-      if(homeSquad.active.length<6||awaySquad.active.length<6){forfeit=homeSquad.active.length<6?'away':'home';events.push({id:'walkover-during',period,minute:currentMinute,type:'MATCH_END',teamSide:'neutral',text:`Domaren avbryter matchen: ${forfeit==='home'?awayClub.name:homeClub.name} har färre än sex spelbara spelare. ${forfeit==='home'?homeClub.name:awayClub.name} vinner på WO med 5–0.`,important:true} as any);break;}
+      if(homeSquad.active.length<6||awaySquad.active.length<6){forfeit=forfeit??(homeSquad.active.length<6?'away':'home');events.push({id:'walkover-during',period,minute:currentMinute,type:'MATCH_END',teamSide:'neutral',text:`Domaren avbryter matchen: ${forfeit==='home'?awayClub.name:homeClub.name} har färre än sex spelbara spelare. ${forfeit==='home'?homeClub.name:awayClub.name} vinner på WO med 5–0.`,important:true} as any);break;}
 
       // Action: Run, Pass, or Shoot based on field position and tactics
       if(lastPossession!==possession){ballHolder=undefined;lastPass=null;}lastPossession=possession;
@@ -768,7 +777,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:21,id: `match-${seed}`,
+    engineVersion:22,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',
