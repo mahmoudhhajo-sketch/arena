@@ -4,11 +4,11 @@ import {PlayerAttributes} from '../types';
 
 export const ARTIFACTS=[
 
- {id:'speed-boots',name:'Snabbhetsstövlar',price:18000,attribute:'snabbhet',bonus:3,rarity:'Ovanlig',supply:10,description:'Förhäxade skor som ger bäraren snabbare steg'},
+ {id:'speed-boots',name:'Gripstövlar',price:18000,attribute:'snabbhet',bonus:3,rarity:'Ovanlig',supply:10,description:'Förhäxade skor som ger bäraren snabbare steg'},
 
  {id:'mithril',name:'Mithrilrustning',price:24000,attribute:'tuffhet',bonus:3,rarity:'Sällsynt',supply:5,description:'Lätt rustning som gör bäraren tåligare'},
 
- {id:'keeper-gloves',name:'Målvaktshandskar',price:18000,attribute:'malvakt',bonus:3,rarity:'Vanlig',supply:18,description:'Säkrare grepp och bättre räckvidd i målet'},
+ {id:'keeper-gloves',name:'Silverhandske',price:18000,attribute:'malvakt',bonus:3,rarity:'Vanlig',supply:18,description:'Säkrare grepp och bättre räckvidd i målet'},
 
  {id:'seven-mile-boots',name:'Sjumilastövlar',price:45000,attribute:'kondition',bonus:0,rarity:'Legendarisk',supply:2,description:'Förhindrar veckans konditionsförlust vid utebliven konditionsträning'},
 
@@ -28,14 +28,20 @@ export const ARTIFACTS=[
 
  {id:'silk-wraps',name:'Skymningslindor',price:14000,attribute:'passning',bonus:0,rarity:'Vanlig',supply:12,description:'Ger säkrare och mer precisa passningar'},
 
+ {id:'cantaniring',name:'Cantaniring',price:42000,attribute:'tuffhet',bonus:0,rarity:'Sällsynt',supply:3,description:'När bäraren förlorar ett slagsmål skadar ringen alltid vinnaren. Vedergällningen ger ett skadekors och kan tvinga fram ett byte'},
+ {id:'warlords-oath',name:'Krigsherrarnas Ed',price:65000,attribute:'tuffhet',bonus:0,rarity:'Legendarisk',supply:1,description:'När Mambennas sex raser hotades av en gemensam fiende svor sex krigsherrar en blodsed att lägga sina uråldriga motsättningar åt sidan. Eden lever ännu kvar på stentavlor och förenar även de bittraste fiender i strid. Upphäver alla negativa effekter av rasblandning när tavlan finns i lagets förråd'},
 ] as const;
 
-export const ARTIFACT_MARKET_CAP=25;
+export const ARTIFACT_MARKET_CAP=33;
 /** Relative imperial-market frequency. Consumables are common; permanent boosts are scarce. */
+// Keep the expected absolute weekly brew supply 10% below the former 16-item
+// batch, even though the new total batch is 21. The other kinds share 31 weights.
+const brewShare=.9*16/21*65/92;
+const brewWeightScale=31*brewShare/(1-brewShare)/65;
 export const ARTIFACT_MARKET_WEIGHTS:Record<string,number>={
- 'herbal-brew':38,'black-brew':27,'luck-amulet':7,'keeper-gloves':5,
+ 'herbal-brew':38*brewWeightScale,'black-brew':27*brewWeightScale,'luck-amulet':7,'keeper-gloves':5,
  'speed-boots':4,'thorn-bracer':4,'mithril':3,'seven-mile-boots':2,
- 'dragon-blood':1,'moon-staff':1
+ 'dragon-blood':1,'moon-staff':1,'cantaniring':3,'warlords-oath':1
 };
 export const MARKET_ARTIFACTS=ARTIFACTS.filter(a=>ARTIFACT_MARKET_WEIGHTS[a.id]>0);
 
