@@ -4,7 +4,7 @@ import {db} from '../db';
 import {clubs,players,worldState} from '../db/schema';
 import {eq,sql} from 'drizzle-orm';
 import {records,record,put} from './records';
-import {dailyUpdates,healingProgress,weeklyPositionAttributes,trainingStepGains} from '../engine/calendar';
+import {dailyUpdates,healingProgress,weeklyPositionTraining,trainingStepGains} from '../engine/calendar';
 import {PLACES} from '../constants/geography';
 import {ATTRIBUTE_NAMES_SV,QUALITATIVE_ATTRIBUTE_LABELS} from '../constants/attributes';
 import {teamNews} from './newsStatistics';
@@ -19,6 +19,7 @@ export async function advanceCalendar(until:Date){
    const all=await tx.select().from(clubs),squad=await tx.select().from(players);
    const managed=all.filter((c:any)=>!c.isBot),average=managed.reduce((sum:number,c:any)=>sum+c.doctorInvestment,0)/Math.max(1,managed.length);
    const recovery=new Map((await records('recovery',tx)).map(r=>[r.playerId,r]));
+   const trainingCarry=new Map((await records('training-remainder',tx)).map(r=>[r.playerId,r.remainders]));
    const participation=new Map((await records('participation',tx)).map(r=>[r.playerId,r]));
    const sunday=at.getUTCDay()===0,monday=at.getUTCDay()===1,weekStart=at.getTime()-7*86400000;
    const trainingReports=new Map<string,string[]>();
@@ -36,7 +37,9 @@ export async function advanceCalendar(until:Date){
     if(sunday&&c&&!p.isMercenary){
      const dates=(participation.get(p.id)?.dates||[]).filter((d:string)=>+new Date(d)>weekStart&&+new Date(d)<=+at);
      const appearances=participation.get(p.id)?.appearances||[];
-     update.attributes=weeklyPositionAttributes(p.attributes,c.trainingPoints,appearances,+at,weekStart);
+     const trained=weeklyPositionTraining(p.attributes,c.trainingPoints,appearances,+at,weekStart,trainingCarry.get(p.id)||{});
+     update.attributes=trained.attributes;
+     await put('training-remainder','training-remainder-'+p.id,{playerId:p.id,remainders:trained.remainders},tx);
      if(p.artifacts?.includes('seven-mile-boots')&&c.trainingPoints.kondition===0)update.attributes.kondition=p.attributes.kondition;
      const gains=trainingStepGains(p.attributes,update.attributes);
      await put('training-gain','gain-'+p.id,{playerId:p.id,clubId:p.clubId,date:at.toISOString(),attributes:gains,before:p.attributes,after:update.attributes},tx);

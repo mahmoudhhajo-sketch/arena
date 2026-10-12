@@ -1,3 +1,4 @@
+import {put} from './records';
 import {DIVISION_NAMES} from '../constants/leagues';
 import { db } from '../db';
 import { worldState, clubs, players, matches, shoutboxMessages, tipsetCoupons } from '../db/schema';
@@ -226,6 +227,7 @@ export async function createHumanClub(params: {
     division = targetBot.division;
     position = targetBot.position;
 
+    await put('club-ownership','club-ownership-'+clubId,{clubId,userId,startedAt:new Date().toISOString(),previousName:targetBot.name},tx);
     // Delete old bot's players
     await tx.delete(players).where(eq(players.clubId, clubId));
 

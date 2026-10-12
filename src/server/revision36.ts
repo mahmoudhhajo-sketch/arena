@@ -1,9 +1,10 @@
 import {eq,sql} from 'drizzle-orm';
 import {db} from '../db';
 import {clubs,gameRecords,matches,players} from '../db/schema';
-import {TRAINING_GAIN_SCALE,reverseWeeklyPositionAttributes,trainingStepGains,weeklyPositionAttributes} from '../engine/calendar';
+import {reverseWeeklyPositionAttributes,trainingStepGains,legacyWeeklyPositionAttributes as weeklyPositionAttributes} from '../engine/calendar';
 import {ATTRIBUTE_NAMES_SV,QUALITATIVE_ATTRIBUTE_LABELS} from '../constants/attributes';
 import {put,record,records} from './records';
+const TRAINING_GAIN_SCALE=.85;
 
 function appearancesFor(playerId:number,played:any[],after:number,before:number){
  const appearances:Array<{date:string;slots:string[]}>=[];
