@@ -38,6 +38,7 @@ import {registerProgression,initializeRevision8} from './src/server/progression'
 import {registerSharedChat} from './src/server/sharedChat';
 
 import {registerAuth} from './src/server/auth';
+import {registerContactPreferences} from './src/server/contactPreferences';
 
 import {registerLore} from './src/server/lore';
 
@@ -97,6 +98,7 @@ const PORT = Number(process.env.PORT || 3000);
 app.use(express.json({limit:"1mb"}));
 
 registerAuth(app);
+registerContactPreferences(app);
 registerAdministration(app);
 
 registerRevision13(app);registerRevision11(app);registerSharedChat(app);
