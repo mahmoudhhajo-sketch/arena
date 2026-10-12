@@ -2,6 +2,7 @@ import {RACE_DESCRIPTIONS,RACE_DISPLAY_NAMES} from '../constants/attributes';
 import {api} from '../lib/api';
 import {useEffect,useState} from 'react';
 import {GuestGame} from './GuestGame';
+import {ContactPreferencePrompt} from './ContactPreferencePrompt';
 
 export function LoginGate({children}:{children:React.ReactNode}){
  const [guest,setGuest]=useState(false),[managerName,setManagerName]=useState(''),[clubName,setClubName]=useState(''),[shortName,setShortName]=useState(''),[race,setRace]=useState('human'),[submitting,setSubmitting]=useState(false),[register,setRegister]=useState(false),[forgot,setForgot]=useState(false);
@@ -11,7 +12,7 @@ export function LoginGate({children}:{children:React.ReactNode}){
  const notice=status?.launch?.paused?<p className="launch-notice" role="status">{kickoff?<>Seriematcherna startar {kickoff}. Marknad, träning och övriga funktioner är öppna.</>:<>Seriematcherna väntar på startsignalen. Marknad, träning och övriga funktioner är öppna.</>}</p>:null;
  const resetToken=new URLSearchParams(location.hash.split('?')[1]||'').get('token');
  if(resetToken&&status)return <main className="login-page"><h1>ARENA</h1><div className="login-frame"><article><h2>Välj ett nytt lösenord</h2><form onSubmit={async e=>{e.preventDefault();if(submitting)return;setSubmitting(true);setError('');try{await api('/auth/reset-password',{token:resetToken,password});setMessage('Lösenordet är ändrat. Du kan nu logga in.');setPassword('');history.replaceState(null,'',location.pathname)}catch(e:any){setError(e.message)}finally{setSubmitting(false)}}}><label>Nytt lösenord<input type="password" autoComplete="new-password" minLength={10} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} required/></label><button disabled={submitting}>Spara nytt lösenord</button></form>{message&&<p className="success">{message}</p>}{error&&<p className="error">{error}</p>}<a href="/">Till inloggningen</a></article></div></main>;
- if(ready)return <>{notice}{guest?<GuestGame/>:children}</>;
+ if(ready)return <>{notice}{guest?<GuestGame/>:<>{children}<ContactPreferencePrompt/></>}</>;
  if(!status)return <main className="login-page"><h1>ARENA</h1><div className="login-frame"><article><h2>Ansluter till Mambenna</h2><p>{error||'Hämtar spelvärlden…'}</p></article></div></main>;
  return <main className="login-page"><h1>ARENA</h1>{notice}<div className="login-frame"><img className="login-guardian" src="/series-portrait.png" alt="Mambennas arenaväktare"/><div className="login-columns"><div>
   <form onSubmit={async e=>{e.preventDefault();if(submitting)return;setSubmitting(true);setError('');try{const user=await api('/auth/login',{name,email,phone,password,managerName,clubName,shortName,race,setup:status?.setup,register});localStorage.setItem('mambenna_user_id',user.userId);localStorage.setItem('arena_guest','false');setGuest(false);setPassword('');setReady(true)}catch(e:any){setError(e.message)}finally{setSubmitting(false)}}}>
