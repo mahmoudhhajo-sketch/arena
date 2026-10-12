@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';import {trainingWork,advanceTraining,weeklyAttributes,weeklyPositionTraining,trainingStepGains} from '../src/engine/calendar';import {accumulatedMatchInjury} from '../src/engine/matchParticipation';
+const near=(a:number,b:number)=>assert.ok(Math.abs(a-b)<1e-9,a+' != '+b);
+near((trainingWork(17)-trainingWork(16))/(trainingWork(16)-trainingWork(15)),3);
+near((trainingWork(18)-trainingWork(17))/(trainingWork(17)-trainingWork(16)),2);
+near(advanceTraining(15.8,trainingWork(17.2)-trainingWork(15.8)),17.2);
+for(let n=0;n<25;n++)near(advanceTraining(n+.123,0),n+.123);
+const attrs:any={snabbhet:16,kondition:16,markering:16,passning:16,teknik:16,speluppfattning:16,skott:16,malvakt:16,tuffhet:16,aggressivitet:3};
+assert.deepEqual(trainingStepGains(attrs,{...attrs,snabbhet:17}),[]);assert.deepEqual(trainingStepGains({...attrs,snabbhet:15.9},attrs),['snabbhet']);
+let current={...attrs},carry:any={};for(let w=0;w<150;w++){const t=weeklyPositionTraining(current,{snabbhet:10,kondition:10} as any,[{date:'2026-10-10',slots:['1-0']},{date:'2026-10-11',slots:['1-0']}],Date.UTC(2026,9,12),Date.UTC(2026,9,5),carry);current=t.attributes;carry=t.remainders;}assert.ok(current.snabbhet<23);assert.ok(current.kondition<24);
+let exact=25;let rounded={...attrs,snabbhet:25};carry={};for(let w=0;w<100;w++){exact=advanceTraining(exact,.765*.25);const t=weeklyPositionTraining(rounded,{snabbhet:1} as any,[{date:'2026-10-10',slots:['1-0']},{date:'2026-10-11',slots:['1-0']}],Date.UTC(2026,9,12),Date.UTC(2026,9,5),carry);rounded=t.attributes;carry=t.remainders;}near(rounded.snabbhet+carry.snabbhet,exact);assert.ok(rounded.snabbhet>25);
+near(accumulatedMatchInjury(1,true,true,15)-1,(accumulatedMatchInjury(1,true,true,16)-1)*1.02);assert.equal(accumulatedMatchInjury(1,false,true,0),1);assert.ok(accumulatedMatchInjury(1,true,true,0)>accumulatedMatchInjury(1,true,true,16));near(accumulatedMatchInjury(1,true,true,30),accumulatedMatchInjury(1,true,true,16));
+console.log('PASS elite effort ratios, boundary crossing, no cap, retained fractional progress, Sagolik highlight, toughness wear; maximum 150-week speed/condition:',current.snabbhet,current.kondition);
