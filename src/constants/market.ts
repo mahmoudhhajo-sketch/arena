@@ -12,7 +12,7 @@ export const ARTIFACTS=[
 
  {id:'seven-mile-boots',name:'Sjumilastövlar',price:45000,attribute:'kondition',bonus:0,rarity:'Legendarisk',supply:2,description:'Förhindrar veckans konditionsförlust vid utebliven konditionsträning'},
 
- {id:'herbal-brew',name:'Örtbrygd',price:5000,attribute:'kondition',bonus:0,rarity:'Vanlig',supply:24,description:'Lindrar tillfälliga skador. Förbrukas vid användning'},
+ {id:'herbal-brew',name:'Örtbrygd',price:5000,attribute:'kondition',bonus:0,rarity:'Vanlig',supply:24,description:'Läker hela den aktuella skadan, men inte permanent slitage. Förbrukas vid användning'},
 
  {id:'black-brew',name:'Svartbrygd',price:9000,attribute:'kondition',bonus:0,rarity:'Ovanlig',supply:12,description:'Återger spelaren god form. Förbrukas vid användning'},
 
@@ -28,7 +28,7 @@ export const ARTIFACTS=[
 
  {id:'silk-wraps',name:'Skymningslindor',price:14000,attribute:'passning',bonus:0,rarity:'Vanlig',supply:12,description:'Ger säkrare och mer precisa passningar'},
 
- {id:'cantaniring',name:'Cantaniring',price:42000,attribute:'tuffhet',bonus:0,rarity:'Sällsynt',supply:3,description:'Om en motståndare startar och vinner ett slagsmål mot bäraren skadar ringen alltid angriparen. Vedergällningen ger ett skadekors och kan tvinga fram ett byte. Ringen utlöses inte när bäraren själv startar slagsmålet'},
+ {id:'cantaniring',name:'Cantaniring',price:42000,attribute:'tuffhet',bonus:0,rarity:'Sällsynt',supply:3,description:'Om en motståndare startar ett slagsmål mot ringens bärare och vinner, skadas motståndaren ändå av ringen. Ringen har ingen effekt om bäraren själv startar slagsmålet.'},
  {id:'warlords-oath',name:'Krigsherrarnas Ed',price:65000,attribute:'tuffhet',bonus:0,rarity:'Legendarisk',supply:1,description:'När Mambennas sex raser hotades av en gemensam fiende svor sex krigsherrar en blodsed att lägga sina uråldriga motsättningar åt sidan. Eden lever ännu kvar på stentavlor och förenar även de bittraste fiender i strid. Upphäver alla negativa effekter av rasblandning när tavlan finns i lagets förråd'},
 ] as const;
 
