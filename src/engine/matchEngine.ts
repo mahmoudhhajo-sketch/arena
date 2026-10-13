@@ -77,7 +77,8 @@ function finalizeCategory(cat: DetailedCategoryStats) {
 
 export function cellStrength(values:number[]):number {
  const [best=0,second=0]=values.slice().sort((a,b)=>b-a);
- return best + second*(.25+.25*(best>0?second/best:0));
+ // The second player contributes 50–80% of their own strength; equal skill gives the best coordination.
+ return best + second*(.5+.3*(best>0?second/best:0));
 }
 // Smooth, unbounded skill comparison: a huge mismatch is not flattened to 75/95%.
 export function contestProbability(a:number,b:number){const x=Math.pow(Math.max(0,a)+.35,1.7),y=Math.pow(Math.max(0,b)+.35,1.7);return x/(x+y)}
@@ -241,7 +242,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:22,id: `match-${seed}`,
+      engineVersion:23,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -394,7 +395,7 @@ export function simulateMatch(
         inc(winner,'slagsmal','vunna');(attackingWins?fightStats:opponentStats).slagsmal.vunna++;
         const injuryChance=injuryProbability(skill(winner,'tuffhet'),skill(loser,'tuffhet'));
         const injured=!activeSpells(loser.player.artifacts).some(s=>s.immune)&&rng.next()<injuryChance&&!luck(loser,'skada');
-        events.push({id:'fight-'+period+'-'+phase,period,minute:currentMinute,type:'FIGHT_RESULT',teamSide:winnerSide,playerName:winner.player.name,playerId:winner.player.id,opponentPlayerName:loser.player.name,opponentPlayerId:loser.player.id,text:injured?`${winner.player.name} vann närkampen. ${loser.player.name} blev liggande och behövde hjälp av bårbärarna.`:`${winner.player.name} fick övertaget mot ${loser.player.name}, men båda kunde fortsätta.`,important:injured} as any);
+        events.push({id:'fight-'+period+'-'+phase,period,minute:currentMinute,type:'FIGHT_RESULT',initiatorPlayerId:fighterCandidate.player.id,teamSide:winnerSide,playerName:winner.player.name,playerId:winner.player.id,opponentPlayerName:loser.player.name,opponentPlayerId:loser.player.id,text:injured?`${winner.player.name} vann närkampen. ${loser.player.name} blev liggande och behövde hjälp av bårbärarna.`:`${winner.player.name} fick övertaget mot ${loser.player.name}, men båda kunde fortsätta.`,important:injured} as any);
         const wound=(target:ActivePlayerState,squad:typeof homeSquad,side:'home'|'away',severity:number,suffix:string)=>{
           const old=target.player,slot=target.slotKey;unavailable.add(old.id);
           (side==='home'?homeInjuries:awayInjuries).push({playerId:old.id,playerName:old.name,severity});
@@ -406,7 +407,7 @@ export function simulateMatch(
           // Resolve simultaneous ring retaliation by the first team to lose its sixth player.
           if(squad.active.length<6&&!forfeit)forfeit=side==='home'?'away':'home';
         };
-        const bearer=loser.player,retaliation=cantaniringRetaliation(bearer.artifacts);
+        const bearer=loser.player,retaliation=cantaniringRetaliation(bearer.artifacts,attackingWins);
         if(injured)wound(loser,loserSquad,loserSide,injurySeverity(skill(winner,'tuffhet'),skill(loser,'tuffhet'),rng.next()),'');
         if(retaliation){
           events.push({id:'cantaniring-'+period+'-'+phase,period,minute:currentMinute,type:'ARTIFACT',teamSide:loserSide,playerId:bearer.id,playerName:bearer.name,opponentPlayerId:winner.player.id,opponentPlayerName:winner.player.name,text:cantaniringCommentary(bearer.name,winner.player.name,period*31+phase+bearer.id),important:true});
@@ -777,7 +778,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:22,id: `match-${seed}`,
+    engineVersion:23,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',

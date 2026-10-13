@@ -1,5 +1,5 @@
 const normalize=(value:string)=>String(value||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
-const excluded=new Set(['behemot bashers','chaos all stars','mongodroid androids','hälsingarna','jens styxon','odenallfader'].map(normalize));
+const excluded=new Set(['behemot bashers','chaos all stars','mongodroid androids','mongoloid androids','hälsingarna','jens styxon','odenallfader'].map(normalize));
 export function needsContactPrompt(club:any,account:any){
  return !!club&&!!account&&!club.isBot&&['Division 1 Västra','Division 2 Clamklyte'].includes(club.division)
   &&!String(account.phone||'').trim()&&!account.whatsappContactChoice
