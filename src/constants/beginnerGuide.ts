@@ -184,13 +184,14 @@ Kontrollera skador, roll, lön och egenskaper tillsammans. En dyr spelare är in
 Spelaren behöver ha spelat på en position där egenskapen används. Två relevanta matcher under veckan ger bättre träningsunderlag än en. Det är deltagandet och positionen som räknas, inte om spelaren vann, spelade bra eller följde en viss taktik.
 
 - Snabbhet: kantspelare, inte innerback, innermitt eller inneranfall.
-- Kondition och teknik: utespelare.
+- Kondition: alla positioner, även målvakter.
+- Teknik: utespelare.
 - Markering: backar och mittfältare.
 - Passning: backar och mittfältare får mer än anfallare.
 - Speluppfattning: främst innerback, innermitt och inneranfall; betydligt mindre på kanterna.
 - Skott: mittfältare och anfallare.
 - Målvakt: spelare i det stora målet eller vid sidokorgarna.
-- Tuffhet: alla positioner.
+- Tuffhet: främst backar, därefter mittfältare. Anfallare och målvakter får mindre träning i tuffhet. Tuffhet är den egenskap som tar längst tid att träna vid jämförbara förutsättningar.
 
 Aggressivitet kan inte tränas. En reserv som aldrig kommer in räknas inte som om han hade spelat. Specialfallet WO före avkast beskrivs under matchreglerna.
 
