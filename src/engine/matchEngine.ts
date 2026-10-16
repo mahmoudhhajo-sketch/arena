@@ -243,7 +243,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:23,id: `match-${seed}`,
+      engineVersion:24,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -445,7 +445,13 @@ export function simulateMatch(
       // Normal goals belong chiefly to the attacking line. Backs instead get
       // their larger attacking contribution through the nearby side baskets.
       const positionFactor=wantsBasket?basketPositionFactor:[1.55,.62,.16,.03][formationRow];
-      const shootingChance=Math.min(.96,(inAttackingThird?.8:isMidfield?.38:.06)*positionFactor);
+      const ballCarrier=decisionHolder;
+      const availableFinisher=attackSquad.active.filter(p=>p!==ballCarrier&&p.slotKey[0]==='0'&&distance(p,ballRow,ballCol)<=1&&!chainBlocksPass(!!weatherInput?.chainsBlocked,period,possession,ballRow,ballCol,p.fieldRow,p.fieldCol))
+        .reduce((best,p)=>Math.max(best,(skill(p,'skott')+.35)/(1+pressure(defendSquad.active,p.fieldRow,p.fieldCol)*.08)),0);
+      const ownFinish=(skill(ballCarrier,'skott')+.35)/(1+pressure(defendSquad.active,ballRow,ballCol)*.08);
+      // A midfielder can still finish, but usually serves an equally good, nearby forward.
+      const serviceFactor=!wantsBasket&&formationRow!==0&&availableFinisher>0?Math.max(.5,1-.35*Math.min(1.15,availableFinisher/ownFinish)):1;
+      const shootingChance=Math.min(wantsBasket?.96:.9,(inAttackingThird?.8:isMidfield?.38:.06)*positionFactor)*serviceFactor;
       if (rng.next() < shootingChance) {
 
         if (wantsBasket) {
@@ -598,7 +604,9 @@ export function simulateMatch(
       // Ball progression: Run or Pass
       const actor=attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
       const runBias=tactics?.uppspel==='Löpning'?.66:tactics?.uppspel==='Passning'?.34:.5;
-      const prefersRun = rng.next()<Math.max(.2,Math.min(.8,runBias+(skill(actor,'snabbhet')-skill(actor,'passning'))*.015-pressure(defendSquad.active,ballRow,ballCol)*.008));
+      // At the end line, look for a forward instead of repeatedly running into the boundary.
+      const forwardOutlet=inAttackingThird&&actor.slotKey[0]!=='0'&&attackSquad.active.some(p=>p!==actor&&p.slotKey[0]==='0'&&distance(p,ballRow,ballCol)<=1&&!chainBlocksPass(!!weatherInput?.chainsBlocked,period,possession,ballRow,ballCol,p.fieldRow,p.fieldCol));
+      const prefersRun = rng.next()<Math.max(.2,Math.min(.8,runBias+(skill(actor,'snabbhet')-skill(actor,'passning'))*.015-pressure(defendSquad.active,ballRow,ballCol)*.008))*(forwardOutlet?.45:1);
       if (prefersRun) {
         // Run action (Löpning)
         attackStats.lopningar.antal++;
@@ -614,9 +622,9 @@ export function simulateMatch(
           ballHolder=runner.player.id;
           // Advance ball
           const direction=possession==='home'?-1:1,move=rng.next();
-          if(move<.76)ballRow=Math.max(0,Math.min(2,ballRow+direction));
-          else if(move<.95)ballCol=Math.max(0,Math.min(2,ballCol+(rng.next()<.5?-1:1)));
-          else ballRow=Math.max(0,Math.min(2,ballRow-direction));
+          if(move<.76&&ballRow+direction>=0&&ballRow+direction<=2)ballRow+=direction;
+          else if(move<.95)ballCol+=ballCol===0?1:ballCol===2?-1:rng.next()<.5?-1:1;
+          else ballRow+=ballRow-direction>=0&&ballRow-direction<=2?-direction:direction;
           runner.fieldRow=ballRow;runner.fieldCol=ballCol;
 
           if (rng.next() > 0.25) {
@@ -653,7 +661,14 @@ export function simulateMatch(
         const desiredCol=lane(possession,ballRow),allReceivers=attackSquad.active.filter(p=>p!==passer&&!chainBlocksPass(!!weatherInput?.chainsBlocked,period,possession,ballRow,ballCol,p.fieldRow,p.fieldCol));
         const near=allReceivers.filter(p=>distance(p,ballRow,ballCol)<=1),pool=near.length&&rng.next()<.88?near:allReceivers;
         const passerFormationRow=passer.slotKey==='goal'?3:Number(passer.slotKey[0]);
-        const receiver=pool.length?pickWeighted(pool,pool.map(p=>{const receiverFormationRow=p.slotKey==='goal'?3:Number(p.slotKey[0]);const finisherBonus=inAttackingThird&&passerFormationRow!==0&&receiverFormationRow===0?1.8:1;return (.5+skill(p,'teknik')+skill(p,'speluppfattning'))*(p.fieldCol===desiredCol?1.8:1)*(p.fieldRow===(ballRow+(possession==='home'?-1:1))?4.5:p.fieldRow===ballRow?1:.6)*finisherBonus/Math.pow(1+distance(p,ballRow,ballCol),2)})):passer;
+        const receiver=pool.length?pickWeighted(pool,pool.map(p=>{
+          const receiverFormationRow=p.slotKey==='goal'?3:Number(p.slotKey[0]);
+          const finisherBonus=passerFormationRow!==0&&receiverFormationRow===0&&(inAttackingThird||isMidfield)?4:1;
+          // Wide forwards offer pace and finishing; central players offer vision.
+          // Selection only creates a pass attempt: delivery and reception still have to succeed.
+          const receivingQuality=.5+skill(p,'teknik')+skill(p,'speluppfattning')*(p.slotKey.endsWith('-1')?1:.15)+(receiverFormationRow===0?skill(p,'skott')*.5+skill(p,'snabbhet')*.25:0);
+          return receivingQuality*(p.fieldCol===desiredCol?1.8:1)*(p.fieldRow===(ballRow+(possession==='home'?-1:1))?4.5:p.fieldRow===ballRow?1:.6)*finisherBonus/Math.pow(1+distance(p,ballRow,ballCol),2);
+        })):passer;
         const passDistance=distance(receiver,ballRow,ballCol),diagonal=receiver.fieldRow!==ballRow&&receiver.fieldCol!==ballCol;
         const interceptor = primaryMarker(defendSquad.active,receiver.fieldRow,receiver.fieldCol);
 
@@ -779,7 +794,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:23,id: `match-${seed}`,
+    engineVersion:24,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',

@@ -136,5 +136,21 @@ export function runMatchEngineTests(): { passed: number; failed: number; log: st
   // Test 7: 3x3 Ball distribution generated
   assert(report1.ballDistribution.length === 3 && report1.ballDistribution[0].length === 3, '3x3 Ball distribution matrix computed');
 
+  // Equal ability isolates the role/service problem from player quality and injuries.
+  const roleClubs=structuredClone([dummyHomeClub,dummyAwayClub]);
+  const rolePlayers=[homePlayers,awayPlayers].map((players,side)=>players.slice(0,10).map((p,i)=>({...p,id:1000+side*100+i,race:'human' as const,form:10,currentInjury:0,totalInjury:0,isDeceased:false,artifacts:[],attributes:{...p.attributes,...Object.fromEntries(Object.keys(p.attributes).map(k=>[k,k==='aggressivitet'?0:8]))}})));
+  const roleSlots=['goal','2-0','2-1','2-2','1-0','1-1','1-2','0-0','0-1','0-2'];
+  roleClubs.forEach((club,side)=>{club.race='human';club.coach=null;club.arena=null;club.lineup.slots=Object.fromEntries(roleSlots.map((slotKey,i)=>[slotKey,{slotKey,starterPlayerId:rolePlayers[side][i].id,subPlayerId:null,activePlayerIds:[rolePlayers[side][i].id],reservePlayerIds:[]}]));});
+  for(const uppspel of ['Normal','Löpning','Passning'] as const){
+    roleClubs.forEach(c=>c.lineup.tactics={uppspel,spelvag:'Normal',skytte:'Mål'});
+    let forwardShots=0,midfieldShots=0,forwardRuns=0;
+    for(let seed=0;seed<120;seed++){
+      const r=simulateMatch(roleClubs[0],roleClubs[1],rolePlayers[0],rolePlayers[1],99127+seed*7919,'Gräs',{temp:15,condition:'Klart',wind:0});
+      for(const p of r.individualStats||[]){const index=p.id%100;if(index===7||index===9){forwardShots+=p.stats.skott.antal;forwardRuns+=p.stats.lopningar.antal;}if(index===4||index===6)midfieldShots+=p.stats.skott.antal;}
+    }
+    assert(forwardShots>midfieldShots,`${uppspel}: equal wing forwards receive more goal shots than wing midfielders`);
+    assert(forwardRuns>0,`${uppspel}: wing forwards still attempt runs`);
+  }
+
   return { passed, failed, log };
 }
