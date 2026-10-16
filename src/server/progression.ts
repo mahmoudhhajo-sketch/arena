@@ -22,7 +22,7 @@ export function tuneMarketWage(attributes:any,target:number){
 }
 
 type MarketQualityBand='budget'|'middle'|'strong';
-function marketQualityBand(wage:number):MarketQualityBand{return wage<1500?'budget':wage<=2000?'middle':'strong'}
+function marketQualityBand(wage:number):MarketQualityBand{return wage<1500?'budget':wage<=2050?'middle':'strong'}
 function marketBandTargets(total:number){const middle=Math.round(total*.55),strong=Math.round(total*.2);return {budget:total-middle-strong,middle,strong}}
 function nextMarketBand(race:string,total:number,auctions:any[],playerById:Map<number,any>,rotation:number):MarketQualityBand{
  const desired=marketBandTargets(total),counts:{budget:number;middle:number;strong:number}={budget:0,middle:0,strong:0};
@@ -30,7 +30,20 @@ function nextMarketBand(race:string,total:number,auctions:any[],playerById:Map<n
  const order=(['budget','middle','strong'] as MarketQualityBand[]).slice(rotation%3).concat((['budget','middle','strong'] as MarketQualityBand[]).slice(0,rotation%3));
  return order.sort((a,b)=>(desired[b]-counts[b])-(desired[a]-counts[a]))[0];
 }
-function marketBandWage(band:MarketQualityBand,random=Math.random){return band==='budget'?700+Math.floor(random()*751):band==='middle'?1700+Math.floor(random()*101):2050+Math.floor(random()*(IMPERIAL_MARKET_MAX_WAGE-2049))}
+function marketBandWage(band:MarketQualityBand,random=Math.random){return band==='budget'?700+Math.floor(random()*751):band==='middle'?1900+Math.floor(random()*151):2051+Math.floor(random()*(IMPERIAL_MARKET_MAX_WAGE-2050))}
+
+const MARKET_ROLES=['goalkeeper','defender','midfielder','attacker'] as const;
+export function nextMarketRole(auctions:any[],playerById:Map<number,any>){
+ const counts={goalkeeper:0,defender:0,midfielder:0,attacker:0};
+ for(const a of auctions){
+  const p=playerById.get(Number(a.playerId));if(!p)continue;
+  const position=String(p.nominalPosition||'').toLocaleLowerCase('sv');
+  const role=a.marketRole|| (position.includes('målvakt')?'goalkeeper':position.includes('back')?'defender':position.includes('anfall')?'attacker':'midfielder');
+  if(role in counts)counts[role as keyof typeof counts]++;
+ }
+ const targets={goalkeeper:4,defender:11,midfielder:11,attacker:11};
+ return [...MARKET_ROLES].sort((a,b)=>(targets[b]-counts[b])-(targets[a]-counts[a]))[0];
+}
 
 const MARKET_ROLE_FACTORS:Record<string,Record<string,number>>={
  goalkeeper:{snabbhet:.45,kondition:.55,markering:.38,passning:.72,teknik:.48,speluppfattning:.82,skott:.22,malvakt:1,tuffhet:.70},
@@ -70,13 +83,22 @@ const MARKET_ROLE_CEILINGS:Record<string,Record<string,number>>={
 
 export function tuneSpecializedMarketWage(attributes:any,target:number,role:string,random=Math.random){
  const shaped=specializeMarketPlayer(attributes,role,random),primary=new Set(MARKET_ROLE_PRIMARY[role]||MARKET_ROLE_PRIMARY.midfielder),ceilings=MARKET_ROLE_CEILINGS[role]||MARKET_ROLE_CEILINGS.midfielder;
+ // Specialists retain one outstanding skill instead of scaling every useful
+ // attribute to the ceiling merely to meet a salary target.
+ const specialist=random()<.25;
+ const keys=[...primary],standout=keys[Math.min(keys.length-1,Math.floor(random()*keys.length))];
+ const limits={...ceilings};
+ for(const key of keys){
+  if(specialist&&key!==standout){shaped[key]*=.35+.3*random();limits[key]=Math.min(limits[key],3.2+random()*1.3);}
+  else if(!specialist){shaped[key]*=.65+.7*random();}
+ }
  let low=.35,high=6,best={...shaped};
  for(let n=0;n<36;n++){
   const factor=(low+high)/2,candidate:any={...shaped};
   for(const [key,value] of Object.entries(shaped)){
    if(key==='aggressivitet')continue;
    const growth=primary.has(key)?factor:1+Math.max(0,factor-1)*.15;
-   candidate[key]=Math.round(Math.min(ceilings[key]??6.5,Number(value)*growth)*1000)/1000;
+   candidate[key]=Math.round(Math.min(limits[key]??6.5,Number(value)*growth)*1000)/1000;
   }
   best=candidate;
   if(calculateLegacyWage(candidate)<Math.min(target,IMPERIAL_MARKET_MAX_WAGE))low=factor;else high=factor;
@@ -110,12 +132,20 @@ export async function releaseMarketPlayers(now:Date){
    if(!surplus)break;
    await put('auction',surplus.id,{...surplus,closed:true,replaced:true},tx);auctions=auctions.filter(a=>a.id!==surplus.id);raceCounts=counts();
   }
+  // Rotate only unbid imperial goalkeepers. Auctions with bids and managers'
+  // listings keep their player, price and deadline unchanged.
+  const isKeeper=(a:any)=>a.marketRole==='goalkeeper'||(!a.marketRole&&String(playerById.get(Number(a.playerId))?.nominalPosition).includes('Målvakt'));
+  while(auctions.filter(isKeeper).length>4){
+   const surplus=auctions.find(a=>isKeeper(a)&&!a.bidderId);
+   if(!surplus)break;
+   await put('auction',surplus.id,{...surplus,closed:true,replaced:true},tx);
+   auctions=auctions.filter(a=>a.id!==surplus.id);
+  }
   const missing=Math.max(0,IMPERIAL_PLAYER_MARKET_TARGET-auctions.length);
   if(!missing){if(!await record('market-day-'+day,tx))await put('system','market-day-'+day,{date:day,active:auctions.length},tx);return;}
-  const roles:any[]=['goalkeeper','defender','midfielder','attacker'];
   for(let i=0;i<missing;i++){
    raceCounts=counts();const race=Object.keys(targets).sort((a,b)=>(targets[b]-(raceCounts[b]||0))-(targets[a]-(raceCounts[a]||0))||a.localeCompare(b))[0];
-   const homes=PLACES.filter(p=>p.race===race),home=homes[Math.floor(Math.random()*homes.length)],role=roles[(auctions.length+i)%roles.length];
+   const homes=PLACES.filter(p=>p.race===race),home=homes[Math.floor(Math.random()*homes.length)],role=nextMarketRole(auctions,playerById);
    const p=generateSinglePlayer(0,race as any,'',home.name,1,role,false,wageSeason);
    // Every race receives the same broad quality curve: roughly 55% useful
    // middle-class players, 20% stronger listings and 25% cheaper prospects.
@@ -124,8 +154,8 @@ export async function releaseMarketPlayers(now:Date){
    p.wage=calculateWage(p.attributes,wageSeason);
    const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;
    const [created]=await tx.insert(players).values({...row,clubId:null}).returning();
-   await put('auction','auction-'+randomUUID(),{playerId:created.id,sellerId:null,price:Math.max(100,Math.round(p.wage*5)),bidderId:null,endsAt:new Date(+now+7*86400000).toISOString(),closed:false},tx);
-   playerById.set(created.id,created as any);auctions.push({id:'new-'+created.id,playerId:created.id,sellerId:null,bidderId:null});
+   await put('auction','auction-'+randomUUID(),{playerId:created.id,marketRole:role,sellerId:null,price:Math.max(100,Math.round(p.wage*5)),bidderId:null,endsAt:new Date(+now+7*86400000).toISOString(),closed:false},tx);
+   playerById.set(created.id,created as any);auctions.push({id:'new-'+created.id,playerId:created.id,marketRole:role,sellerId:null,bidderId:null});
   }
   await put('system','market-day-'+day,{date:day,added:missing,target:IMPERIAL_PLAYER_MARKET_TARGET},tx);
  });
