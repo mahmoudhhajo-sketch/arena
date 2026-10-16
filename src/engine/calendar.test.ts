@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {positionalTrainingMatches,reverseWeeklyPositionAttributes,weeklyPositionAttributes} from './calendar';
+import {legacyWeeklyPositionAttributes,positionalTrainingMatches,reverseWeeklyPositionAttributes,weeklyPositionAttributes} from './calendar';
 
 const before=Date.parse('2026-09-20T00:00:00Z');
 const after=Date.parse('2026-09-27T00:00:00Z');
@@ -25,7 +25,17 @@ test('den nya träningsökningen är 15 procent lägre och kan korrigera en reda
  const attributes:any={snabbhet:7.123,kondition:6.234,markering:5.345,passning:4.456,teknik:6.567,speluppfattning:7.678,skott:5.789,malvakt:1.234,aggressivitet:8.321,tuffhet:6.432};
  const allocation:any={snabbhet:3,kondition:2,markering:1,passning:2,teknik:1,speluppfattning:1,skott:2,malvakt:0,tuffhet:1};
  const played=[{date:'2026-09-22T19:00:00Z',slots:['1-0']}];
- const old=weeklyPositionAttributes(attributes,allocation,played,after,before,1),recovered=reverseWeeklyPositionAttributes(old,allocation,played,after,before,1),reduced=weeklyPositionAttributes(recovered,allocation,played,after,before,.85);
+ const old=legacyWeeklyPositionAttributes(attributes,allocation,played,after,before,1),recovered=reverseWeeklyPositionAttributes(old,allocation,played,after,before,1),reduced=weeklyPositionAttributes(recovered,allocation,played,after,before,.85);
  assert.deepEqual(recovered,attributes);
  assert.ok(reduced.snabbhet>attributes.snabbhet&&reduced.snabbhet<old.snabbhet);
 });
+
+ test('målvakter tränar kondition och backar får mest tuffhet',()=>{
+  assert.equal(positionalTrainingMatches(appearances('goal'),'kondition',after,before),1);
+  assert.equal(positionalTrainingMatches(appearances('2-1'),'tuffhet',after,before),1);
+  assert.equal(positionalTrainingMatches(appearances('1-1'),'tuffhet',after,before),.75);
+  assert.equal(positionalTrainingMatches(appearances('0-1'),'tuffhet',after,before),.5);
+  const attrs:any=Object.fromEntries(['snabbhet','kondition','markering','passning','teknik','speluppfattning','skott','malvakt','tuffhet','aggressivitet'].map(k=>[k,5]));
+  const trained=weeklyPositionAttributes(attrs,{markering:4,tuffhet:4} as any,appearances('2-1'),after,before);
+  assert.ok(trained.tuffhet>attrs.tuffhet&&trained.tuffhet<trained.markering);
+ });
