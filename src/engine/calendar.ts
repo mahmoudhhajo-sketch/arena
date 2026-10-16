@@ -42,7 +42,7 @@ function attributeUpdate(attributes:PlayerAttributes,allocation:Record<Trainable
   const positionalMatches=matchesByAttribute?.[key],load=Math.min(2,Math.max(0,positionalMatches??matches));
   const participation=positionalMatches===undefined?[0.1,0.55,1][Math.round(load)]:load<=1?0.55*load:0.55+0.45*(load-1);
   const points=Math.min(10,Math.max(0,allocation[key]||0));
-  const effort=gainScale*.25*points*participation*(key==='kondition'?2.25:1);
+  const effort=gainScale*.25*points*participation*(key==='kondition'?2.25:key==='tuffhet'?.75:1);
   const exact=Math.max(0,advanceTraining(Math.max(0,attributes[key]+(carry[key]||0)),effort)-(key==='kondition'&&points===0?.15:0));
   result[key]=Math.round(exact*1000)/1000;remainders[key]=exact-result[key];
  }
@@ -54,14 +54,14 @@ export function weeklyAttributes(attributes:PlayerAttributes,allocation:Record<T
 
 const trainingSlotWeights:Record<TrainableAttribute,Record<string,number>>={
  snabbhet:{'0-0':1,'0-2':1,'1-0':1,'1-2':1,'2-0':1,'2-2':1},
- kondition:{'0-0':1,'0-1':1,'0-2':1,'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1},
+ kondition:{goal:1,'0-0':1,'0-1':1,'0-2':1,'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1},
  markering:{'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1},
  passning:{'0-0':0.5,'0-1':0.5,'0-2':0.5,'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1},
  teknik:{'0-0':1,'0-1':1,'0-2':1,'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1},
  speluppfattning:{'0-0':0.2,'0-1':1,'0-2':0.2,'1-0':0.2,'1-1':1,'1-2':0.2,'2-0':0.2,'2-1':1,'2-2':0.2},
  skott:{'0-0':1,'0-1':1,'0-2':1,'1-0':1,'1-1':1,'1-2':1},
  malvakt:{goal:1,'1-0':1,'1-2':1},
- tuffhet:{goal:1,'0-0':1,'0-1':1,'0-2':1,'1-0':1,'1-1':1,'1-2':1,'2-0':1,'2-1':1,'2-2':1}
+ tuffhet:{goal:.5,'0-0':.5,'0-1':.5,'0-2':.5,'1-0':.75,'1-1':.75,'1-2':.75,'2-0':1,'2-1':1,'2-2':1}
 };
 export function positionalTrainingMatches(appearances:Array<{date:string;slots:string[]}>,key:TrainableAttribute,after:number,before:number){return appearances.filter(a=>+new Date(a.date)>before&&+new Date(a.date)<=after).reduce((sum,a)=>sum+Math.max(0,...a.slots.map(slot=>trainingSlotWeights[key][slot]||0)),0);}
 export function weeklyPositionTraining(attributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,appearances:Array<{date:string;slots:string[]}>,after:number,before:number,carry:TrainingRemainders={},gainScale=TRAINING_GAIN_SCALE){
@@ -74,7 +74,7 @@ export function weeklyPositionAttributes(attributes:PlayerAttributes,allocation:
 
 // Kept for one-time historical repairs, which must invert the original curve.
 export function legacyWeeklyPositionAttributes(attributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,appearances:Array<{date:string;slots:string[]}>,after:number,before:number,gainScale=.85):PlayerAttributes{
- const result={...attributes};for(const key of TRAINABLE_ATTRIBUTES){const load=Math.min(2,Math.max(0,positionalTrainingMatches(appearances,key,after,before))),participation=load<=1?.55*load:.55+.45*(load-1),points=Math.min(10,Math.max(0,allocation[key]||0)),gain=gainScale*.25*points*participation*(key==='kondition'?2.25:1)/Math.pow(1.03,Math.max(0,attributes[key]));result[key]=Math.max(0,Math.round((attributes[key]+gain-(key==='kondition'&&points===0?.15:0))*1000)/1000)}return result;
+ const result={...attributes};for(const key of TRAINABLE_ATTRIBUTES){const load=Math.min(2,Math.max(0,(key==='tuffhet'?appearances.filter(a=>+new Date(a.date)>before&&+new Date(a.date)<=after).length:positionalTrainingMatches(appearances.map(a=>({...a,slots:key==='kondition'?a.slots.filter(s=>s!=='goal'):a.slots})),key,after,before)))),participation=load<=1?.55*load:.55+.45*(load-1),points=Math.min(10,Math.max(0,allocation[key]||0)),gain=gainScale*.25*points*participation*(key==='kondition'?2.25:1)/Math.pow(1.03,Math.max(0,attributes[key]));result[key]=Math.max(0,Math.round((attributes[key]+gain-(key==='kondition'&&points===0?.15:0))*1000)/1000)}return result;
 }
 // Recover the three-decimal base values that produced an already applied
 // weekly update. This is used only by data corrections; ordinary training

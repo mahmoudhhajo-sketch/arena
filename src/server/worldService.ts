@@ -1,3 +1,4 @@
+import {assignManagerClubIds} from './clubIds';
 import {put} from './records';
 import {DIVISION_NAMES} from '../constants/leagues';
 import { db } from '../db';
@@ -301,6 +302,9 @@ export async function createHumanClub(params: {
       arena: null,
     });
   }
+
+  const renamed = await assignManagerClubIds(tx,clubId);
+  clubId = renamed.get(clubId) || clubId;
 
   // 4. Generate 20 new players for human club
   const [currentWorld] = await tx.select().from(worldState);

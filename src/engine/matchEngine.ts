@@ -200,7 +200,8 @@ export function simulateMatch(
   const events: MatchEvent[] = [];
   let luckPeriod=0,luckMinute=0;
   const luckUses=new Map<number,number>();
-  const matchHeat=.45+1.5*Math.pow(rng.next(),2);
+  // Same average heat (.95), much less match-wide amplification of violence.
+  const matchHeat=.8+.3*rng.next();
   const luck=(p:ActivePlayerState,reason:string)=>{
    const side=homeSquad.active.includes(p)?'home':'away';
    if(!p.player.artifacts.includes('luck-amulet')||(luckUses.get(p.player.id)||0)>=2||rng.next()>=.35)return false;
@@ -382,7 +383,7 @@ export function simulateMatch(
       const fightSide=rng.next()<.5?'home':'away',fightSquad=fightSide==='home'?homeSquad:awaySquad,opponentSquad=fightSide==='home'?awaySquad:homeSquad;
       const fightStats=fightSide==='home'?homeStats:awayStats,opponentStats=fightSide==='home'?awayStats:homeStats;
       const fighterCandidate = fightSquad.active[rng.nextInt(0,fightSquad.active.length-1)];
-      if(fighterCandidate&&opponentSquad.active.length&&rng.next()<Math.min(.65,matchHeat*(.025+Math.max(0,fighterCandidate.player.attributes.aggressivitet)*.012))){
+      if(fighterCandidate&&opponentSquad.active.length&&rng.next()<.8*Math.min(.65,matchHeat*(.025+Math.max(0,fighterCandidate.player.attributes.aggressivitet)*.012))){
         const defender=choose(opponentSquad.active,fighterCandidate.fieldRow,fighterCandidate.fieldCol);
         inc(fighterCandidate,'slagsmal');inc(defender,'slagsmal');inc(fighterCandidate,'slagsmal','startade');
         fightStats.slagsmal.antal++;opponentStats.slagsmal.antal++;fightStats.slagsmal.startade++;
@@ -516,7 +517,7 @@ export function simulateMatch(
         } else {
           // Normal Goal shot (Skott på mål)
           attackStats.skott.antal++;
-          
+
           const shooter = attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
           const keeperPresent=defendSquad.active.some(a=>a.slotKey==='goal');
           const goalkeeper = defendSquad.active.find((a) => a.slotKey === 'goal') || defendSquad.active[0];
@@ -773,7 +774,7 @@ export function simulateMatch(
   );
 
   // Attendance calculation based on Section 34
-  
+
   const ticketP = homeClub.lineup?.intrade ?? 8;
 
 
@@ -809,7 +810,7 @@ export function simulateMatch(
   };
 }
 
-export function injuryProbability(attack:number,defense:number){const ratio=(Math.max(0,attack)+.5)/(Math.max(0,defense)+.5);return Math.min(.94,.7*Math.pow(ratio,4.7));}
+export function injuryProbability(attack:number,defense:number){const ratio=(Math.max(0,attack)+.5)/(Math.max(0,defense)+.5);return .8*Math.min(.94,.7*Math.pow(ratio,4.7));}
 export function injurySeverity(attack:number,defense:number,roll:number){const ratio=(Math.max(0,attack)+.5)/(Math.max(0,defense)+.5),force=Math.min(1.75,Math.max(.55,Math.pow(ratio,.35))),impact=-Math.log(Math.max(1e-9,1-Math.min(.999999,Math.max(0,roll))))*force;return impact>=6.5?7:impact>=4.8?6:impact>=3.5?5:impact>=2.5?4:impact>=1.6?3:impact>=.8?2:1;}
 function reportEvent(e:any,index:number,seed:number){if(['GOAL_NORMAL','INJURY','SUBSTITUTION','PERIOD_START','PERIOD_END','MATCH_END'].includes(e.type)||e.important)return true;const probability:Record<string,number>={SHOT_NORMAL:.08,GOAL_BASKET:.65,FIGHT_RESULT:.15,SAVE_NORMAL:.10,SAVE_BASKET:.06,UPPKAST:.02,PASS_SUCCESS:.04,RUN_SUCCESS:.07,INTERCEPTION:.06};return new SeededRNG(seed+index*7919).next()<(probability[e.type]??0)}
 
