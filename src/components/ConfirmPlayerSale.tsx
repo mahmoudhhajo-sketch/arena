@@ -1,0 +1,6 @@
+import {useRef,useState} from 'react';
+export function ConfirmPlayerSale({player,price,onConfirm}:{player?:{name:string;shirtNumber?:number};price:number;onConfirm:()=>Promise<unknown>}){
+ const dialog=useRef<HTMLDialogElement>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ return <><button type="button" disabled={!player||!Number.isFinite(price)||price<1} onClick={()=>{setError('');dialog.current?.showModal()}}>Sälj spelaren…</button>
+ <dialog ref={dialog} aria-label="Bekräfta spelarförsäljning" onCancel={e=>{if(busy)e.preventDefault()}}><h3>Bekräfta försäljning</h3><p>Vill du lägga ut <b>{player?.shirtNumber ? `${player.shirtNumber}. `:''}{player?.name}</b> på transfermarknaden?</p><p>Utgångspris: <b>{price.toLocaleString('sv-SE')} guld</b>. Auktionen pågår i sju dagar.</p><p role="alert">{error}</p><button type="button" disabled={busy} onClick={async()=>{if(busy)return;setBusy(true);try{await onConfirm();dialog.current?.close()}catch(e:any){setError(e.message||'Försäljningen kunde inte sparas.')}finally{setBusy(false)}}}>{busy?'Lägger ut…':'Bekräfta försäljning'}</button> <button type="button" disabled={busy} onClick={()=>dialog.current?.close()}>Avbryt</button></dialog></>;
+}
