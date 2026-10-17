@@ -173,6 +173,21 @@ export function describeEvent(event: MatchEvent, index: number): string {
     }
 
     case 'RUN_SUCCESS':
+      if(event.id.startsWith('breakthrough-'))return compose(event,index,[
+        `${p} sänkte axeln och utmanade sin bevakare inne i anfallsrutan.`,
+        `${p} drog bollen intill kroppen medan kedjan skrapade över marken.`,
+        `${p} låtsades vända hemåt men kastade sig plötsligt mot målet.`,
+        `Mitt i trängseln fann ${p} en smal öppning mellan försvararna.`,
+      ],[
+        `Ett snabbt steg förbi markeringen öppnade ett avslutsläge.`,
+        `Bevakaren sträckte sig efter bollen men fick bara tag i luft.`,
+        `Med en kort rusning lämnades försvararen på fel sida.`,
+        `En skarp riktningsförändring gav precis det utrymme som behövdes.`,
+      ],[
+        `Läktarna reste sig när anfallaren fick målet framför sig.`,
+        `Försvaret försökte sluta luckan innan avslutet kunde komma.`,
+        `Bollen var fortfarande under kontroll, nu med mindre trängsel framför målet.`,
+      ]);
       return compose(event, index, [
         `${p} satte fart längs kanten med bollen tätt intill kroppen.`,
         `${p} tog emot mitt i trängseln och såg en smal korridor framåt.`,

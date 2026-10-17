@@ -42,6 +42,8 @@ Vid periodstart och efter mål sker ett uppkast. Innermittarna kämpar om bollen
 ## Anfall och försvar
 Laget med bollen försöker skapa ett skottläge genom löpningar och passningar. Löpningar kostar mer ork än passningar. Motståndarna kan stoppa bollföraren eller bryta en passning. Även spelare i närheten kan hjälpa till att försvara en tom ruta, men har sämre utgångsläge än någon som redan finns där.
 
+En anfallare kan också göra en kort genombrottslöpning inom anfallsrutan för att ta sig förbi sin bevakare. Det räknas som en löpning även om spelaren inte byter ruta. Ett lyckat genombrott ger mer utrymme för avslut, men ett misslyckat försök kan kosta laget bollen. Anfallarna är lagets främsta avslutare; mittfältarna söker i första hand en tillgänglig anfallare men kan fortfarande ta egna lägen.
+
 Två spelare i samma ruta ger understöd, inte automatiskt dubbel styrka. Du måste också väga stödet mot den yta som blir obemannad någon annanstans.
 
 ## Mål och sidokorgar

@@ -1,3 +1,4 @@
+import {imperialAuctionEnd} from './auctionTiming';
 import {worldState} from '../db/schema';
 import {ARTIFACTS} from '../constants/market';
 import {put,record,records} from './records';
@@ -21,7 +22,7 @@ export async function seasonalCantanirings(tx:any,now:Date,slots:number){
  for(let i=0;i<count;i++){
   const itemId='item-'+randomUUID();
   await put('artifact-item',itemId,{artifactId:artifact.id,clubId:null,playerId:null,listed:true},tx);
-  await put('artifact-auction','artifact-auction-'+randomUUID(),{itemId,artifactId:artifact.id,sellerId:null,price:artifact.price,bidderId:null,supplySeason:world.season,createdAt:now.toISOString(),endsAt:new Date(+now+7*86400000).toISOString(),closed:false},tx);
+  await put('artifact-auction','artifact-auction-'+randomUUID(),{itemId,artifactId:artifact.id,sellerId:null,price:artifact.price,bidderId:null,supplySeason:world.season,createdAt:now.toISOString(),endsAt:imperialAuctionEnd(now),closed:false},tx);
  }
  await put('system',key,{count:released+count,date:now.toISOString()},tx);
  return count;

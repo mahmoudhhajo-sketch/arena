@@ -1,4 +1,4 @@
-import { simulateMatch } from './matchEngine';
+import { simulateMatch, fightInitiationProbability } from './matchEngine';
 import { generateStarterSquad } from './playerGenerator';
 import { Club } from '../types';
 
@@ -74,6 +74,11 @@ export function runMatchEngineTests(): { passed: number; failed: number; log: st
 
   const homePlayers = generateStarterSquad('orc', dummyHomeClub.id, 'Shraknek');
   const awayPlayers = generateStarterSquad('human', dummyAwayClub.id, 'Berunia');
+  // Fixed, disjoint identities and peaceful squads isolate scoring invariants
+  // from wall-clock generated IDs and a legitimate mid-match walkover.
+  for(const [side,squad] of [homePlayers,awayPlayers].entries())for(const [i,p] of squad.entries()){
+    p.id=10000+side*100+i;p.attributes.aggressivitet=0;
+  }
 
   for(const [club,squad] of [[dummyHomeClub,homePlayers],[dummyAwayClub,awayPlayers]] as const){
     club.lineup={...club.lineup,slots:Object.fromEntries(['goal','2-0','2-1','2-2','1-0','1-1','1-2','0-0','0-1','0-2'].map((slotKey,i)=>[slotKey,{slotKey,starterPlayerId:squad[i].id,subPlayerId:null,activePlayerIds:[squad[i].id],reservePlayerIds:[]}]))};
@@ -134,6 +139,9 @@ export function runMatchEngineTests(): { passed: number; failed: number; log: st
   }
 
   // Test 7: 3x3 Ball distribution generated
+  assert(fightInitiationProbability(6)===.8*(.025+6*.012),'Ordinary aggression retains its initiation probability');
+  assert(fightInitiationProbability(16)>fightInitiationProbability(6)*3,'Very aggressive players initiate substantially more fights');
+  assert(fightInitiationProbability(100)<=1,'Fight probability remains valid at extreme aggression');
   assert(report1.ballDistribution.length === 3 && report1.ballDistribution[0].length === 3, '3x3 Ball distribution matrix computed');
 
   // Equal ability isolates the role/service problem from player quality and injuries.
@@ -143,13 +151,20 @@ export function runMatchEngineTests(): { passed: number; failed: number; log: st
   roleClubs.forEach((club,side)=>{club.race='human';club.coach=null;club.arena=null;club.lineup.slots=Object.fromEntries(roleSlots.map((slotKey,i)=>[slotKey,{slotKey,starterPlayerId:rolePlayers[side][i].id,subPlayerId:null,activePlayerIds:[rolePlayers[side][i].id],reservePlayerIds:[]}]));});
   for(const uppspel of ['Normal','Löpning','Passning'] as const){
     roleClubs.forEach(c=>c.lineup.tactics={uppspel,spelvag:'Normal',skytte:'Mål'});
-    let forwardShots=0,midfieldShots=0,forwardRuns=0;
+    let forwardShots=0,midfieldShots=0,forwardRuns=0,breakthroughs=0;
     for(let seed=0;seed<120;seed++){
       const r=simulateMatch(roleClubs[0],roleClubs[1],rolePlayers[0],rolePlayers[1],99127+seed*7919,'Gräs',{temp:15,condition:'Klart',wind:0});
+      breakthroughs+=r.events.filter(e=>e.id.startsWith('breakthrough-')).length;
+      for(const side of ['home','away'] as const){
+        const team=side==='home'?r.homeStats:r.awayStats;
+        const totals=r.individualStats.filter(p=>p.side===side).reduce((n,p)=>n+p.stats.lopningar.antal,0);
+        if(totals!==team.lopningar.antal)throw new Error('Run attempts must reconcile including in-cell breakthroughs');
+      }
       for(const p of r.individualStats||[]){const index=p.id%100;if(index===7||index===9){forwardShots+=p.stats.skott.antal;forwardRuns+=p.stats.lopningar.antal;}if(index===4||index===6)midfieldShots+=p.stats.skott.antal;}
     }
     assert(forwardShots>midfieldShots,`${uppspel}: equal wing forwards receive more goal shots than wing midfielders`);
     assert(forwardRuns>0,`${uppspel}: wing forwards still attempt runs`);
+    assert(breakthroughs>0,`${uppspel}: forwards beat markers within the attacking cell`);
   }
 
   return { passed, failed, log };

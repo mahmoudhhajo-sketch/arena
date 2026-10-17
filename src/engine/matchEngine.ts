@@ -243,7 +243,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:24,id: `match-${seed}`,
+      engineVersion:25,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -383,7 +383,7 @@ export function simulateMatch(
       const fightSide=rng.next()<.5?'home':'away',fightSquad=fightSide==='home'?homeSquad:awaySquad,opponentSquad=fightSide==='home'?awaySquad:homeSquad;
       const fightStats=fightSide==='home'?homeStats:awayStats,opponentStats=fightSide==='home'?awayStats:homeStats;
       const fighterCandidate = fightSquad.active[rng.nextInt(0,fightSquad.active.length-1)];
-      if(fighterCandidate&&opponentSquad.active.length&&rng.next()<.8*Math.min(.65,matchHeat*(.025+Math.max(0,fighterCandidate.player.attributes.aggressivitet)*.012))){
+      if(fighterCandidate&&opponentSquad.active.length&&rng.next()<fightInitiationProbability(fighterCandidate.player.attributes.aggressivitet,matchHeat)){
         const defender=choose(opponentSquad.active,fighterCandidate.fieldRow,fighterCandidate.fieldCol);
         inc(fighterCandidate,'slagsmal');inc(defender,'slagsmal');inc(fighterCandidate,'slagsmal','startade');
         fightStats.slagsmal.antal++;opponentStats.slagsmal.antal++;fightStats.slagsmal.startade++;
@@ -450,8 +450,26 @@ export function simulateMatch(
         .reduce((best,p)=>Math.max(best,(skill(p,'skott')+.35)/(1+pressure(defendSquad.active,p.fieldRow,p.fieldCol)*.08)),0);
       const ownFinish=(skill(ballCarrier,'skott')+.35)/(1+pressure(defendSquad.active,ballRow,ballCol)*.08);
       // A midfielder can still finish, but usually serves an equally good, nearby forward.
-      const serviceFactor=!wantsBasket&&formationRow!==0&&availableFinisher>0?Math.max(.5,1-.35*Math.min(1.15,availableFinisher/ownFinish)):1;
-      const shootingChance=Math.min(wantsBasket?.96:.9,(inAttackingThird?.8:isMidfield?.38:.06)*positionFactor)*serviceFactor;
+      const serviceFactor=!wantsBasket&&formationRow!==0&&availableFinisher>0?Math.max(.35,.65-.25*Math.min(1.15,availableFinisher/ownFinish)):1;
+      // A forward can beat the marker inside the attacking cell. This is a real
+      // contest (and stamina cost), not a fictitious movement or a free statistic.
+      let breakthrough=false;
+      if(inAttackingThird&&formationRow===0&&rng.next()<(tactics?.uppspel==='Löpning'?.45:.3)){
+        const marker=primaryMarker(defendSquad.active,ballRow,ballCol);
+        inc(decisionHolder,'lopningar');attackStats.lopningar.antal++;
+        inc(marker,'brytningar');defendStats.brytningar.antal++;
+        effort(decisionHolder,underlag==='Jord'?.042:underlag==='Sten'?.037:.035);
+        breakthrough=weighted(decisionHolder,'lopningar',skill(decisionHolder,'snabbhet')*(weather.condition==='Regn'?.82:1)+skill(decisionHolder,'teknik')*.5+support(attackSquad.active,decisionHolder,'teknik'),pressure(defendSquad.active,ballRow,ballCol),marker,'brytningar');
+        if(breakthrough){
+          inc(decisionHolder,'lopningar','lyckade');attackStats.lopningar.lyckade++;
+          events.push({id:`breakthrough-${period}-${phase}`,period,minute:currentMinute,type:'RUN_SUCCESS',teamSide:possession,playerId:decisionHolder.player.id,playerName:decisionHolder.player.name,text:`${decisionHolder.player.name} vek undan från sin bevakare och bröt fram mot målet inne i anfallsrutan.`});
+        }else{
+          inc(marker,'brytningar','lyckade');defendStats.brytningar.lyckade++;
+          possession=possession==='home'?'away':'home';ballHolder=undefined;lastPass=null;
+          continue;
+        }
+      }
+      const shootingChance=Math.min(wantsBasket?.96:.9,(inAttackingThird?.8:isMidfield?.38:.06)*positionFactor+(breakthrough?.12:0))*serviceFactor;
       if (rng.next() < shootingChance) {
 
         if (wantsBasket) {
@@ -534,7 +552,7 @@ export function simulateMatch(
           const saveRating = keeperPresent?skill(goalkeeper,'malvakt')*.8+skill(goalkeeper,'passning')*.2:0;
 
           inc(shooter,'skott');if(keeperPresent){inc(goalkeeper,'raddningar');defendStats.raddningar.antal++;}effort(shooter,.012);
-          if (weighted(shooter,'skott',Math.max(.1,shotRating+support(attackSquad.active,shooter,'speluppfattning')-pressure(defendSquad.active,ballRow,ballCol)*.2),saveRating*1.05+(keeperPresent?(inAttackingThird?1:4.5):.2),keeperPresent?goalkeeper:undefined,'raddningar')) {
+          if (weighted(shooter,'skott',Math.max(.1,shotRating+support(attackSquad.active,shooter,'speluppfattning')-pressure(defendSquad.active,ballRow,ballCol)*(breakthrough?.06:.2)),saveRating*1.05+(keeperPresent?(inAttackingThird?1:4.5):.2),keeperPresent?goalkeeper:undefined,'raddningar')) {
             inc(shooter,'skott','lyckade');
             attackStats.skott.lyckade++;
 
@@ -605,7 +623,7 @@ export function simulateMatch(
       const actor=attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
       const runBias=tactics?.uppspel==='Löpning'?.66:tactics?.uppspel==='Passning'?.34:.5;
       // At the end line, look for a forward instead of repeatedly running into the boundary.
-      const forwardOutlet=inAttackingThird&&actor.slotKey[0]!=='0'&&attackSquad.active.some(p=>p!==actor&&p.slotKey[0]==='0'&&distance(p,ballRow,ballCol)<=1&&!chainBlocksPass(!!weatherInput?.chainsBlocked,period,possession,ballRow,ballCol,p.fieldRow,p.fieldCol));
+      const forwardOutlet=(inAttackingThird||isMidfield)&&actor.slotKey[0]!=='0'&&attackSquad.active.some(p=>p!==actor&&p.slotKey[0]==='0'&&distance(p,ballRow,ballCol)<=1&&!chainBlocksPass(!!weatherInput?.chainsBlocked,period,possession,ballRow,ballCol,p.fieldRow,p.fieldCol));
       const prefersRun = rng.next()<Math.max(.2,Math.min(.8,runBias+(skill(actor,'snabbhet')-skill(actor,'passning'))*.015-pressure(defendSquad.active,ballRow,ballCol)*.008))*(forwardOutlet?.45:1);
       if (prefersRun) {
         // Run action (Löpning)
@@ -794,7 +812,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:24,id: `match-${seed}`,
+    engineVersion:25,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',
@@ -825,6 +843,12 @@ export function simulateMatch(
   };
 }
 
+// Ordinary aggression keeps the existing rate. Above eight, escalating
+// aggression creates sustained pressure; toughness still decides the duels.
+export function fightInitiationProbability(aggression:number,heat=1){
+  const a=Math.max(0,aggression),excess=Math.max(0,a-8);
+  return .8*Math.min(.85,heat*(.025+a*.012+excess*excess*.003));
+}
 export function injuryProbability(attack:number,defense:number){const ratio=(Math.max(0,attack)+.5)/(Math.max(0,defense)+.5);return .8*Math.min(.94,.7*Math.pow(ratio,4.7));}
 export function injurySeverity(attack:number,defense:number,roll:number){const ratio=(Math.max(0,attack)+.5)/(Math.max(0,defense)+.5),force=Math.min(1.75,Math.max(.55,Math.pow(ratio,.35))),impact=-Math.log(Math.max(1e-9,1-Math.min(.999999,Math.max(0,roll))))*force;return impact>=6.5?7:impact>=4.8?6:impact>=3.5?5:impact>=2.5?4:impact>=1.6?3:impact>=.8?2:1;}
 function reportEvent(e:any,index:number,seed:number){if(['GOAL_NORMAL','INJURY','SUBSTITUTION','PERIOD_START','PERIOD_END','MATCH_END'].includes(e.type)||e.important)return true;const probability:Record<string,number>={SHOT_NORMAL:.08,GOAL_BASKET:.65,FIGHT_RESULT:.15,SAVE_NORMAL:.10,SAVE_BASKET:.06,UPPKAST:.02,PASS_SUCCESS:.04,RUN_SUCCESS:.07,INTERCEPTION:.06};return new SeededRNG(seed+index*7919).next()<(probability[e.type]??0)}

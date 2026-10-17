@@ -1,3 +1,4 @@
+import {imperialAuctionEnd} from './auctionTiming';
 import {seasonPrizeNotice} from './seasonPrizeNotice';
 import {seasonPrize} from '../constants/prizes';
 import {progressLoanConsequences,overdueEffects} from './loanConsequences';
@@ -154,7 +155,7 @@ export async function releaseMarketPlayers(now:Date){
    p.wage=calculateWage(p.attributes,wageSeason);
    const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;
    const [created]=await tx.insert(players).values({...row,clubId:null}).returning();
-   await put('auction','auction-'+randomUUID(),{playerId:created.id,marketRole:role,sellerId:null,price:Math.max(100,Math.round(p.wage*5)),bidderId:null,endsAt:new Date(+now+7*86400000).toISOString(),closed:false},tx);
+   await put('auction','auction-'+randomUUID(),{playerId:created.id,marketRole:role,sellerId:null,price:Math.max(100,Math.round(p.wage*5)),bidderId:null,endsAt:imperialAuctionEnd(now),closed:false},tx);
    playerById.set(created.id,created as any);auctions.push({id:'new-'+created.id,playerId:created.id,marketRole:role,sellerId:null,bidderId:null});
   }
   await put('system','market-day-'+day,{date:day,added:missing,target:IMPERIAL_PLAYER_MARKET_TARGET},tx);
