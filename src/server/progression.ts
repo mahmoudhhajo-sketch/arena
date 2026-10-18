@@ -23,15 +23,15 @@ export function tuneMarketWage(attributes:any,target:number){
 }
 
 type MarketQualityBand='budget'|'middle'|'strong';
-function marketQualityBand(wage:number):MarketQualityBand{return wage<1500?'budget':wage<=2050?'middle':'strong'}
+function marketQualityBand(wage:number):MarketQualityBand{return wage<1500?'budget':wage<=1900?'middle':'strong'}
 function marketBandTargets(total:number){const middle=Math.round(total*.55),strong=Math.round(total*.2);return {budget:total-middle-strong,middle,strong}}
 function nextMarketBand(race:string,total:number,auctions:any[],playerById:Map<number,any>,rotation:number):MarketQualityBand{
  const desired=marketBandTargets(total),counts:{budget:number;middle:number;strong:number}={budget:0,middle:0,strong:0};
- for(const auction of auctions){const player=playerById.get(Number(auction.playerId));if(player?.race===race)counts[marketQualityBand(calculateLegacyWage(player.attributes))]++;}
+ for(const auction of auctions){const player=playerById.get(Number(auction.playerId));if(player?.race===race)counts[marketQualityBand(player.wage)]++;}
  const order=(['budget','middle','strong'] as MarketQualityBand[]).slice(rotation%3).concat((['budget','middle','strong'] as MarketQualityBand[]).slice(0,rotation%3));
  return order.sort((a,b)=>(desired[b]-counts[b])-(desired[a]-counts[a]))[0];
 }
-function marketBandWage(band:MarketQualityBand,random=Math.random){return band==='budget'?700+Math.floor(random()*751):band==='middle'?1900+Math.floor(random()*151):2051+Math.floor(random()*(IMPERIAL_MARKET_MAX_WAGE-2050))}
+function marketBandWage(band:MarketQualityBand,random=Math.random){return band==='budget'?700+Math.floor(random()*751):band==='middle'?1800+Math.floor(random()*101):1950+Math.floor(random()*151)}
 
 const MARKET_ROLES=['goalkeeper','defender','midfielder','attacker'] as const;
 export function nextMarketRole(auctions:any[],playerById:Map<number,any>){
@@ -82,12 +82,17 @@ const MARKET_ROLE_CEILINGS:Record<string,Record<string,number>>={
  attacker:{snabbhet:8,kondition:7,markering:4.5,passning:6.5,teknik:8,speluppfattning:8,skott:8,malvakt:3,tuffhet:6.5},
 };
 
-export function tuneSpecializedMarketWage(attributes:any,target:number,role:string,random=Math.random){
+export function tuneSpecializedMarketWage(attributes:any,target:number,role:string,random=Math.random,race='',season=1){
  const shaped=specializeMarketPlayer(attributes,role,random),primary=new Set(MARKET_ROLE_PRIMARY[role]||MARKET_ROLE_PRIMARY.midfielder),ceilings=MARKET_ROLE_CEILINGS[role]||MARKET_ROLE_CEILINGS.midfielder;
+ const strengths:Record<string,string[]>={elf:['snabbhet'],human:['markering'],dwarf:['tuffhet'],orc:['skott'],goblin:['snabbhet'],troll:['tuffhet',random()<.5?'markering':'skott']};
+ // Most listings retain their racial character, without forcing every player
+ // into the same position or erasing unusual individuals.
+ const favored=random()<.8?(strengths[race]||[]):[];
+ for(const key of favored)shaped[key]*=1.45;
  // Specialists retain one outstanding skill instead of scaling every useful
  // attribute to the ceiling merely to meet a salary target.
  const specialist=random()<.25;
- const keys=[...primary],standout=keys[Math.min(keys.length-1,Math.floor(random()*keys.length))];
+ const keys=[...primary],preferred=keys.filter(key=>favored.includes(key)),choices=preferred.length?preferred:keys,standout=choices[Math.min(choices.length-1,Math.floor(random()*choices.length))];
  const limits={...ceilings};
  for(const key of keys){
   if(specialist&&key!==standout){shaped[key]*=.35+.3*random();limits[key]=Math.min(limits[key],3.2+random()*1.3);}
@@ -102,7 +107,7 @@ export function tuneSpecializedMarketWage(attributes:any,target:number,role:stri
    candidate[key]=Math.round(Math.min(limits[key]??6.5,Number(value)*growth)*1000)/1000;
   }
   best=candidate;
-  if(calculateLegacyWage(candidate)<Math.min(target,IMPERIAL_MARKET_MAX_WAGE))low=factor;else high=factor;
+  if(calculateWage(candidate,season)<Math.min(target,IMPERIAL_MARKET_MAX_WAGE))low=factor;else high=factor;
  }
  return best;
 }
@@ -151,7 +156,7 @@ export async function releaseMarketPlayers(now:Date){
    // Every race receives the same broad quality curve: roughly 55% useful
    // middle-class players, 20% stronger listings and 25% cheaper prospects.
    const band=nextMarketBand(race,targets[race],auctions,playerById,rotation+i);
-   p.attributes=tuneSpecializedMarketWage(p.attributes,marketBandWage(band),role);
+   p.attributes=tuneSpecializedMarketWage(p.attributes,marketBandWage(band),role,Math.random,race,wageSeason);
    p.wage=calculateWage(p.attributes,wageSeason);
    const {id,positionRatingsWithForm,positionRatingsWithoutForm,...row}=p;
    const [created]=await tx.insert(players).values({...row,clubId:null}).returning();
