@@ -1,0 +1,11 @@
+# Kejsarens tränarlicens
+
+Implemented 2026-10-18. New registrations start a persistent, account-scoped license. Existing accounts opt in. Eleven tasks cover players, lineup, reserves, training, opponent, match preparation, a real league match, report statistics, economy, market research and a season goal. Chapters remain accessible while waiting for kickoff. Pause, minimize and resume persist; completion grants only a cosmetic title.
+
+`src/server/coachLicense.ts` observes successful existing game responses and validates real fixture ownership. It stores progress in the existing game-record table under a per-account transaction lock. No schema migration is required. `src/constants/coachLicense.ts` defines the tasks. `src/components/CoachLicense.tsx` supplies guidance and administration metrics. Registration, application navigation, report statistics and successful API reads/saves connect to these modules.
+
+The optional practice endpoint passes detached squad/club copies to the existing match engine. It uses Standard 1, falling back to the club lineup, and a valid computer opponent. It performs no game-state writes and has a per-account rate limit. Practice reports never complete the real-match task.
+
+Public squads use a single sortable table with total public weekly wage, excluding mercenaries and deceased players. Imperial generation emphasizes racial strengths while retaining exceptions and specialists. The main targeted wage band is 1800–1900, with a stronger band at 1950–2100; limited single-skill specialists can cost less. Existing auctions are not rewritten.
+
+Validation: TypeScript check; `node tests/coach-license.cjs` uses isolated in-memory PGlite and covers real registration/login/logout persistence, validated lineup saving, invalid saves, all chapters, pause/resume, account isolation, admin access, rate limiting, and complete before/after snapshots proving practice changes no club, player or game record. Desktop/mobile preview checks covered sorting, total wage, minimization, chapter navigation and goal saving. A seeded sample of 2400 generated profiles verified differentiated racial strengths and wage distribution. No production game data was used for these tests.
