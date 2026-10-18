@@ -11,7 +11,7 @@ const settlementRace=(p:any)=>p?.name==='Berunia'?'Alla folk':RACE_DISPLAY_NAMES
 export function useData(path:string,initial:any=[]){
  const [data,setData]=useState<any>(initial),[error,setError]=useState(''),[revision,setRevision]=useState(0);
  const load=()=>{setRevision(v=>v+1);return Promise.resolve();};
- useEffect(()=>{const controller=new AbortController();setError('');fetch('/api'+path,{signal:controller.signal}).then(async r=>{const v=await r.json();if(!r.ok)throw Error(v.error||'Kunde inte läsa sidan.');return v}).then(setData).catch(e=>{if(e.name!=='AbortError')setError(e.message)});return()=>controller.abort();},[path,revision]);
+ useEffect(()=>{const controller=new AbortController();setError('');fetch('/api'+path,{signal:controller.signal}).then(async r=>{const v=await r.json();if(!r.ok)throw Error(v.error||'Kunde inte läsa sidan.');if(/^\/(player-detail\/|club-detail\/|economy\/)/.test(path))window.dispatchEvent(new Event('arena-action-complete'));return v}).then(setData).catch(e=>{if(e.name!=='AbortError')setError(e.message)});return()=>controller.abort();},[path,revision]);
  return {data,error,load};
 }
 export function Message({error}:{error:string}){return error?<p role="alert" className="error">{error}</p>:null}
