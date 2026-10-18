@@ -1,3 +1,4 @@
+import {registerCoachLicense} from './src/server/coachLicense';
 import {initializeRevision39} from './src/server/revision39';
 import {registerClubIdAliases} from './src/server/clubIds';
 import {initializeRevision38} from './src/server/revision38';
@@ -102,6 +103,7 @@ app.use(express.json({limit:"1mb"}));
 
 registerClubIdAliases(app);
 registerAuth(app);
+registerCoachLicense(app);
 registerContactPreferences(app);
 registerAdministration(app);
 
