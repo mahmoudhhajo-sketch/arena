@@ -1,3 +1,4 @@
+import {CoachLicense} from './components/CoachLicense';
 import {Administration} from './components/Administration';
 import {useHistoryState} from './lib/useHistoryState';
 import {ArenaRental} from './components/ArenaRental';
@@ -62,7 +63,7 @@ function Game(){
  case 'post':return <MailView/>;
  default:return <NewsView clubId={state.club.id} onOpen={setEntity} onMatch={openMatch}/>;
  }};
- return <><RetroFrame onOpen={setEntity} onMatch={openMatch} club={state.club} currentTab={state.currentTab} onSelectTab={navigate} onOpenNewClub={()=>{}} shoutboxMessages={state.shoutboxMessages} onAddShout={addShoutboxMessage}>{error&&<p className="error">{error}</p>}{content()}</RetroFrame>{overviewWindow&&!overviewWindow.closed&&<SquadOverview clubId={state.club.id} players={state.players} targetDocument={overviewWindow.document} closeOnSelect={false} onSelect={id=>{setEntity({kind:'player',id});window.focus()}} onClose={()=>{overviewWindow.close();setOverviewWindow(null)}}/>}{forumWindow&&!forumWindow.closed&&<Forum club={state.club} targetDocument={forumWindow.document} onClose={()=>{forumWindow.close();setForumWindow(null)}}/>}<CreateClubModal isOpen={!state.isLoading&&!state.hasClub} onClose={()=>{}} onCreateClub={(name,short,race,owner)=>{createNewClub(name,short,race,owner)}}/></>;
+ return <><RetroFrame onOpen={setEntity} onMatch={openMatch} club={state.club} currentTab={state.currentTab} onSelectTab={navigate} onOpenNewClub={()=>{}} shoutboxMessages={state.shoutboxMessages} onAddShout={addShoutboxMessage}>{error&&<p className="error">{error}</p>}{state.hasClub&&!state.isLoading&&localStorage.getItem('arena_guest')!=='true'&&<CoachLicense context={planning?'planning':state.currentTab} onNavigate={navigate} onMatch={openMatch} onClub={id=>setEntity({kind:'club',id})}/>}{content()}</RetroFrame>{overviewWindow&&!overviewWindow.closed&&<SquadOverview clubId={state.club.id} players={state.players} targetDocument={overviewWindow.document} closeOnSelect={false} onSelect={id=>{setEntity({kind:'player',id});window.focus()}} onClose={()=>{overviewWindow.close();setOverviewWindow(null)}}/>}{forumWindow&&!forumWindow.closed&&<Forum club={state.club} targetDocument={forumWindow.document} onClose={()=>{forumWindow.close();setForumWindow(null)}}/>}<CreateClubModal isOpen={!state.isLoading&&!state.hasClub} onClose={()=>{}} onCreateClub={(name,short,race,owner)=>{createNewClub(name,short,race,owner)}}/></>;
 }
 
 
