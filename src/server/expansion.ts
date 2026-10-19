@@ -1,3 +1,4 @@
+import {friendlyNotice} from './friendlies';
 import {prepareLaunch} from './launch';
 import {matchParticipation,accumulatedMatchInjury} from '../engine/matchParticipation';
 import {deliverWelcomeMail} from './welcomeMail';
@@ -103,7 +104,7 @@ export async function tickWorld(now=new Date()){
  await deliverWelcomeMail();
  const matchesStarted=await prepareLaunch(now);
  if(!await record('calendar-clock'))await advanceCalendar(now);
- const due=[...(await records('artifact-auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'artifact',date:item.endsAt,item})),...(await records('auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'auction',date:item.endsAt,item})),...(await records('scout')).filter(s=>s.destination&&new Date(s.returnsAt)<=now).map(item=>({type:'scout',date:item.returnsAt,item})),...(await records('fixture')).filter(f=>matchesStarted&&!f.played&&new Date(f.date)<=now).map(item=>({type:'fixture',date:item.date,item}))].sort((a,b)=>a.date.localeCompare(b.date));
+ const due=[...(await records('artifact-auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'artifact',date:item.endsAt,item})),...(await records('auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'auction',date:item.endsAt,item})),...(await records('scout')).filter(s=>s.destination&&new Date(s.returnsAt)<=now).map(item=>({type:'scout',date:item.returnsAt,item})),...[...(await records('fixture')),...(await records('friendly-fixture'))].filter(f=>matchesStarted&&!f.played&&new Date(f.date)<=now).map(item=>({type:'fixture',date:item.date,item}))].sort((a,b)=>a.date.localeCompare(b.date));
  const handledFixtures=new Set<string>();
  for(const event of due){
   if(event.type==='fixture'&&handledFixtures.has(event.item.id))continue;
@@ -160,10 +161,10 @@ export async function tickWorld(now=new Date()){
 
 function route(app:Express,method:'get'|'post',path:string,fn:(req:any)=>Promise<any>){app[method](path,async(req,res)=>{try{res.json(await fn(req))}catch(e:any){res.status(400).json({error:e.message})}});}
 export function registerExpansion(app:Express){
- route(app,'get','/api/match/:id',async(req)=>{const [m]=await db.select().from(matches).where(eq(matches.id,req.params.id));if(!m){const f=await record(req.params.id);if(f?.homeId&&!f.played){const live=await record('live-'+f.id);if(live)return liveMatchView(live.report,new Date());return {upcoming:true,id:f.id};}if(f?.friendly)return f;throw Error('Matchen saknas.');}return m.matchReport;});
+ route(app,'get','/api/match/:id',async(req)=>{const [m]=await db.select().from(matches).where(eq(matches.id,req.params.id));if(!m){const f=await record(req.params.id);if(f?.homeId&&!f.played){const live=await record('live-'+f.id);if(live)return liveMatchView(live.report,new Date());return {upcoming:true,id:f.id};}if(f?.friendly)return (await record('friendly-report-'+f.id))||f;throw Error('Matchen saknas.');}return m.matchReport;});
  route(app,'get','/api/series',async()=>DIVISION_NAMES);
  route(app,'get','/api/fixtures',async(req)=>{
-  const all=await db.select().from(clubs);const [world]=await db.select().from(worldState),live=await records('live-match');return (await records('fixture')).filter(f=>(f.season||1)===Number(req.query.season||world.season)).filter(f=>(!req.query.division||f.division===req.query.division)&&(!req.query.clubId||f.homeId===req.query.clubId||f.awayId===req.query.clubId)).sort((a,b)=>a.date.localeCompare(b.date)).map(f=>{const running=live.find(x=>x.id==='live-'+f.id);const view=running?liveMatchView(running.report,new Date()):null;return {...f,homeName:all.find(c=>c.id===f.homeId)?.name,awayName:all.find(c=>c.id===f.awayId)?.name,...(view?.live?{live:true,liveScore:view.finalScore,elapsedMinute:view.elapsedMinute}:{})}});
+  const all=await db.select().from(clubs);const [world]=await db.select().from(worldState),live=await records('live-match');return [...(await records('fixture')),...(req.query.clubId&&!req.query.division?await records('friendly-fixture'):[])].filter(f=>(f.season||1)===Number(req.query.season||world.season)).filter(f=>(!req.query.division||f.division===req.query.division)&&(!req.query.clubId||f.homeId===req.query.clubId||f.awayId===req.query.clubId)).sort((a,b)=>a.date.localeCompare(b.date)).map(f=>{const running=live.find(x=>x.id==='live-'+f.id);const view=running?liveMatchView(running.report,new Date()):null;return {...f,homeName:all.find(c=>c.id===f.homeId)?.name,awayName:all.find(c=>c.id===f.awayId)?.name,...(view?.live?{live:true,liveScore:view.finalScore,elapsedMinute:view.elapsedMinute}:{})}});
  });
  route(app,'get','/api/search',async(req)=>{const q=String(req.query.q||'').trim().toLocaleLowerCase('sv');if(q.length<2)return{players:[],clubs:[],managers:[]};
  const all=await db.select().from(clubs),ps=await db.select().from(players);
@@ -217,13 +218,15 @@ export function registerExpansion(app:Express){
 }
 
 
+function friendlyDuration(report:any){const end=report.events.find((e:any)=>e.type==='MATCH_END'&&/WO|walkover/i.test(e.text));return end?Math.max(0,Math.min(75,end.minute)):75;}
 export async function playFixture(fixture:any,now:Date,early=false){
 await db.transaction(async(tx:any)=>{
    // Lock only this fixture. A single global match lock forced an otherwise
    // parallel round back into the same several-minute queue.
-   await tx.execute(sql`SELECT pg_advisory_xact_lock(719086, ${fixtureLockKey(fixture.id)})`);const stored=await record(fixture.id,tx);if(!stored||stored.played)return;const pending=await record('live-'+stored.id,tx);if(!early&&pending&&+now<+new Date(stored.date)+75*60000)return;const f=early?{...stored,scheduledDate:stored.date,date:now.toISOString()}:stored;
+   await tx.execute(sql`SELECT pg_advisory_xact_lock(719086, ${fixtureLockKey(fixture.id)})`);const stored=await record(fixture.id,tx);if(!stored||stored.played)return;const pending=await record('live-'+stored.id,tx);if(!early&&pending&&+now<+new Date(stored.date)+(stored.friendly?friendlyDuration(pending.report):75)*60000)return;const f=early?{...stored,scheduledDate:stored.date,date:now.toISOString()}:stored;
    const [home]=await tx.select().from(clubs).where(eq(clubs.id,f.homeId)),[away]=await tx.select().from(clubs).where(eq(clubs.id,f.awayId));
    const hs=await tx.select().from(players).where(pending?.homeIds?.length?inArray(players.id,pending.homeIds):eq(players.clubId,home.id)),as=await tx.select().from(players).where(pending?.awayIds?.length?inArray(players.id,pending.awayIds):eq(players.clubId,away.id));
+   if(f.friendly)for(const p of [...hs,...as])p.currentInjury=0;
    const homeSaved=await record('match-lineup-'+f.id+'-'+home.id,tx),awaySaved=await record('match-lineup-'+f.id+'-'+away.id,tx),homePreset=(await record('presets-'+home.id,tx))?.presets?.[0]?.lineup,awayPreset=(await record('presets-'+away.id,tx))?.presets?.[0]?.lineup;
    home.lineup=homeSaved&&!homeSaved.automatic?homeSaved.lineup:homePreset||homeSaved?.lineup||home.lineup;
    away.lineup=awaySaved&&!awaySaved.automatic?awaySaved.lineup:awayPreset||awaySaved?.lineup||away.lineup;
@@ -238,9 +241,25 @@ await db.transaction(async(tx:any)=>{
    home.lineup={...home.lineup,underlag:home.arena.underlag==='Nimonimbus'?home.lineup.underlag:home.arena.underlag};
    const ward=await record('ward-'+f.id,tx);const originalSpells=new Map<number,string[]>(pending?.originalSpells||[...hs,...as].map(p=>[p.id,p.artifacts]));const currentArtifacts=new Map([...hs,...as].map(p=>[p.id,[...p.artifacts]]));if(ward)for(const p of [...hs,...as])p.artifacts=p.artifacts.filter((a:string)=>!a.startsWith('magic:')&&!a.startsWith('spell:'));const enchantment=ward?null:await record('weather-'+f.id,tx);const effect=enchantment?.effect;const weather=effect?{temp:effect==='rain'?8:15,condition:effect==='rain'?'Regn':effect==='fog'?'Dimma':'Klart',wind:effect==='wind'?(enchantment.spellId==='stormcall'?14:0):3}:weatherFor(home.hometown,new Date(f.date));
    const basketSpell=ward?null:await record('baskets-'+f.id,tx);if(basketSpell)(weather as any).basketsBlocked=true;const chainSpell=ward?null:await record('chains-'+f.id,tx);(weather as any).chainsBlocked=!!chainSpell;(weather as any).spells=[ward?.spellId,enchantment?.spellId,basketSpell?.spellId,chainSpell?.spellId].filter(Boolean);
+   (weather as any).friendly=!!f.friendly;
    const report=pending?.report||simulateMatch(home,away,hs,as,Number(new Date(f.date))+(home.id+away.id).split('').reduce((a,c)=>a+c.charCodeAt(0),0),home.lineup.underlag,weather,overdueEffects(await records('loan',tx),home.id,new Date(f.date)));
-   report.id=f.id;report.date=f.date;
-   if(!early&&+now<+new Date(f.date)+75*60000){await put('live-match','live-'+f.id,{report,homeIds:hs.map(p=>p.id),awayIds:as.map(p=>p.id),originalSpells:[...originalSpells]},tx);return;}
+   report.id=f.id;report.date=f.date;if(f.friendly){report.friendly=true;report.division='Vänskapsmatch';report.attendance=0;report.ticketPrice=0;}
+   if(!early&&+now<+new Date(f.date)+(f.friendly?friendlyDuration(report):75)*60000){await put('live-match','live-'+f.id,{report,homeIds:hs.map(p=>p.id),awayIds:as.map(p=>p.id),originalSpells:[...originalSpells]},tx);return;}
+   if(f.friendly){
+    for(const [side,squad] of [['home',hs],['away',as]] as any[]){
+     const credit=matchParticipation(report,side);if(!credit.started)continue;
+     for(const p of squad){if(!credit.slots.has(p.id)||p.isDeceased)continue;
+      const original=originalSpells.get(p.id)||p.artifacts;
+      await tx.update(players).set({artifacts:[...consumeMatchSpells(original),...(currentArtifacts.get(p.id)||[]).filter((a:string)=>!original.includes(a))]}).where(eq(players.id,p.id));
+     }
+    }
+    for(const contract of (await records('mercenary-contract',tx)).filter(c=>[home.id,away.id].includes(c.clubId)&&!c.completed&&+new Date(c.hiredAt)<=+new Date(f.date))){await tx.update(players).set({clubId:null}).where(eq(players.id,contract.playerId));await put('mercenary-contract',contract.id,{...contract,completed:true},tx);}
+    await put('friendly-report','friendly-report-'+f.id,report,tx);
+    await put('friendly-fixture',f.id,{...f,played:true,homeScore:report.finalScore.home,awayScore:report.finalScore.away},tx);
+    await tx.delete(gameRecords).where(eq(gameRecords.id,'live-'+f.id));
+    for(const club of [home,away])await friendlyNotice(tx,club,f.id+'-result','Vänskapsmatchen är färdig',home.name+' – '+away.name+': '+report.finalScore.home+'–'+report.finalScore.away+'. Resultatet påverkar inte serien eller spelarstatistiken.',{matchId:f.id});
+    return;
+   }
    await tx.insert(matches).values({id:f.id,round:f.round,division:f.division,homeClubId:home.id,awayClubId:away.id,homeScore:report.finalScore.home,awayScore:report.finalScore.away,matchReport:report,season:f.season||1,playedAt:new Date(f.date)});
    for(const [c,scored,conceded] of [[home,report.finalScore.home,report.finalScore.away],[away,report.finalScore.away,report.finalScore.home]] as any[]){
     const wins=c.wins+(scored>conceded?1:0),draws=c.draws+(scored===conceded?1:0),losses=c.losses+(scored<conceded?1:0);
