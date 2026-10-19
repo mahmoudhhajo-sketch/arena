@@ -50,6 +50,7 @@ import {registerMatchPlanning} from './src/server/matchPlanning';
 
 import {registerMagic} from './src/server/magic';
 
+import {registerFriendlies} from './src/server/friendlies';
 import {registerExhibitions} from './src/server/exhibitions';
 
 import {registerArtifactMarket} from './src/server/artifactMarket';
@@ -117,6 +118,7 @@ registerMatchPlanning(app);
 registerMagic(app);
 
 registerExhibitions(app);
+registerFriendlies(app);
 
 registerArtifactMarket(app);
 
