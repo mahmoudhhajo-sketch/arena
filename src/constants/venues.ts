@@ -1,3 +1,4 @@
+import {FRIENDLY_VENUES} from './friendlies';
 import {ArenaConfig,Club} from '../types';
 const names=['Kejsararenan','Solkronan','Månporten','Drakvallen','Berunias borg','Silverläktaren','Örnnästet','Kronans gård','Rosentorget','Järnporten','Högvakten','Mitrilhallen','Vargborgen','Askfältet','Stormvallen','Kopparringen','Stjärnvalvet','Norrporten','Söderlyktan','Västervallen','Granitgården','Havsarenan','Gryningsvallen','Skymningsborg','Lövkransen','Flintgården','Korpnästet','Kungslunden','Tornringen','Mossvallen'];
 // Kejsarens arenor är spridda över riket. Stora handelsorter har flera, medan mindre orter fortfarande får matchliv.
@@ -12,4 +13,4 @@ export const CAPITAL_VENUES=[
 export function standardVenue(f:{id:string}){const hash=[...f.id].reduce((a,c)=>a+c.charCodeAt(0),0);return {id:'standard-'+f.id,name:'Allmänna arenan '+(hash%900+100),landscape:'Allmän mark',underlag:['Gräs','Jord','Sten'][hash%3] as ArenaConfig['underlag'],capacity:30000,typeDescription:'Allmän matcharena',ara:hash%3,skrack:(hash+1)%3,cost:0,weeklyRent:0};}
 export function bookingFee(v:any){return v.id?.startsWith('club-')&&Number.isInteger(v.rentalPrice)?v.rentalPrice:v.id?.startsWith('standard-')?0:Math.round((v.capacity*.2+(v.ara||0)**2*500+(v.skrack||0)**2*300)/100)*100}
 export function venueCatalog(teams:any[]){return [...IMPERIAL_VENUES,...CAPITAL_VENUES,...teams.filter(c=>c.arena).map(c=>({...c.arena,id:'club-'+c.id,ownerName:c.name,hometown:c.hometown}))].map(v=>({...v,bookingFee:bookingFee(v)}))}
-export function fixtureVenue(f:any,teams:any[]){return venueCatalog(teams).find(a=>a.id===(f.venueId||'club-'+f.homeId))||standardVenue(f)}
+export function fixtureVenue(f:any,teams:any[]){if(f.friendly)return FRIENDLY_VENUES.find(v=>v.id===f.venueId)||FRIENDLY_VENUES[0];return venueCatalog(teams).find(a=>a.id===(f.venueId||'club-'+f.homeId))||standardVenue(f)}

@@ -10,13 +10,5 @@ export function registerExhibitions(app:Express){
  });
  route('get','/api/friendlies/:clubId',async req=>(await records('friendly')).filter(r=>r.homeClub.id===req.params.clubId||r.awayClub.id===req.params.clubId));
  route('get','/api/friendly/:id',async req=>{const r=await record(req.params.id);if(!r?.friendly)throw Error('Träningsmatchen saknas.');return r});
- route('post','/api/friendly',async req=>{
-  const id='friendly-'+String(req.body.clubId)+'-'+String(req.body.requestId||'preview-1');const existing=await record(id);if(existing)return existing;
-  const [home]=await db.select().from(clubs).where(eq(clubs.id,req.body.clubId));if(!home||home.isBot)throw Error('Välj ditt lag.');
-  const hs=await db.select().from(players).where(eq(players.clubId,home.id));const invalid=validateLineup(home.lineup as any,hs as any);if(invalid)throw Error('Spara en giltig uppställning först: '+invalid);
-  const bots=(await db.select().from(clubs)).filter(c=>c.isBot),away=bots[Math.floor(Math.random()*bots.length)],as=await db.select().from(players).where(eq(players.clubId,away.id));
-  const report=simulateMatch(home as any,away as any,hs as any,as as any,Date.now(),(home.arena as any)?.underlag||'Sten');
-  const result={...report,id,date:new Date().toISOString(),division:'Vänskapsmatch · test',friendly:true,arenaName:(home.arena as any)?.name||'Kejsardömets träningsarena',attendance:Math.min(30000,report.attendance)};
-  await put('friendly',id,result);return result;
- });
+ route('post','/api/friendly',async()=>{throw Error('Utmana ett lag från lagprofilen för att boka en vänskapsmatch.');});
 }

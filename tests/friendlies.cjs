@@ -1,0 +1,54 @@
+const fs=require('fs'),ts=require('typescript'),assert=require('node:assert/strict');
+process.env.LOCAL_DB_DIR=':memory:';process.env.DATABASE_URL='';process.env.SQL_HOST='';process.env.RAILWAY_ENVIRONMENT='';
+require.extensions['.ts']=(m,p)=>m._compile(ts.transpileModule(fs.readFileSync(p,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,p);
+const {db,initializeDatabase,closeDatabase}=require('../src/db/index.ts'),{clubs,players,matches,worldState}=require('../src/db/schema.ts'),{put,record,records}=require('../src/server/records.ts'),{registerFriendlies}=require('../src/server/friendlies.ts'),{registerMatchPlanning}=require('../src/server/matchPlanning.ts'),{registerExpansion,playFixture}=require('../src/server/expansion.ts'),{friendlyKickoff}=require('../src/constants/friendlies.ts'),{SLOT_KEYS}=require('../src/engine/lineup.ts'),{eq}=require('drizzle-orm');
+let server;
+(async()=>{
+ assert.equal(friendlyKickoff('2030-07-01',new Date('2030-01-01')),'2030-07-01T17:00:00.000Z');
+ assert.equal(friendlyKickoff('2030-01-07',new Date('2030-01-01')),'2030-01-07T18:00:00.000Z');
+ for(const d of ['2030-01-08','2030-01-11','2030-02-30','bad','2020-01-01'])assert.throws(()=>friendlyKickoff(d));
+ const {chatVisibleStart}=require('../src/server/sharedChat.ts');
+ assert.equal(chatVisibleStart(new Date('2026-10-19T03:00:00Z')).toISOString(),'2026-10-12T02:00:00.000Z');
+ assert.equal(chatVisibleStart(new Date('2026-10-26T02:59:59Z')).toISOString(),'2026-10-12T02:00:00.000Z');
+ assert.equal(chatVisibleStart(new Date('2026-10-26T03:00:00Z')).toISOString(),'2026-10-26T03:00:00.000Z');
+ await initializeDatabase();await db.insert(worldState).values({id:1,season:1});
+ const attrs={snabbhet:6,kondition:6,markering:6,passning:6,teknik:6,speluppfattning:6,skott:6,malvakt:6,tuffhet:6,aggressivitet:16};
+ for(let n=0;n<3;n++){
+  const lineup={slots:Object.fromEntries(SLOT_KEYS.map((k,i)=>[k,{slotKey:k,activePlayerIds:[n*20+i+1],reservePlayerIds:[n*20+11]}])),underlag:'Gräs',intrade:5,tactics:{uppspel:'Normal',spelvag:'Normal',skytte:'Normal'}};
+  await db.insert(clubs).values({id:'team'+n,userId:'user'+n,name:'Lag '+n,shortName:'L'+n,ownerName:'Test '+n,race:'human',hometown:'Berunia',division:'Kejsarserien',trainingPoints:{},lineup,gold:100000});
+  for(let i=1;i<=11;i++)await db.insert(players).values({id:n*20+i,clubId:'team'+n,name:'Spelare '+n+'-'+i,race:'human',shirtNumber:i,hometown:'Berunia',nominalPosition:'Innermitt',wage:1000,attributes:attrs,currentInjury:3,totalInjury:2,artifacts:i===1?['magic:aura:4']:[],isMercenary:i===2});
+  await put('mercenary-contract','contract'+n,{clubId:'team'+n,playerId:n*20+2,hiredAt:'2026-01-01',completed:false});
+ }
+ const app=require('express')();app.use(require('express').json());app.use((req,res,next)=>{req.arenaUser={userId:req.headers['x-user']||'user0'};next()});registerFriendlies(app);registerMatchPlanning(app);registerExpansion(app);
+ server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));const base='http://127.0.0.1:'+server.address().port;
+ const call=async(path,body,user='user0')=>{const r=await fetch(base+'/api'+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','x-user':user},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json()}};
+ const challenge=await call('/friendly-challenges',{targetId:'team1',day:'2030-01-07',venueId:'friendly-ground-1'});assert.equal(challenge.status,200,JSON.stringify(challenge.data));
+ assert.equal((await call('/friendly-challenges/'+challenge.data.id,undefined,'user2')).status,400);
+ assert.equal((await call('/friendly-challenges/'+challenge.data.id+'/respond',{accept:true},'user0')).status,400);
+ const accepted=await call('/friendly-challenges/'+challenge.data.id+'/respond',{accept:true},'user1');assert.equal(accepted.status,200,JSON.stringify(accepted.data));
+ assert.equal((await call('/friendly-challenges/'+challenge.data.id+'/respond',{accept:true},'user1')).data.fixtureId,accepted.data.fixtureId);
+ assert.equal((await call('/friendly-challenges',{targetId:'team0',day:'2030-01-07',venueId:'friendly-ground-0'},'user2')).status,400);
+ const fixture=await record(accepted.data.fixtureId);assert.equal((await records('fixture')).length,0);
+ assert.equal((await call('/match-plan/'+fixture.id+'?clubId=team0')).data.venues.length,3);
+ assert.equal((await call('/match-plan/'+fixture.id,{clubId:'team0',venueId:'imperial-0'})).status,400);
+ assert.equal((await call('/match-plan/'+fixture.id,{clubId:'team0',ticket:5})).status,400);
+ assert.equal((await call('/match-plan/'+fixture.id,{clubId:'team0',venueId:'friendly-ground-2'})).status,200);
+ const beforePlayers=await db.select().from(players),beforeClubs=await db.select().from(clubs),beforeWorld=await db.select().from(worldState);
+ await playFixture(fixture,new Date(fixture.date));
+ const live=await record('live-'+fixture.id);assert.ok(live.report.events.length);assert.equal(live.report.attendance,0);assert.equal(live.report.injuries.home.length+live.report.injuries.away.length,0);assert.equal(live.report.startingLineups.home.length,10);
+ const {liveMatchView}=require('../src/server/liveMatch.ts');const view=liveMatchView(live.report,new Date(+new Date(fixture.date)+17*60000));assert.ok(view.events.every(e=>e.minute<=17));assert.equal(view.live,true);assert.equal(view.friendly,true);assert.equal(view.individualStats.length,0);
+ assert.deepEqual(await db.select().from(players),beforePlayers,'Kickoff modified players');
+ await playFixture(fixture,new Date(+new Date(fixture.date)+75*60000));
+ assert.equal((await db.select().from(matches)).length,0);assert.deepEqual(await db.select().from(clubs),beforeClubs);assert.deepEqual(await db.select().from(worldState),beforeWorld);assert.equal((await records('participation')).length,0);assert.equal((await records('ledger')).length,0);
+ const after=await db.select().from(players);for(const p of after){const b=beforePlayers.find(x=>x.id===p.id);const {artifacts,clubId,...rest}=p,{artifacts:ba,clubId:bc,...br}=b;assert.deepEqual(rest,br,'Player progression changed');if(p.id===1||p.id===21)assert.deepEqual(artifacts,['magic:aura:3']);else assert.deepEqual(artifacts,ba);assert.equal(clubId,(p.id===2||p.id===22)?null:bc);}
+ assert.ok((await record(fixture.id)).played);assert.equal(await record('live-'+fixture.id),null);assert.equal((await call('/match/'+fixture.id)).data.friendly,true);
+ await playFixture(fixture,new Date(+new Date(fixture.date)+76*60000));assert.deepEqual(await db.select().from(players),after,'Finalization ran twice');
+ assert.equal((await records('mail')).length,5);assert.equal((await records('team-news')).length,5);
+ const a=await call('/friendly-challenges',{targetId:'team1',day:'2030-01-09',venueId:'friendly-ground-0'});
+ const b=await call('/friendly-challenges',{targetId:'team1',day:'2030-01-09',venueId:'friendly-ground-0'},'user2');
+ const race=await Promise.all([a,b].map(x=>call('/friendly-challenges/'+x.data.id+'/respond',{accept:true},'user1')));assert.deepEqual(race.map(x=>x.status).sort(),[200,400]);
+ const wo={id:'friendly-wo-test',friendly:true,homeId:'team0',awayId:'team1',date:'2030-01-10T18:00:00.000Z',venueId:'friendly-ground-0',division:'Vänskapsmatch',season:1,played:false,ticketPrice:0};
+ await put('friendly-fixture',wo.id,wo);const empty={slots:{},underlag:'Gräs',intrade:0,tactics:{uppspel:'Normal',spelvag:'Normal',skytte:'Normal'}};
+ await db.update(players).set({isDeceased:true}).where(eq(players.clubId,'team0'));const beforeWo=await db.select().from(players);await playFixture(wo,new Date(wo.date));assert.ok((await record(wo.id)).played);assert.deepEqual(await db.select().from(players),beforeWo,'WO changed player state');
+ console.log('PASS: dates/DST, invitations, ownership, double booking, free arenas, live projection, injured participation, zero progression, spell/mercenary consumption, idempotence.');
+})().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{if(server)await new Promise(r=>server.close(r));await closeDatabase()});
