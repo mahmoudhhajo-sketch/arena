@@ -105,7 +105,7 @@ export function simulateMatch(
     wind: rng.nextInt(1, 8),
   };
 
-  const attendance=Math.round(calculateAttendance(homeClub,awayClub,(homeClub.lineup?.intrade??8)+crowdEffects.portSurcharge,homeClub.arena?.capacity||30000,rng.next())*crowdEffects.fanFactor);
+  const attendance=(weather as any)?.friendly?0:Math.round(calculateAttendance(homeClub,awayClub,(homeClub.lineup?.intrade??8)+crowdEffects.portSurcharge,homeClub.arena?.capacity||30000,rng.next())*crowdEffects.fanFactor);
   // Build active field squads (Starters & Reserves)
   function buildSquad(
     club: Club,
@@ -395,7 +395,7 @@ export function simulateMatch(
         const loserSquad=attackingWins?opponentSquad:fightSquad,winnerSide=attackingWins?fightSide:fightSide==='home'?'away':'home',loserSide=winnerSide==='home'?'away':'home';
         inc(winner,'slagsmal','vunna');(attackingWins?fightStats:opponentStats).slagsmal.vunna++;
         const injuryChance=injuryProbability(skill(winner,'tuffhet'),skill(loser,'tuffhet'));
-        const injured=!activeSpells(loser.player.artifacts).some(s=>s.immune)&&rng.next()<injuryChance&&!luck(loser,'skada');
+        const injured=!(weather as any)?.friendly&&!activeSpells(loser.player.artifacts).some(s=>s.immune)&&rng.next()<injuryChance&&!luck(loser,'skada');
         events.push({id:'fight-'+period+'-'+phase,period,minute:currentMinute,type:'FIGHT_RESULT',initiatorPlayerId:fighterCandidate.player.id,teamSide:winnerSide,playerName:winner.player.name,playerId:winner.player.id,opponentPlayerName:loser.player.name,opponentPlayerId:loser.player.id,text:injured?`${winner.player.name} vann närkampen. ${loser.player.name} blev liggande och behövde hjälp av bårbärarna.`:`${winner.player.name} fick övertaget mot ${loser.player.name}, men båda kunde fortsätta.`,important:injured} as any);
         const wound=(target:ActivePlayerState,squad:typeof homeSquad,side:'home'|'away',severity:number,suffix:string)=>{
           const old=target.player,slot=target.slotKey;unavailable.add(old.id);
@@ -408,7 +408,7 @@ export function simulateMatch(
           // Resolve simultaneous ring retaliation by the first team to lose its sixth player.
           if(squad.active.length<6&&!forfeit)forfeit=side==='home'?'away':'home';
         };
-        const bearer=loser.player,retaliation=cantaniringRetaliation(bearer.artifacts,attackingWins);
+        const bearer=loser.player,retaliation=!(weather as any)?.friendly&&cantaniringRetaliation(bearer.artifacts,attackingWins);
         if(injured)wound(loser,loserSquad,loserSide,injurySeverity(skill(winner,'tuffhet'),skill(loser,'tuffhet'),rng.next()),'');
         if(retaliation){
           events.push({id:'cantaniring-'+period+'-'+phase,period,minute:currentMinute,type:'ARTIFACT',teamSide:loserSide,playerId:bearer.id,playerName:bearer.name,opponentPlayerId:winner.player.id,opponentPlayerName:winner.player.name,text:cantaniringCommentary(bearer.name,winner.player.name,period*31+phase+bearer.id),important:true});
