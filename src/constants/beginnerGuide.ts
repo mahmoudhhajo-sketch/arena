@@ -20,13 +20,6 @@ En ny klubb får en spelartrupp och en startkassa. Du behöver inte bygga en are
 I seriespelet tävlar din klubb om tabellplaceringar och avancemang. Högst upp finns Kejsarserien och dess Kodudorfpokal. Enskilda spelare kan också bli legender genom Kejsarspelen, en separat tävling som förklaras längre fram. Men ditt första mål är enkelt: ställ upp ett spelklart lag och lär känna det under den första matchen.`},
  {id:1,group:'Börja här',title:'Så spelas Yaraaz Vigil',body:`Yaraaz Vigil är en bollsport där två lag försöker besegra varandra över fem perioder. En period är femton minuter lång. Det finns två sätt att göra poäng: skjuta i motståndarens stora mål eller i någon av de två sidokorgarna.
 
-## Vänskapsmatcher
-Vill du pröva en uppställning utan att riskera truppens hälsa? Öppna ett annat managerstyrt lags profil och välj **Utmana på vänskapsmatch**. Motståndaren får förfrågan i både post och lagnyheter och kan acceptera eller avböja. En accepterad match hittar du under Matcher → Vänskapsmatcher.
-
-Vänskapsmatcher börjar klockan 19.00 svensk tid på måndagar, onsdagar, torsdagar, lördagar och söndagar. Varje lag kan spela högst en match per dag. Hemmalaget väljer mellan tre kostnadsfria allmänna träningsplaner med gräs, jord eller sten. Gör uppställningen på matchsidan precis som till en seriematch, och följ sedan referatet genom att uppdatera sidan.
-
-Skadade spelare får delta. Vänskapsmatchen ger inga nya skador, träningsunderlag, formförändringar, meriter eller tävlingsstatistik. Det kommer ingen publik och laget får inga matchintäkter. **Magi och fribrytare har däremot sina vanliga kostnader och deras matchvaraktighet förbrukas som vanligt.** Resultatet sparas bland vänskapsmatcherna.
-
 ## Planen och bollen
 Uppställningsbilden delar in utespelarnas plan i nio rutor: tre för backar, tre för mittfältare och tre för anfallare. Dessutom finns en målvaktsruta. Sidokorgarna står utanför de två yttermittsrutorna. Rutorna visar spelarnas utgångslägen och vilka ytor de främst ansvarar för.
 
@@ -153,7 +146,14 @@ Jämför bollvägar, försök, lyckade handlingar och byten. Ett dåligt resulta
 Öppna matchsidan och uppdatera själv för att följa nya händelser. Referatet visar det som hittills har hänt. Det är ett urval av bollhandlingarna, inte en text för varje passning.
 
 ## Efter matchen
-Titta både på periodresultaten och på statistiken. Vem fick avslut? Var bröts anfallen? Vilka reserver behövdes? Kontrollera sedan skadorna och uppställningen till nästa match. Matchen bidrar också till spelarnas träningsunderlag för veckan.`},
+Titta både på periodresultaten och på statistiken. Vem fick avslut? Var bröts anfallen? Vilka reserver behövdes? Kontrollera sedan skadorna och uppställningen till nästa match. Matchen bidrar också till spelarnas träningsunderlag för veckan.
+
+## Vänskapsmatcher
+Vill du pröva en uppställning utan att riskera truppens hälsa? Öppna ett annat managerstyrt lags profil och välj Utmana på vänskapsmatch. Motståndaren får förfrågan i både post och lagnyheter och kan acceptera eller avböja. En accepterad match hittar du under Matcher → Vänskapsmatcher.
+
+Vänskapsmatcher börjar klockan 19.00 svensk tid på måndagar, onsdagar, torsdagar, lördagar och söndagar. Varje lag kan spela högst en match per dag. Hemmalaget väljer mellan tre kostnadsfria allmänna träningsplaner med gräs, jord eller sten. Gör uppställningen på matchsidan precis som till en seriematch, och följ sedan referatet genom att uppdatera sidan.
+
+Skadade spelare får delta. Vänskapsmatchen ger inga nya skador, träningsunderlag, formförändringar, meriter eller tävlingsstatistik. Det kommer ingen publik och laget får inga matchintäkter. Magi och fribrytare har däremot sina vanliga kostnader och deras matchvaraktighet förbrukas som vanligt. Resultatet sparas bland vänskapsmatcherna.`},
  {id:2,group:'Lär känna laget',title:'Mambennas folk',body:`Klubben har en huvudras, men truppen kan innehålla flera folk. Rasen ger en bakgrund och vissa vanliga styrkor, inte en garanti för hur en enskild spelare fungerar.
 
 - Människor är allsidiga och har ofta fallenhet för markering. Deras huvudstad är Skeppsvye.
