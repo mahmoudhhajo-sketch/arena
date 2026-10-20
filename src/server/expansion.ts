@@ -1,3 +1,4 @@
+import {restoreFriendlyMagic} from './restoreFriendlyMagic';
 import {friendlyNotice} from './friendlies';
 import {prepareLaunch} from './launch';
 import {matchParticipation,accumulatedMatchInjury} from '../engine/matchParticipation';
@@ -17,7 +18,7 @@ import {matchMerit,postMatchForm} from '../engine/matchEngine';
 import {progressEconomy,releaseMarketPlayers,awardSeason} from './progression';
 import {weatherFor} from '../engine/weather';
 import {dailyUpdates} from '../engine/calendar';
-import {consumeMatchSpells} from '../constants/spells';
+import {consumeFixtureSpells,artifactsForFixture} from '../constants/spells';
 import {ARTIFACTS} from '../constants/market';
 import {advanceImperialGames} from './officialGames';
 import {sendContact} from './contactMail';
@@ -102,6 +103,7 @@ export async function tickWorld(now=new Date()){
  try{
  if(!localClient){worker=await createPool().connect();const lock=await worker.query('SELECT pg_try_advisory_lock(719202) AS acquired');if(!lock.rows[0].acquired)return;}
  await deliverWelcomeMail();
+ await restoreFriendlyMagic();
  const matchesStarted=await prepareLaunch(now);
  if(!await record('calendar-clock'))await advanceCalendar(now);
  const due=[...(await records('artifact-auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'artifact',date:item.endsAt,item})),...(await records('auction')).filter(a=>!a.closed&&new Date(a.endsAt)<=now).map(item=>({type:'auction',date:item.endsAt,item})),...(await records('scout')).filter(s=>s.destination&&new Date(s.returnsAt)<=now).map(item=>({type:'scout',date:item.returnsAt,item})),...[...(await records('fixture')),...(await records('friendly-fixture'))].filter(f=>matchesStarted&&!f.played&&new Date(f.date)<=now).map(item=>({type:'fixture',date:item.date,item}))].sort((a,b)=>a.date.localeCompare(b.date));
@@ -239,7 +241,7 @@ await db.transaction(async(tx:any)=>{
    if(shouldAutofillInactiveLineup(away,f,loginEvents,playedMatches))away.lineup=completeReserves(away.lineup,as);
    const recent=await tx.select({homeClubId:matches.homeClubId,awayClubId:matches.awayClubId,homeScore:matches.homeScore,awayScore:matches.awayScore,playedAt:matches.playedAt}).from(matches);for(const c of [home,away]){const past=recent.filter((m:any)=>m.homeClubId===c.id||m.awayClubId===c.id).sort((a:any,b:any)=>+new Date(b.playedAt)-+new Date(a.playedAt)).slice(0,5);(c as any).recentForm=past.length?past.reduce((n:number,m:any)=>{const h=m.homeClubId===c.id;const a=h?m.homeScore:m.awayScore,b=h?m.awayScore:m.homeScore;return n+(a>b?1:a===b?.5:0)},0)/past.length:.5;}(home as any).morale=await clubMorale(home.id,tx,+new Date(f.date));(away as any).morale=await clubMorale(away.id,tx,+new Date(f.date));home.arena=fixtureVenue(f,await tx.select().from(clubs));
    home.lineup={...home.lineup,underlag:home.arena.underlag==='Nimonimbus'?home.lineup.underlag:home.arena.underlag};
-   const ward=await record('ward-'+f.id,tx);const originalSpells=new Map<number,string[]>(pending?.originalSpells||[...hs,...as].map(p=>[p.id,p.artifacts]));const currentArtifacts=new Map([...hs,...as].map(p=>[p.id,[...p.artifacts]]));if(ward)for(const p of [...hs,...as])p.artifacts=p.artifacts.filter((a:string)=>!a.startsWith('magic:')&&!a.startsWith('spell:'));const enchantment=ward?null:await record('weather-'+f.id,tx);const effect=enchantment?.effect;const weather=effect?{temp:effect==='rain'?8:15,condition:effect==='rain'?'Regn':effect==='fog'?'Dimma':'Klart',wind:effect==='wind'?(enchantment.spellId==='stormcall'?14:0):3}:weatherFor(home.hometown,new Date(f.date));
+   const ward=await record('ward-'+f.id,tx);const originalSpells=new Map<number,string[]>(pending?.originalSpells||[...hs,...as].map(p=>[p.id,p.artifacts]));const currentArtifacts=new Map([...hs,...as].map(p=>[p.id,[...p.artifacts]]));for(const p of [...hs,...as])p.artifacts=artifactsForFixture(p.artifacts,f);if(ward)for(const p of [...hs,...as])p.artifacts=p.artifacts.filter((a:string)=>!a.startsWith('magic:')&&!a.startsWith('spell:'));const enchantment=ward?null:await record('weather-'+f.id,tx);const effect=enchantment?.effect;const weather=effect?{temp:effect==='rain'?8:15,condition:effect==='rain'?'Regn':effect==='fog'?'Dimma':'Klart',wind:effect==='wind'?(enchantment.spellId==='stormcall'?14:0):3}:weatherFor(home.hometown,new Date(f.date));
    const basketSpell=ward?null:await record('baskets-'+f.id,tx);if(basketSpell)(weather as any).basketsBlocked=true;const chainSpell=ward?null:await record('chains-'+f.id,tx);(weather as any).chainsBlocked=!!chainSpell;(weather as any).spells=[ward?.spellId,enchantment?.spellId,basketSpell?.spellId,chainSpell?.spellId].filter(Boolean);
    (weather as any).friendly=!!f.friendly;
    const report=pending?.report||simulateMatch(home,away,hs,as,Number(new Date(f.date))+(home.id+away.id).split('').reduce((a,c)=>a+c.charCodeAt(0),0),home.lineup.underlag,weather,overdueEffects(await records('loan',tx),home.id,new Date(f.date)));
@@ -250,11 +252,11 @@ await db.transaction(async(tx:any)=>{
      const credit=matchParticipation(report,side);if(!credit.started)continue;
      for(const p of squad){if(!credit.slots.has(p.id)||p.isDeceased)continue;
       const original=originalSpells.get(p.id)||p.artifacts;
-      await tx.update(players).set({artifacts:[...consumeMatchSpells(original),...(currentArtifacts.get(p.id)||[]).filter((a:string)=>!original.includes(a))]}).where(eq(players.id,p.id));
+      await tx.update(players).set({artifacts:[...consumeFixtureSpells(original,f),...(currentArtifacts.get(p.id)||[]).filter((a:string)=>!original.includes(a))]}).where(eq(players.id,p.id));
      }
     }
     for(const contract of (await records('mercenary-contract',tx)).filter(c=>[home.id,away.id].includes(c.clubId)&&!c.completed&&+new Date(c.hiredAt)<=+new Date(f.date))){await tx.update(players).set({clubId:null}).where(eq(players.id,contract.playerId));await put('mercenary-contract',contract.id,{...contract,completed:true},tx);}
-    await put('friendly-report','friendly-report-'+f.id,report,tx);
+    await put('friendly-report','friendly-report-'+f.id,{...report,magicFixtureVersion:2},tx);
     await put('friendly-fixture',f.id,{...f,played:true,homeScore:report.finalScore.home,awayScore:report.finalScore.away},tx);
     await tx.delete(gameRecords).where(eq(gameRecords.id,'live-'+f.id));
     for(const club of [home,away])await friendlyNotice(tx,club,f.id+'-result','Vänskapsmatchen är färdig',home.name+' – '+away.name+': '+report.finalScore.home+'–'+report.finalScore.away+'. Resultatet påverkar inte serien eller spelarstatistiken.',{matchId:f.id});
@@ -277,7 +279,7 @@ await db.transaction(async(tx:any)=>{
      const injury=report.injuries[side].find((i:any)=>i.playerId===p.id);
      const goals=report.events.filter(e=>e.playerId===p.id&&e.type==='GOAL_NORMAL').length,baskets=report.events.filter(e=>e.playerId===p.id&&e.type==='GOAL_BASKET').length;
       const performance=report.individualStats.find((row:any)=>row.id===p.id),statRows=Object.values(performance?.stats||{}) as any[],attempts=statRows.reduce((sum:number,stat:any)=>sum+Number(stat.antal||0),0),weighted=statRows.reduce((sum:number,stat:any)=>sum+Number(stat.viktat||0),0)+Number(performance?.assistWeighted||0),performanceEffect=weighted/Math.max(100,attempts*22);
-     await tx.update(players).set({form:postMatchForm(p.form,side==='home'?report.finalScore.home>report.finalScore.away:report.finalScore.away>report.finalScore.home,!!injury,new SeededRNG(p.id+Number(new Date(f.date))).next(),performanceEffect),assists:p.assists+report.events.filter((e:any)=>e.assistPlayerId===p.id).length,seasonAssists:p.seasonAssists+report.events.filter((e:any)=>e.assistPlayerId===p.id).length,artifacts:[...consumeMatchSpells(originalSpells.get(p.id)||p.artifacts),...(currentArtifacts.get(p.id)||[]).filter((a:string)=>!(originalSpells.get(p.id)||p.artifacts).includes(a))],matches:p.matches+1,seasonMatches:p.seasonMatches+1,goals:p.goals+goals,seasonGoals:p.seasonGoals+goals,basketGoals:p.basketGoals+baskets,seasonBasketGoals:p.seasonBasketGoals+baskets,currentInjury:injury?injury.severity:p.currentInjury,totalInjury:accumulatedMatchInjury(p.totalInjury,participationCredit.started,!!injury,p.attributes.tuffhet),isDeceased:accumulatedMatchInjury(p.totalInjury,participationCredit.started,!!injury,p.attributes.tuffhet)>=9}).where(eq(players.id,p.id));
+     await tx.update(players).set({form:postMatchForm(p.form,side==='home'?report.finalScore.home>report.finalScore.away:report.finalScore.away>report.finalScore.home,!!injury,new SeededRNG(p.id+Number(new Date(f.date))).next(),performanceEffect),assists:p.assists+report.events.filter((e:any)=>e.assistPlayerId===p.id).length,seasonAssists:p.seasonAssists+report.events.filter((e:any)=>e.assistPlayerId===p.id).length,artifacts:[...consumeFixtureSpells(originalSpells.get(p.id)||p.artifacts,f),...(currentArtifacts.get(p.id)||[]).filter((a:string)=>!(originalSpells.get(p.id)||p.artifacts).includes(a))],matches:p.matches+1,seasonMatches:p.seasonMatches+1,goals:p.goals+goals,seasonGoals:p.seasonGoals+goals,basketGoals:p.basketGoals+baskets,seasonBasketGoals:p.seasonBasketGoals+baskets,currentInjury:injury?injury.severity:p.currentInjury,totalInjury:accumulatedMatchInjury(p.totalInjury,participationCredit.started,!!injury,p.attributes.tuffhet),isDeceased:accumulatedMatchInjury(p.totalInjury,participationCredit.started,!!injury,p.attributes.tuffhet)>=9}).where(eq(players.id,p.id));
     }
    }
    for(const contract of (await records('mercenary-contract',tx)).filter(c=>[home.id,away.id].includes(c.clubId)&&!c.completed&&+new Date(c.hiredAt)<=+new Date(f.date))){await tx.update(players).set({clubId:null}).where(eq(players.id,contract.playerId));await put('mercenary-contract',contract.id,{...contract,completed:true},tx);}
