@@ -153,7 +153,7 @@ Vill du pröva en uppställning utan att riskera truppens hälsa? Öppna ett ann
 
 Vänskapsmatcher börjar klockan 19.00 svensk tid på måndagar, onsdagar, torsdagar, lördagar och söndagar. Varje lag kan spela högst en match per dag. Hemmalaget väljer mellan tre kostnadsfria allmänna träningsplaner med gräs, jord eller sten. Gör uppställningen på matchsidan precis som till en seriematch, och följ sedan referatet genom att uppdatera sidan.
 
-Skadade spelare får delta. Vänskapsmatchen ger inga nya skador, träningsunderlag, formförändringar, meriter eller tävlingsstatistik. Det kommer ingen publik och laget får inga matchintäkter. Magi och fribrytare har däremot sina vanliga kostnader och deras matchvaraktighet förbrukas som vanligt. Resultatet sparas bland vänskapsmatcherna.`},
+Skadade spelare får delta. Spelare kan skadas och behöva bytas ut under vänskapsmatchen. Efter slutsignalen försvinner skadorna från just den matchen; tidigare skador påverkas inte och ingen permanent skada tillkommer. Matchen ger inget träningsunderlag, inga formförändringar, meriter eller tävlingsstatistik. Det kommer ingen publik och laget får inga matchintäkter. Magi och fribrytare har däremot sina vanliga kostnader. Välj match när du kastar magi: magi avsedd för serien förbrukas inte i en vänskapsmatch. Besvärjelser som varar flera matcher fortsätter inom samma matchtyp. Fribrytarens kontrakt förbrukas som vanligt. Resultatet sparas bland vänskapsmatcherna.`},
  {id:2,group:'Lär känna laget',title:'Mambennas folk',body:`Klubben har en huvudras, men truppen kan innehålla flera folk. Rasen ger en bakgrund och vissa vanliga styrkor, inte en garanti för hur en enskild spelare fungerar.
 
 - Människor är allsidiga och har ofta fallenhet för markering. Deras huvudstad är Skeppsvye.

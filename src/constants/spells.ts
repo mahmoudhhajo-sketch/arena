@@ -34,3 +34,15 @@ export function activeSpells(artifacts:string[]=[],now=Date.now()){return artifa
 export function consumeMatchSpells(artifacts:string[]){return artifacts.flatMap(a=>{if(!a.startsWith('magic:'))return [a];const [tag,id,count]=a.split(':');return Number(count)>1?[tag+':'+id+':'+(Number(count)-1)]:[]})}
 
 export function spellById(id:string){return SPELLS.find(s=>s.id===(/^antimagic-(human|elf|dwarf|orc|goblin|troll)$/.test(id)?'antimagic':id));}
+
+// Unbound legacy magic belongs to competitive matches. A newly cast spell starts
+// at its selected fixture; remaining uses stay in that competition type.
+export function spellAppliesToFixture(a:string,f:{id:string;friendly?:boolean}){
+ if(!a.startsWith('magic:')&&!a.startsWith('spell:'))return true;
+ const target=a.split(':')[3];
+ return target===f.id||target===(f.friendly?'friendly':'series')||(!target&&!f.friendly);
+}
+export function artifactsForFixture(artifacts:string[],f:{id:string;friendly?:boolean}){return artifacts.filter(a=>spellAppliesToFixture(a,f));}
+export function consumeFixtureSpells(artifacts:string[],f:{id:string;friendly?:boolean}){
+ return artifacts.flatMap(a=>{if(!a.startsWith('magic:')||!spellAppliesToFixture(a,f))return [a];const [,id,count]=a.split(':');return Number(count)>1?['magic:'+id+':'+(Number(count)-1)+':'+(f.friendly?'friendly':'series')]:[];});
+}
