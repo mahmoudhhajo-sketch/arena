@@ -20,9 +20,11 @@ let server;
   for(let i=1;i<=11;i++)await db.insert(players).values({id:n*20+i,clubId:'team'+n,name:'Spelare '+n+'-'+i,race:'human',shirtNumber:i,hometown:'Berunia',nominalPosition:'Innermitt',wage:1000,attributes:attrs,currentInjury:3,totalInjury:2,artifacts:i===1?['magic:aura:4']:[],isMercenary:i===2});
   await put('mercenary-contract','contract'+n,{clubId:'team'+n,playerId:n*20+2,hiredAt:'2026-01-01',completed:false});
  }
- const app=require('express')();app.use(require('express').json());app.use((req,res,next)=>{req.arenaUser={userId:req.headers['x-user']||'user0'};next()});registerFriendlies(app);registerMatchPlanning(app);registerExpansion(app);require('../src/server/magic.ts').registerMagic(app);
+ const app=require('express')();app.use(require('express').json());app.use((req,res,next)=>{req.arenaUser={userId:req.headers['x-user']||'user0'};next()});registerFriendlies(app);registerMatchPlanning(app);registerExpansion(app);require('../src/server/magic.ts').registerMagic(app);require('../src/server/features.ts').registerFeatures(app);
  server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));const base='http://127.0.0.1:'+server.address().port;
  const call=async(path,body,user='user0')=>{const r=await fetch(base+'/api'+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','x-user':user},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json()}};
+ assert.equal((await call('/player-detail/2')).data.attributes.teknik,6,'Hired mercenary stays inspectable by owner');assert.equal((await call('/player-detail/2?viewerUserId=user0',undefined,'user1')).status,400,'Other managers cannot spoof owner to reveal a hired mercenary');
+
  const challenge=await call('/friendly-challenges',{targetId:'team1',day:'2030-01-07',venueId:'friendly-ground-1'});assert.equal(challenge.status,200,JSON.stringify(challenge.data));
  assert.equal((await call('/friendly-challenges/'+challenge.data.id,undefined,'user2')).status,400);
  assert.equal((await call('/friendly-challenges/'+challenge.data.id+'/respond',{accept:true},'user0')).status,400);

@@ -243,7 +243,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:25,id: `match-${seed}`,
+      engineVersion:26,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -326,10 +326,10 @@ export function simulateMatch(
       awayStats.uppkast.antal++;
 
       const central=(squad:ActivePlayerState[])=>{const mids=squad.filter(p=>p.slotKey==='1-1');const pool=mids.length?mids:squad.filter(p=>p.slotKey!=='goal');return (pool.length?pool:squad).sort((a,b)=>(skill(b,'teknik')*.65+skill(b,'speluppfattning')*.35)-(skill(a,'teknik')*.65+skill(a,'speluppfattning')*.35)).slice(0,mids.length?2:1)};
-      const hMids=central(homeSquad.active),aMids=central(awaySquad.active),hCandidate=hMids[0],aCandidate=aMids[0];
+      const hMids=central(homeSquad.active),aMids=central(awaySquad.active),hCandidate=pickWeighted(hMids,hMids.map(p=>skill(p,'teknik')*.65+skill(p,'speluppfattning')*.35+.01)),aCandidate=pickWeighted(aMids,aMids.map(p=>skill(p,'teknik')*.65+skill(p,'speluppfattning')*.35+.01));
       const jump=(m:ActivePlayerState[])=>cellStrength(m.map(p=>(skill(p,'teknik')*.65+skill(p,'speluppfattning')*.35)*(p.slotKey==='1-1'?1:.45)));
       const homeWins=weighted(hCandidate,'uppkast',jump(hMids),jump(aMids),aCandidate,'uppkast');
-      inc(hCandidate,'uppkast');inc(aCandidate,'uppkast');inc(homeWins?hCandidate:aCandidate,'uppkast','vunna');
+      for(const p of [...hMids,...aMids])inc(p,'uppkast');inc(homeWins?hCandidate:aCandidate,'uppkast','vunna');
       const winner=homeWins?'home':'away';
       if (winner === 'home') {
         homeStats.uppkast.vunna++;
@@ -465,8 +465,9 @@ export function simulateMatch(
           events.push({id:`breakthrough-${period}-${phase}`,period,minute:currentMinute,type:'RUN_SUCCESS',teamSide:possession,playerId:decisionHolder.player.id,playerName:decisionHolder.player.name,text:`${decisionHolder.player.name} vek undan från sin bevakare och bröt fram mot målet inne i anfallsrutan.`});
         }else{
           inc(marker,'brytningar','lyckade');defendStats.brytningar.lyckade++;
-          possession=possession==='home'?'away':'home';ballHolder=undefined;lastPass=null;
-          continue;
+          // Stopping the run does not always mean winning the ball. The forward
+          // may protect it, shoot from the original spot or look for a pass.
+          if(rng.next()<.4){possession=possession==='home'?'away':'home';ballHolder=undefined;lastPass=null;continue;}
         }
       }
       const shootingChance=Math.min(wantsBasket?.96:.9,(inAttackingThird?.8:isMidfield?.38:.06)*positionFactor+(breakthrough?.12:0))*serviceFactor;
@@ -812,7 +813,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:25,id: `match-${seed}`,
+    engineVersion:26,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',

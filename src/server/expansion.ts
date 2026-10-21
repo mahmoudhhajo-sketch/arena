@@ -2,7 +2,6 @@ import {restoreFriendlyMagic} from './restoreFriendlyMagic';
 import {friendlyNotice} from './friendlies';
 import {prepareLaunch} from './launch';
 import {matchParticipation,accumulatedMatchInjury} from '../engine/matchParticipation';
-import {deliverWelcomeMail} from './welcomeMail';
 import {replenishArtifacts} from './artifactSupply';
 import {transitionSeason} from './seasonTransition';
 import {liveMatchView} from './liveMatch';
@@ -30,13 +29,13 @@ import {fixtureDates,roundRobin} from '../engine/schedule';
 import {Express} from 'express';
 import {db,localClient,createPool} from '../db';
 import {clubs,players,matches,worldState,gameRecords} from '../db/schema';
-import {eq,sql,inArray} from 'drizzle-orm';
+import {eq,sql,inArray,or} from 'drizzle-orm';
 import {records,record,put} from './records';
 import {DIVISION_NAMES,LEGACY_DIVISIONS} from '../constants/leagues';
 import {PLACES,nearbyPlaces} from '../constants/geography';
 import {generateStarterSquad,generateSinglePlayer,calculateWage} from '../engine/playerGenerator';
 import {generateProceduralBotClubName} from '../constants/mambenna';
-import {simulateMatch} from '../engine/matchEngine';
+import {simulateMatchAsync} from './matchSimulation';
 import {activeIds} from '../engine/lineup';
 import {completeReserves} from '../engine/testLineup';
 import {shouldAutofillInactiveLineup} from './inactiveLineups';
@@ -102,7 +101,6 @@ export async function tickWorld(now=new Date()){
  let worker:any;
  try{
  if(!localClient){worker=await createPool().connect();const lock=await worker.query('SELECT pg_try_advisory_lock(719202) AS acquired');if(!lock.rows[0].acquired)return;}
- await deliverWelcomeMail();
  await restoreFriendlyMagic();
  const matchesStarted=await prepareLaunch(now);
  if(!await record('calendar-clock'))await advanceCalendar(now);
@@ -122,7 +120,7 @@ export async function tickWorld(now=new Date()){
   await runPartitionedBatch(round,candidate=>candidate.item.division,async candidate=>{
    await playFixture(candidate.item,now);
    if(process.env.ARENA_STRESS_LOG==='1'&&++stressPlayed%25===0)console.log('Provspelade matcher: '+stressPlayed);
-  });
+  },4);
  }else if(event.type==='auction'){const auction=event.item;
   await db.transaction(async(tx:any)=>{await tx.execute(sql`SELECT pg_advisory_xact_lock(719084)`);const a=await record(auction.id,tx);if(a.closed||+new Date(a.endsAt)>+now)return;
    if(a.bidderId){if(a.unreserved)await tx.update(clubs).set({gold:sql`${clubs.gold}-${a.price}`}).where(eq(clubs.id,a.bidderId));const squad=await tx.select().from(players).where(eq(players.clubId,a.bidderId));const nums=new Set(squad.map((p:any)=>p.shirtNumber));let number=1;while(nums.has(number))number++;
@@ -166,7 +164,11 @@ export function registerExpansion(app:Express){
  route(app,'get','/api/match/:id',async(req)=>{const [m]=await db.select().from(matches).where(eq(matches.id,req.params.id));if(!m){const f=await record(req.params.id);if(f?.homeId&&!f.played){const live=await record('live-'+f.id);if(live)return liveMatchView(live.report,new Date());return {upcoming:true,id:f.id};}if(f?.friendly)return (await record('friendly-report-'+f.id))||f;throw Error('Matchen saknas.');}return m.matchReport;});
  route(app,'get','/api/series',async()=>DIVISION_NAMES);
  route(app,'get','/api/fixtures',async(req)=>{
-  const all=await db.select().from(clubs);const [world]=await db.select().from(worldState),live=await records('live-match');return [...(await records('fixture')),...(req.query.clubId&&!req.query.division?await records('friendly-fixture'):[])].filter(f=>(f.season||1)===Number(req.query.season||world.season)).filter(f=>(!req.query.division||f.division===req.query.division)&&(!req.query.clubId||f.homeId===req.query.clubId||f.awayId===req.query.clubId)).sort((a,b)=>a.date.localeCompare(b.date)).map(f=>{const running=live.find(x=>x.id==='live-'+f.id);const view=running?liveMatchView(running.report,new Date()):null;return {...f,homeName:all.find(c=>c.id===f.homeId)?.name,awayName:all.find(c=>c.id===f.awayId)?.name,...(view?.live?{live:true,liveScore:view.finalScore,elapsedMinute:view.elapsedMinute}:{})}});
+  const all=await db.select({id:clubs.id,name:clubs.name}).from(clubs);const [world]=await db.select().from(worldState);
+  const fixtures=[...(await records('fixture')),...(req.query.clubId&&!req.query.division?await records('friendly-fixture'):[])].filter(f=>(f.season||1)===Number(req.query.season||world.season)).filter(f=>(!req.query.division||f.division===req.query.division)&&(!req.query.clubId||f.homeId===req.query.clubId||f.awayId===req.query.clubId)).sort((a,b)=>a.date.localeCompare(b.date));
+  const liveIds=fixtures.filter(f=>!f.played&&+new Date(f.date)<=Date.now()).map(f=>'live-'+f.id);
+  const live=liveIds.length?(await db.select().from(gameRecords).where(inArray(gameRecords.id,liveIds))).map(r=>({id:r.id,...r.payload as any})):[];
+  return fixtures.map(f=>{const running=live.find(x=>x.id==='live-'+f.id);const view=running?liveMatchView(running.report,new Date()):null;return {...f,homeName:all.find(c=>c.id===f.homeId)?.name,awayName:all.find(c=>c.id===f.awayId)?.name,...(view?.live?{live:true,liveScore:view.finalScore,elapsedMinute:view.elapsedMinute}:{})}});
  });
  route(app,'get','/api/search',async(req)=>{const q=String(req.query.q||'').trim().toLocaleLowerCase('sv');if(q.length<2)return{players:[],clubs:[],managers:[]};
  const all=await db.select().from(clubs),ps=await db.select().from(players);
@@ -229,6 +231,9 @@ await db.transaction(async(tx:any)=>{
    const [home]=await tx.select().from(clubs).where(eq(clubs.id,f.homeId)),[away]=await tx.select().from(clubs).where(eq(clubs.id,f.awayId));
    const hs=await tx.select().from(players).where(pending?.homeIds?.length?inArray(players.id,pending.homeIds):eq(players.clubId,home.id)),as=await tx.select().from(players).where(pending?.awayIds?.length?inArray(players.id,pending.awayIds):eq(players.clubId,away.id));
    if(f.friendly)for(const p of [...hs,...as])p.currentInjury=0;
+   const originalSpells=new Map<number,string[]>(pending?.originalSpells||[...hs,...as].map(p=>[p.id,p.artifacts]));const currentArtifacts=new Map([...hs,...as].map(p=>[p.id,[...p.artifacts]]));
+   let report=pending?.report;
+   if(!report){
    const homeSaved=await record('match-lineup-'+f.id+'-'+home.id,tx),awaySaved=await record('match-lineup-'+f.id+'-'+away.id,tx),homePreset=(await record('presets-'+home.id,tx))?.presets?.[0]?.lineup,awayPreset=(await record('presets-'+away.id,tx))?.presets?.[0]?.lineup;
    home.lineup=homeSaved&&!homeSaved.automatic?homeSaved.lineup:homePreset||homeSaved?.lineup||home.lineup;
    away.lineup=awaySaved&&!awaySaved.automatic?awaySaved.lineup:awayPreset||awaySaved?.lineup||away.lineup;
@@ -236,15 +241,16 @@ await db.transaction(async(tx:any)=>{
    if(!Object.values(home.lineup?.slots||{}).some((slot:any)=>activeIds(slot).length))home.lineup=botLineup(hs);
    if(!Object.values(away.lineup?.slots||{}).some((slot:any)=>activeIds(slot).length))away.lineup=botLineup(as);
    if(home.isBot&&!await record('match-lineup-'+f.id+'-'+home.id,tx))home.lineup=variedBotLineup(hs,f.id+home.id,home.lineup);if(away.isBot&&!await record('match-lineup-'+f.id+'-'+away.id,tx))away.lineup=variedBotLineup(as,f.id+away.id,away.lineup);
-   const loginEvents=await records('login-event',tx),playedMatches=await tx.select().from(matches);
+   const loginEvents=(await records('login-event',tx)).filter(e=>e.userId===home.userId||e.userId===away.userId),playedMatches=await tx.select({homeClubId:matches.homeClubId,awayClubId:matches.awayClubId,homeScore:matches.homeScore,awayScore:matches.awayScore,playedAt:matches.playedAt}).from(matches).where(or(inArray(matches.homeClubId,[home.id,away.id]),inArray(matches.awayClubId,[home.id,away.id])));
    if(shouldAutofillInactiveLineup(home,f,loginEvents,playedMatches))home.lineup=completeReserves(home.lineup,hs);
    if(shouldAutofillInactiveLineup(away,f,loginEvents,playedMatches))away.lineup=completeReserves(away.lineup,as);
-   const recent=await tx.select({homeClubId:matches.homeClubId,awayClubId:matches.awayClubId,homeScore:matches.homeScore,awayScore:matches.awayScore,playedAt:matches.playedAt}).from(matches);for(const c of [home,away]){const past=recent.filter((m:any)=>m.homeClubId===c.id||m.awayClubId===c.id).sort((a:any,b:any)=>+new Date(b.playedAt)-+new Date(a.playedAt)).slice(0,5);(c as any).recentForm=past.length?past.reduce((n:number,m:any)=>{const h=m.homeClubId===c.id;const a=h?m.homeScore:m.awayScore,b=h?m.awayScore:m.homeScore;return n+(a>b?1:a===b?.5:0)},0)/past.length:.5;}(home as any).morale=await clubMorale(home.id,tx,+new Date(f.date));(away as any).morale=await clubMorale(away.id,tx,+new Date(f.date));home.arena=fixtureVenue(f,await tx.select().from(clubs));
+   const recent=playedMatches;for(const c of [home,away]){const past=recent.filter((m:any)=>m.homeClubId===c.id||m.awayClubId===c.id).sort((a:any,b:any)=>+new Date(b.playedAt)-+new Date(a.playedAt)).slice(0,5);(c as any).recentForm=past.length?past.reduce((n:number,m:any)=>{const h=m.homeClubId===c.id;const a=h?m.homeScore:m.awayScore,b=h?m.awayScore:m.homeScore;return n+(a>b?1:a===b?.5:0)},0)/past.length:.5;}(home as any).morale=await clubMorale(home.id,tx,+new Date(f.date));(away as any).morale=await clubMorale(away.id,tx,+new Date(f.date));home.arena=fixtureVenue(f,await tx.select().from(clubs));
    home.lineup={...home.lineup,underlag:home.arena.underlag==='Nimonimbus'?home.lineup.underlag:home.arena.underlag};
-   const ward=await record('ward-'+f.id,tx);const originalSpells=new Map<number,string[]>(pending?.originalSpells||[...hs,...as].map(p=>[p.id,p.artifacts]));const currentArtifacts=new Map([...hs,...as].map(p=>[p.id,[...p.artifacts]]));for(const p of [...hs,...as])p.artifacts=artifactsForFixture(p.artifacts,f);if(ward)for(const p of [...hs,...as])p.artifacts=p.artifacts.filter((a:string)=>!a.startsWith('magic:')&&!a.startsWith('spell:'));const enchantment=ward?null:await record('weather-'+f.id,tx);const effect=enchantment?.effect;const weather=effect?{temp:effect==='rain'?8:15,condition:effect==='rain'?'Regn':effect==='fog'?'Dimma':'Klart',wind:effect==='wind'?(enchantment.spellId==='stormcall'?14:0):3}:weatherFor(home.hometown,new Date(f.date));
+   const ward=await record('ward-'+f.id,tx);for(const p of [...hs,...as])p.artifacts=artifactsForFixture(p.artifacts,f);if(ward)for(const p of [...hs,...as])p.artifacts=p.artifacts.filter((a:string)=>!a.startsWith('magic:')&&!a.startsWith('spell:'));const enchantment=ward?null:await record('weather-'+f.id,tx);const effect=enchantment?.effect;const weather=effect?{temp:effect==='rain'?8:15,condition:effect==='rain'?'Regn':effect==='fog'?'Dimma':'Klart',wind:effect==='wind'?(enchantment.spellId==='stormcall'?14:0):3}:weatherFor(home.hometown,new Date(f.date));
    const basketSpell=ward?null:await record('baskets-'+f.id,tx);if(basketSpell)(weather as any).basketsBlocked=true;const chainSpell=ward?null:await record('chains-'+f.id,tx);(weather as any).chainsBlocked=!!chainSpell;(weather as any).spells=[ward?.spellId,enchantment?.spellId,basketSpell?.spellId,chainSpell?.spellId].filter(Boolean);
    (weather as any).friendly=!!f.friendly;
-   const report=pending?.report||simulateMatch(home,away,hs,as,Number(new Date(f.date))+(home.id+away.id).split('').reduce((a,c)=>a+c.charCodeAt(0),0),home.lineup.underlag,weather,overdueEffects(await records('loan',tx),home.id,new Date(f.date)));
+   report=await simulateMatchAsync(home,away,hs,as,Number(new Date(f.date))+(home.id+away.id).split('').reduce((a,c)=>a+c.charCodeAt(0),0),home.lineup.underlag,weather,overdueEffects(await records('loan',tx),home.id,new Date(f.date)));
+   }
    report.id=f.id;report.date=f.date;if(f.friendly){report.friendly=true;report.division='Vänskapsmatch';report.attendance=0;report.ticketPrice=0;}
    if(!early&&+now<+new Date(f.date)+(f.friendly?friendlyDuration(report):75)*60000){await put('live-match','live-'+f.id,{report,homeIds:hs.map(p=>p.id),awayIds:as.map(p=>p.id),originalSpells:[...originalSpells]},tx);return;}
    if(f.friendly){
