@@ -1,3 +1,4 @@
+import {deliverWelcomeMail} from './src/server/welcomeMail';
 import {registerCoachLicense} from './src/server/coachLicense';
 import {initializeRevision39} from './src/server/revision39';
 import {registerClubIdAliases} from './src/server/clubIds';
@@ -884,6 +885,7 @@ async function startServer() {
   const backupTimer=setInterval(()=>void backupDatabase().catch(console.error),30*60*1000);
   let activeTick: Promise<any> = Promise.resolve();
 
+  let mailBusy=false;const deliverMail=async()=>{if(mailBusy)return;mailBusy=true;try{await deliverWelcomeMail()}catch(error){console.error('Mail queue:',error)}finally{mailBusy=false}};void deliverMail();const mailTicker=setInterval(()=>void deliverMail(),30000);mailTicker.unref();
   const ticker = setInterval(()=>{activeTick=activeTick.then(()=>tickWorld()).catch(console.error)},30000);
 
   if (process.env.NODE_ENV !== 'production') {

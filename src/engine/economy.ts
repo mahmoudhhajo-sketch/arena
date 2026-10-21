@@ -3,10 +3,10 @@ import {dailyUpdates} from './calendar';
 export function attendanceDemand(home:any,away:any,ticket:number,variation=.5){
  const tier=home.division==='Kejsarserien'?0:Number(home.division?.match(/Division (\d)/)?.[1]||3);
  const base=[62000,41000,29000,20000,15000,11500][Math.min(5,tier)];
- const merit=1+.35*(1-Math.exp(-Math.max(0,home.merit||0)/15));
- const form=1+Math.max(-.07,Math.min(.07,((home.recentForm??.5)-.5)*.14));
- const history=1+Math.min(.12,(home.wins+home.draws+home.losses||0)*.005);
- const visiting=1.05+Math.min(.08,Math.max(0,away.merit||0)*.002);
+ const merit=1+.08*(1-Math.exp(-Math.max(0,home.merit||0)/15));
+ const form=1+Math.max(-.03,Math.min(.03,((home.recentForm??.5)-.5)*.06));
+ const history=1+Math.min(.04,(home.wins+home.draws+home.losses||0)*.0015);
+ const visiting=1.05+.02*(1-Math.exp(-Math.max(0,away.merit||0)/15));
  const derby=home.hometown&&away.hometown&&home.hometown===away.hometown?1.13:1;
  return Math.round(base*merit*form*history*visiting*derby*Math.exp(-.13*(Math.max(0,ticket)-3))*(.94+variation*.12));
 }

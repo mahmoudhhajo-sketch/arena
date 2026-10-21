@@ -40,3 +40,15 @@ export function validateLineup(lineup:LineupConfig,squad:Player[],requireTen=tru
 
 
 
+
+/** Order within one reserve cell; another assignment for this player is independent. */
+export function orderedReserves(ids:number[],id:number,index:number):number[]{
+ const remaining=ids.filter(value=>value!==id);
+ remaining.splice(Math.max(0,Math.min(index,remaining.length)),0,id);
+ return remaining;
+}
+export function removeLineupPlayer(lineup:LineupConfig,id:number,slotKey?:string):LineupConfig{
+ const copy=structuredClone(lineup);
+ for(const key of SLOT_KEYS){if(slotKey&&key!==slotKey)continue;const slot=copy.slots[key];copy.slots[key]={slotKey:key,starterPlayerId:null,subPlayerId:null,activePlayerIds:activeIds(slot).filter(value=>value!==id),reservePlayerIds:reserveIds(slot).filter(value=>value!==id)};}
+ return copy;
+}
