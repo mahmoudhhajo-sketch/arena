@@ -858,8 +858,11 @@ export function calculateAttendance(home:any,away:any,ticket:number,capacity:num
     return Math.max(0,Math.min(capacity,attendanceDemand(home,away,ticket,variation)));
 }
 export function matchMerit(division:string,scored:number,conceded:number){const tier=division==='Kejsarserien'?0:Number(division.match(/Division (\d)/)?.[1]||3);return scored<conceded?0:.2/2**tier*(scored===conceded?.5:1)}
-export function postMatchForm(form:number,_won:boolean,injured:boolean,random:number,performance=0){
- const played=.08,performanceEffect=Math.max(-.18,Math.min(.20,performance));
- const drift=(9-form)*.06+played+performanceEffect-(injured?.20:0),roll=random+drift;
- return Math.max(0,Math.min(16,form+(roll>.72?1:roll<.22?-1:0)));
+export function postMatchForm(form:number,_won:boolean,injured:boolean,random:number,performance=6){
+ // Symmetric baseline at 9. Only exceptional repeat performances sustain elite form.
+ const rating=Math.max(0,Math.min(10,performance));
+ const target=9+Math.max(-7,Math.min(7,(rating-6)*2.1))-(injured?.35:0);
+ const drift=Math.max(-.9,Math.min(.9,(target-form)*.20));
+ const up=.12+Math.max(0,drift),down=.12+Math.max(0,-drift);
+ return Math.max(0,Math.min(16,form+(random<up?1:random>1-down?-1:0)));
 }

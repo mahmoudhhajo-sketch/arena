@@ -2,7 +2,9 @@ import {PlayerAttributes,TrainableAttribute} from '../types';
 import {TRAINABLE_ATTRIBUTES} from '../constants/attributes';
 
 const zone='Europe/Stockholm';
-export const TRAINING_GAIN_SCALE=.85*.9;
+export const TRAINING_GAIN_SCALE=.85*.9*.8;
+// Preserve updates due on or before Nov 1, including delayed calendar catch-up.
+export function trainingScaleAt(at:Date){return +at<=Date.parse('2026-11-01T05:00:00Z')?.85*.9:TRAINING_GAIN_SCALE;}
 // Use local noon to determine the offset; all updates are at 06:00, outside DST's repeated hour.
 export function dailyUpdates(after:Date,until:Date):Date[]{
  const local=new Intl.DateTimeFormat('sv-SE',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(after);
