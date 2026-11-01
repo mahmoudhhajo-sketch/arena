@@ -127,3 +127,5 @@ button:focus-visible,a:focus-visible{outline:2px solid #728654;outline-offset:3p
 /* Reserve priority sits below the shirt, separate from the player's number. */
 .field-player { position: relative; }
 .reserve-order { display: block; margin: 2px auto 0; width: 1.4rem; line-height: 1.25rem; border-radius: 50%; border: 1px solid #415f42; background: #f7f3df; color: #213c25; font-weight: bold; text-align: center; }
+
+.match-rating{display:inline-block;min-width:2.8em;padding:.15em .4em;border-radius:5px;background:#dce4d6;color:#263d2a;font-variant-numeric:tabular-nums;font-weight:700;text-align:center}.match-rating.excellent{background:#255c43;color:#fff}.match-rating.poor{background:#f0ddd3;color:#7c3428}.match-rating.unrated{background:transparent;color:#777}.match-stat-layout{display:grid;grid-template-columns:minmax(210px,280px) minmax(0,1fr);gap:16px}.match-stat-pitch{position:sticky;top:12px;align-self:start}.match-stat-layout>div{min-width:0;overflow-x:auto}@media(max-width:760px){.match-stat-layout{display:block}.match-stat-pitch{position:static;max-width:300px;margin:0 auto 16px}}

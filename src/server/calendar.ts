@@ -4,7 +4,7 @@ import {db} from '../db';
 import {clubs,players,worldState} from '../db/schema';
 import {eq,sql} from 'drizzle-orm';
 import {records,record,put} from './records';
-import {dailyUpdates,healingProgress,weeklyPositionTraining,trainingStepGains} from '../engine/calendar';
+import {dailyUpdates,healingProgress,weeklyPositionTraining,trainingStepGains,trainingScaleAt} from '../engine/calendar';
 import {PLACES} from '../constants/geography';
 import {ATTRIBUTE_NAMES_SV,QUALITATIVE_ATTRIBUTE_LABELS} from '../constants/attributes';
 import {teamNews} from './newsStatistics';
@@ -37,7 +37,7 @@ export async function advanceCalendar(until:Date){
     if(sunday&&c&&!p.isMercenary){
      const dates=(participation.get(p.id)?.dates||[]).filter((d:string)=>+new Date(d)>weekStart&&+new Date(d)<=+at);
      const appearances=participation.get(p.id)?.appearances||[];
-     const trained=weeklyPositionTraining(p.attributes,c.trainingPoints,appearances,+at,weekStart,trainingCarry.get(p.id)||{});
+     const trained=weeklyPositionTraining(p.attributes,c.trainingPoints,appearances,+at,weekStart,trainingCarry.get(p.id)||{},trainingScaleAt(at));
      update.attributes=trained.attributes;
      await put('training-remainder','training-remainder-'+p.id,{playerId:p.id,remainders:trained.remainders},tx);
      if(p.artifacts?.includes('seven-mile-boots')&&c.trainingPoints.kondition===0)update.attributes.kondition=p.attributes.kondition;
@@ -45,8 +45,8 @@ export async function advanceCalendar(until:Date){
      await put('training-gain','gain-'+p.id,{playerId:p.id,clubId:p.clubId,date:at.toISOString(),attributes:gains,before:p.attributes,after:update.attributes},tx);
      for(const key of gains){const from=Math.min(16,Math.floor(p.attributes[key])),to=Math.min(16,Math.floor(update.attributes[key]));if(from!==to){const rows=trainingReports.get(p.clubId)||[];rows.push(`${p.name}: ${ATTRIBUTE_NAMES_SV[key]} ${QUALITATIVE_ATTRIBUTE_LABELS[from]} → ${QUALITATIVE_ATTRIBUTE_LABELS[to]}`);trainingReports.set(p.clubId,rows)}}
      // Match participation and performance now adjust form immediately after
-     // each match. The weekly clock only penalizes complete inactivity.
-     update.form=Math.min(16,Math.max(0,p.form+(dates.length===0?-1:0)));
+     // each match. Inactive players settle toward ordinary form, never endlessly down.
+     update.form=Math.min(16,Math.max(0,p.form+(dates.length===0?Math.sign(9-p.form):0)));
      await put('participation','participation-'+p.id,{playerId:p.id,dates:[],appearances:[]},tx);
     }
     if(Object.keys(update).length)await tx.update(players).set(update).where(eq(players.id,p.id));

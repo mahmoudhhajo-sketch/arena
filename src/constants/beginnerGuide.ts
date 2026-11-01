@@ -180,8 +180,13 @@ Du kan alltså bygga ett blandat lag. Planera värvningarna och ge laget tid att
 Håll ditt lösenord för dig själv. Du kan ändra det på din sida och använda Glömt lösenord om du inte kommer in. Kontakta spelledningen om något verkar fel. Arenan tillåter ett lag per användare.`},
  {id:5,group:'Utveckla truppen',title:'Spelaröversikt och form',body:`Spelaröversikten gör det lättare att jämföra truppen. Sortera efter exempelvis namn, lön eller egenskap och öppna en spelare när du vill läsa hans profil och historik.
 
+## Form och matchbetyg
+Formen rör sig mot ett normalt utgångsläge. Bra insatser kan höja den, medan svaga insatser och skador kan sänka den. Mycket hög form kräver återkommande exceptionella prestationer. Svartbrygd kan hjälpa en spelare att återfå god form.
+
+Matchbetyget sammanfattar vad spelaren faktiskt åstadkom utifrån sin position: både lyckade aktioner, misslyckanden och motståndets svårighet spelar roll. Det är en bedömning av prestationen, inte spelarens egenskaper. Äldre matcher får betyg från den sparade statistiken. Du ser matchbetyg och säsongssnitt i spelarstatistiken; en WO före avkast ger inget betyg.
+
 ## Form är dagsformen
-Egenskaper beskriver vad spelaren kan; form påverkar hur väl han får ut det just nu. Matchspel, bra prestationer och Svartbrygd kan förbättra formen. Skador och inaktivitet kan dra åt andra hållet. Svartbrygd är en förbrukningsbar brygd som beskrivs i artefaktkapitlet.
+Egenskaper beskriver vad spelaren kan; form påverkar hur väl han får ut det just nu. Matchspel, bra prestationer och Svartbrygd kan förbättra formen. Skador kan dra åt andra hållet. Utan matchspel söker sig formen tillbaka mot ett normalt utgångsläge. Svartbrygd är en förbrukningsbar brygd som beskrivs i artefaktkapitlet.
 
 Med form och Utan form hjälper dig framför allt att jämföra positionsvärden. Vanlig form skriver inte om spelarens egenskaper. Drakblod är ett särskilt undantag med tillfälligt förstärkta egenskaper; dess aktuella effekt kan visas separat.
 

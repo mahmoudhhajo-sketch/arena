@@ -10,7 +10,7 @@ export const ARTIFACTS=[
 
  {id:'keeper-gloves',name:'Silverhandske',price:18000,attribute:'malvakt',bonus:3,rarity:'Vanlig',supply:18,description:'Säkrare grepp och bättre räckvidd i målet'},
 
- {id:'seven-mile-boots',name:'Sjumilastövlar',price:45000,attribute:'kondition',bonus:0,rarity:'Legendarisk',supply:2,description:'Förhindrar veckans konditionsförlust vid utebliven konditionsträning'},
+ {id:'seven-mile-boots',name:'Sjumilastövlar',price:45000,attribute:'kondition',bonus:4,rarity:'Legendarisk',supply:2,description:'Ger fyra steg högre kondition och förhindrar veckans konditionsförlust vid utebliven konditionsträning'},
 
  {id:'herbal-brew',name:'Örtbrygd',price:5000,attribute:'kondition',bonus:0,rarity:'Vanlig',supply:24,description:'Läker hela den aktuella skadan, men inte permanent slitage. Förbrukas vid användning'},
 
@@ -67,6 +67,7 @@ const coachNames=[['Aia','riel','elf'],['Glor','dil','elf'],['Tor','vald','human
 const COACH_BASE=[...ORIGINAL_COACHES,...Array.from({length:80},(_,i)=>{const [first,last,race]=coachNames[i%coachNames.length];const trainingBonus=1+i%7,tacticsBonus=1+Math.floor(i/7)%6;return {id:'trainer-'+i,name:first+['a','e','o','i'][Math.floor(i/10)%4]+last+['','ar','en','ir','or','un','el','in'][Math.floor(i/10)],race,trainingBonus,tacticsBonus,wage:300+trainingBonus*trainingBonus*75+tacticsBonus*120};})];
 
 
-export const COACHES=COACH_BASE.map(c=>({...c,wage:Math.round(700+80*c.trainingBonus**3+65*c.tacticsBonus**3)}));
+const ADDITIONAL_COACHES=Array.from({length:42},(_,i)=>{const c=COACH_BASE[(i*2+3)%COACH_BASE.length];return {...c,id:"trainer-expansion-"+i,name:["Eld","Tor","Val","Grom","Skarn","Brann"][i%6]+["arin","grim","old","ak","und","or","iel"][Math.floor(i/6)]};});
+export const COACHES=[...COACH_BASE,...ADDITIONAL_COACHES].map(c=>({...c,wage:Math.round(700+80*c.trainingBonus**3+65*c.tacticsBonus**3)}));
 
 export function dragonBloodAttributes(p:{attributes:PlayerAttributes;artifacts?:string[]},now=Date.now()):PlayerAttributes {const until=Math.max(0,...(p.artifacts||[]).filter(a=>a.startsWith("effect:dragon-blood:")).map(a=>Number(a.split(":")[2])||0));const strength=Math.min(1,Math.max(0,(until-now)/(8*86400000))),multiplier=1+.7*strength;return Object.fromEntries(Object.entries(p.attributes).map(([k,v])=>[k,Number(v)*multiplier])) as unknown as PlayerAttributes;}
