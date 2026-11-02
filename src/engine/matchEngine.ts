@@ -243,7 +243,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:26,id: `match-${seed}`,
+      engineVersion:27,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -364,9 +364,10 @@ export function simulateMatch(
     let ballRow = 1;
     let ballCol = lane(possession,1);
 
-    // Simulate roughly 10-15 possession phases per period (~15 minutes)
-    for (let phase = 1; phase <= 30; phase++) {
-      const currentMinute = (period - 1) * 15 + Math.min(15, Math.floor((phase / 30) * 15));
+    // More ball-playing phases within the same fifteen minutes. Violence stays time-normalized.
+    const phasesPerPeriod=36;
+    for (let phase = 1; phase <= phasesPerPeriod; phase++) {
+      const currentMinute = (period - 1) * 15 + Math.min(15, Math.floor((phase / phasesPerPeriod) * 15));
       luckPeriod=period;luckMinute=currentMinute;
       if(homeSquad.active.length<6||awaySquad.active.length<6){forfeit=forfeit??(homeSquad.active.length<6?'away':'home');events.push({id:'walkover-during',period,minute:currentMinute,type:'MATCH_END',teamSide:'neutral',text:`Domaren avbryter matchen: ${forfeit==='home'?awayClub.name:homeClub.name} har färre än sex spelbara spelare. ${forfeit==='home'?homeClub.name:awayClub.name} vinner på WO med 5–0.`,important:true} as any);break;}
       if(phase>1&&rng.next()<.09){possession=possession==='home'?'away':'home';ballHolder=undefined;lastPass=null;ballRow=1;ballCol=rng.nextInt(0,2);if(phase%3===0)events.push({id:'restart-'+period+'-'+phase,period,minute:currentMinute,type:'RESTART',teamSide:'neutral',text:'Bollen slits ur trängseln och studsar tillbaka mot mittzonen. Motståndarna kastar sig fram och tar hand om den lösa kedjan.',important:true} as any);}
@@ -383,7 +384,7 @@ export function simulateMatch(
       const fightSide=rng.next()<.5?'home':'away',fightSquad=fightSide==='home'?homeSquad:awaySquad,opponentSquad=fightSide==='home'?awaySquad:homeSquad;
       const fightStats=fightSide==='home'?homeStats:awayStats,opponentStats=fightSide==='home'?awayStats:homeStats;
       const fighterCandidate = fightSquad.active[rng.nextInt(0,fightSquad.active.length-1)];
-      if(fighterCandidate&&opponentSquad.active.length&&rng.next()<fightInitiationProbability(fighterCandidate.player.attributes.aggressivitet,matchHeat)){
+      if(fighterCandidate&&opponentSquad.active.length&&rng.next()<fightInitiationProbability(fighterCandidate.player.attributes.aggressivitet,matchHeat)*30/phasesPerPeriod){
         const defender=choose(opponentSquad.active,fighterCandidate.fieldRow,fighterCandidate.fieldCol);
         inc(fighterCandidate,'slagsmal');inc(defender,'slagsmal');inc(fighterCandidate,'slagsmal','startade');
         fightStats.slagsmal.antal++;opponentStats.slagsmal.antal++;fightStats.slagsmal.startade++;
@@ -813,7 +814,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:26,id: `match-${seed}`,
+    engineVersion:27,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',
