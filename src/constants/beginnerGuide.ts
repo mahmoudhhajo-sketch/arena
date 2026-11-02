@@ -323,7 +323,7 @@ När du bygger väljer du antal platser inom den valda arenatypens gräns. En st
 ## Varför spelar vädret roll?
 Regn gör bollhantering och fotfäste besvärligare. Vind påverkar bollbanor och avslut. Dimma gör det svårare att se, och värme gör att spelarna tröttnar snabbare.
 
-Båda lagen spelar i samma väder, men kan vara olika rustade för det. God kondition hjälper den som måste arbeta mycket. Spelarnas egenskaper och din inriktning avgör hur väl laget hanterar förutsättningarna. Vädermagi kan ändra matchens villkor.`},
+Båda lagen spelar i samma väder, men kan vara olika rustade för det. God kondition hjälper den som måste arbeta mycket. Spelarnas egenskaper och din inriktning avgör hur väl laget hanterar förutsättningarna. Vädermagi kan ändra matchens villkor. Förbered besvärjelsen för en vald kommande match redan när du planerar laget. Vädermagi, Kedjefängelse och Bergets försegling kräver hemmamatch; Antimagi kan även användas borta.`},
  {id:16,group:'Driv klubben',title:'Ekonomi och merit',body:`## Håll koll på kassan
 Guld betalar löner, personal, vård, magi, arenor och värvningar. På ekonomisidan ser du intäkter, utgifter och transaktioner. Veckokostnader dras på måndagar; det konkreta klockslaget visas i lokal tid.
 
