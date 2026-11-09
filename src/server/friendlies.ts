@@ -6,10 +6,10 @@ import {clubs,worldState} from '../db/schema';
 import {record,records,put} from './records';
 import {FRIENDLY_VENUES,friendlyKickoff,swedishDay} from '../constants/friendlies';
 
-export async function friendlyNotice(tx:any,club:any,id:string,title:string,body:string,extra:any={}){
+export async function friendlyNotice(tx:any,club:any,id:string,title:string,body:string,extra:any={},sendMail=true){
  const date=new Date().toISOString();
  await put('team-news','news-'+id+'-'+club.id,{clubId:club.id,title,body,date,...extra},tx);
- if(club.userId)await put('mail','mail-'+id+'-'+club.id,{from:'arena',fromName:'Arenans matchkontor',to:club.userId,toName:club.ownerName,subject:title,body,date,read:false,...extra},tx);
+ if(sendMail&&club.userId)await put('mail','mail-'+id+'-'+club.id,{from:'arena',fromName:'Arenans matchkontor',to:club.userId,toName:club.ownerName,subject:title,body,date,read:false,...extra},tx);
 }
 export function registerFriendlies(app:Express){
  const route=(method:'get'|'post',path:string,fn:(req:any)=>Promise<any>)=>app[method](path,async(req,res)=>{try{res.json(await fn(req))}catch(e:any){res.status(400).json({error:e.message})}});

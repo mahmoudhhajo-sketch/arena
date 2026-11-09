@@ -1,6 +1,6 @@
 /** Only a victorious initiator is hurt; defending against the bearer never triggers retaliation. */
-export function cantaniringRetaliation(artifacts: readonly string[], winnerStartedFight: boolean): number {
-  return winnerStartedFight && artifacts.includes('cantaniring') ? 1 : 0;
+export function cantaniringRetaliation(artifacts: readonly string[], winnerStartedFight: boolean, bearerInjured: boolean): number {
+  return bearerInjured && winnerStartedFight && artifacts.includes('cantaniring') ? 1 : 0;
 }
 
 const tales = [
