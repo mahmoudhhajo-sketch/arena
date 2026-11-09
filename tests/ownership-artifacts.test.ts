@@ -16,9 +16,9 @@ assert.equal(firstWeekRefund('2026-10-13',[debit],'c').length,0);
 const account={name:'Login',managerName:'Zagge',email:'someone@example.invalid'};
 for(const name of [' login ','ZAGGE','SOMEONE@example.invalid'])assert.deepEqual(loginCandidates([account],name),[account]);
 assert.equal(loginCandidates([account],'someone').length,0);
-assert.equal(cantaniringRetaliation(['cantaniring'],true),1);
-assert.equal(cantaniringRetaliation(['cantaniring'],false),0);
-assert.equal(cantaniringRetaliation([],true),0);
+assert.equal(cantaniringRetaliation(['cantaniring'],true,true),1);
+assert.equal(cantaniringRetaliation(['cantaniring'],false,true),0);
+assert.equal(cantaniringRetaliation([],true,true),0);
 assert.equal(new Set(Array.from({length:16},(_,i)=>cantaniringCommentary('Bärare','Vinnare',i))).size,16);
 
 // A synthetic match exercises the real injury/substitution path. It never touches a world database.
@@ -39,7 +39,7 @@ for(const reserve of [true,false])for(const seed of [71,81,91]){
  }
  for(const fight of report.events.filter(e=>e.type==='FIGHT_RESULT')){
    const prefix=fight.id.replace('fight-','cantaniring-').replace(/-\d+$/,'')+'-';
-   assert.equal(ringEvents.some(e=>e.id.startsWith(prefix)),(fight as any).initiatorPlayerId===fight.playerId);
+   assert.equal(ringEvents.some(e=>e.id.startsWith(prefix)),(fight as any).initiatorPlayerId===fight.playerId&&!!fight.important);
  }
  replacements+=report.events.filter(e=>e.type==='SUBSTITUTION'&&e.id.includes('-cantaniring-')).length;
  walkovers+=Number(report.events.some(e=>e.id.startsWith('walkover-during')));
@@ -48,3 +48,5 @@ for(const reserve of [true,false])for(const seed of [71,81,91]){
 assert.ok(reactions>0);assert.ok(replacements>0);assert.ok(walkovers>0);
 console.log('PASS ownership boundaries, scoped refunds, login aliases, ring narration and guaranteed wounds, substitutions and WO.');
 
+
+assert.equal(cantaniringRetaliation(['cantaniring'],true,false),0);

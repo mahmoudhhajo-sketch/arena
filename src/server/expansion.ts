@@ -279,7 +279,7 @@ await db.transaction(async(tx:any)=>{
     await put('friendly-report','friendly-report-'+f.id,{...report,magicFixtureVersion:2},tx);
     await put('friendly-fixture',f.id,{...f,played:true,homeScore:report.finalScore.home,awayScore:report.finalScore.away},tx);
     await tx.delete(gameRecords).where(eq(gameRecords.id,'live-'+f.id));
-    for(const club of [home,away])await friendlyNotice(tx,club,f.id+'-result','Vänskapsmatchen är färdig',home.name+' – '+away.name+': '+report.finalScore.home+'–'+report.finalScore.away+'. Resultatet påverkar inte serien eller spelarstatistiken.',{matchId:f.id});
+    for(const club of [home,away])await friendlyNotice(tx,club,f.id+'-result','Vänskapsmatchen är färdig',home.name+' – '+away.name+': '+report.finalScore.home+'–'+report.finalScore.away+'. Resultatet påverkar inte serien eller spelarstatistiken.',{matchId:f.id},false);
     return;
    }
    await tx.insert(matches).values({id:f.id,round:f.round,division:f.division,homeClubId:home.id,awayClubId:away.id,homeScore:report.finalScore.home,awayScore:report.finalScore.away,matchReport:report,season:f.season||1,playedAt:new Date(f.date)});

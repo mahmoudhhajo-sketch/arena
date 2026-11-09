@@ -243,7 +243,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:27,id: `match-${seed}`,
+      engineVersion:28,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -409,7 +409,7 @@ export function simulateMatch(
           // Resolve simultaneous ring retaliation by the first team to lose its sixth player.
           if(squad.active.length<6&&!forfeit)forfeit=side==='home'?'away':'home';
         };
-        const bearer=loser.player,retaliation=cantaniringRetaliation(bearer.artifacts,attackingWins);
+        const bearer=loser.player,retaliation=cantaniringRetaliation(bearer.artifacts,attackingWins,injured);
         if(injured)wound(loser,loserSquad,loserSide,injurySeverity(skill(winner,'tuffhet'),skill(loser,'tuffhet'),rng.next()),'');
         if(retaliation){
           events.push({id:'cantaniring-'+period+'-'+phase,period,minute:currentMinute,type:'ARTIFACT',teamSide:loserSide,playerId:bearer.id,playerName:bearer.name,opponentPlayerId:winner.player.id,opponentPlayerName:winner.player.name,text:cantaniringCommentary(bearer.name,winner.player.name,period*31+phase+bearer.id),important:true});
@@ -814,7 +814,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:27,id: `match-${seed}`,
+    engineVersion:28,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',
