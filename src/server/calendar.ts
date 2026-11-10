@@ -1,10 +1,11 @@
+import {expireCoaches} from './coachContracts';
 import {weeklyMagicThresholds,refreshMagicPrices} from './magicPrices';
 import {earnedMagicLevel,regenerateMana} from '../engine/magicEconomy';
 import {db} from '../db';
 import {clubs,players,worldState} from '../db/schema';
 import {eq,sql} from 'drizzle-orm';
 import {records,record,put} from './records';
-import {dailyUpdates,healingProgress,weeklyPositionTraining,trainingStepGains,trainingScaleAt} from '../engine/calendar';
+import {dailyUpdates,healingProgress,weeklyPositionTraining,trainingStepGains,trainingScaleAt,trainingPotential} from '../engine/calendar';
 import {PLACES} from '../constants/geography';
 import {ATTRIBUTE_NAMES_SV,QUALITATIVE_ATTRIBUTE_LABELS} from '../constants/attributes';
 import {teamNews} from './newsStatistics';
@@ -16,6 +17,8 @@ export async function advanceCalendar(until:Date){
  for(const at of dailyUpdates(new Date(clock.last),until)){
   await db.transaction(async(tx:any)=>{
    const latest=await record('calendar-clock',tx);if(new Date(latest.last)>=at)return;
+   await expireCoaches(at,tx);
+   const potentialStart=await record('training-potential-start',tx);
    const all=await tx.select().from(clubs),squad=await tx.select().from(players);
    const managed=all.filter((c:any)=>!c.isBot),average=managed.reduce((sum:number,c:any)=>sum+c.doctorInvestment,0)/Math.max(1,managed.length);
    const recovery=new Map((await records('recovery',tx)).map(r=>[r.playerId,r]));
@@ -37,13 +40,13 @@ export async function advanceCalendar(until:Date){
     if(sunday&&c&&!p.isMercenary){
      const dates=(participation.get(p.id)?.dates||[]).filter((d:string)=>+new Date(d)>weekStart&&+new Date(d)<=+at);
      const appearances=participation.get(p.id)?.appearances||[];
-     const trained=weeklyPositionTraining(p.attributes,c.trainingPoints,appearances,+at,weekStart,trainingCarry.get(p.id)||{},trainingScaleAt(at));
+     const trained=weeklyPositionTraining(p.attributes,c.trainingPoints,appearances,+at,weekStart,trainingCarry.get(p.id)||{},trainingScaleAt(at)*trainingPotential(p.id,potentialStart?.lastExistingId??Number.MAX_SAFE_INTEGER));
      update.attributes=trained.attributes;
      await put('training-remainder','training-remainder-'+p.id,{playerId:p.id,remainders:trained.remainders},tx);
      if(p.artifacts?.includes('seven-mile-boots')&&c.trainingPoints.kondition===0)update.attributes.kondition=p.attributes.kondition;
      const gains=trainingStepGains(p.attributes,update.attributes);
      await put('training-gain','gain-'+p.id,{playerId:p.id,clubId:p.clubId,date:at.toISOString(),attributes:gains,before:p.attributes,after:update.attributes},tx);
-     for(const key of gains){const from=Math.min(16,Math.floor(p.attributes[key])),to=Math.min(16,Math.floor(update.attributes[key]));if(from!==to){const rows=trainingReports.get(p.clubId)||[];rows.push(`${p.name}: ${ATTRIBUTE_NAMES_SV[key]} ${QUALITATIVE_ATTRIBUTE_LABELS[from]} → ${QUALITATIVE_ATTRIBUTE_LABELS[to]}`);trainingReports.set(p.clubId,rows)}}
+     for(const key of gains){const from=Math.min(16,Math.round(p.attributes[key])),to=Math.min(16,Math.round(update.attributes[key]));if(from!==to){const rows=trainingReports.get(p.clubId)||[];rows.push(`${p.name}: ${ATTRIBUTE_NAMES_SV[key]} ${QUALITATIVE_ATTRIBUTE_LABELS[from]} → ${QUALITATIVE_ATTRIBUTE_LABELS[to]}`);trainingReports.set(p.clubId,rows)}}
      // Match participation and performance now adjust form immediately after
      // each match. Inactive players settle toward ordinary form, never endlessly down.
      update.form=Math.min(16,Math.max(0,p.form+(dates.length===0?Math.sign(9-p.form):0)));

@@ -91,13 +91,19 @@ export function tuneSpecializedMarketWage(attributes:any,target:number,role:stri
  for(const key of favored)shaped[key]*=1.45;
  // Specialists retain one outstanding skill instead of scaling every useful
  // attribute to the ceiling merely to meet a salary target.
- const specialist=random()<.25;
+ const specialist=random()<.60;
  const keys=[...primary],preferred=keys.filter(key=>favored.includes(key)),choices=preferred.length?preferred:keys,standout=choices[Math.min(choices.length-1,Math.floor(random()*choices.length))];
  const limits={...ceilings};
+ // A specialist can lack a central skill for the nominal role. Salary is still
+ // earned by attributes, never assigned independently. Other strengths may be
+ // useful elsewhere (for example a durable shooter with poor ball control).
+ const supportPool=Object.keys(shaped).filter(k=>k!=='aggressivitet'&&k!==standout&&k!=='malvakt');
+ const supports=supportPool.map(k=>({k,sort:random()})).sort((a,b)=>a.sort-b.sort).slice(0,3).map(v=>v.k);
  for(const key of keys){
   if(specialist&&key!==standout){shaped[key]*=.35+.3*random();limits[key]=Math.min(limits[key],3.2+random()*1.3);}
   else if(!specialist){shaped[key]*=.65+.7*random();}
  }
+ if(specialist)for(const key of supports){primary.add(key);limits[key]=8;shaped[key]=Math.max(shaped[key],3.5+random()*2);}
  let low=.35,high=6,best={...shaped};
  for(let n=0;n<36;n++){
   const factor=(low+high)/2,candidate:any={...shaped};

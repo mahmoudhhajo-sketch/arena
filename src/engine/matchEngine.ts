@@ -1,5 +1,5 @@
 import {cantaniringRetaliation,cantaniringCommentary} from './cantaniring';
-import {moraleFactor} from './economy';
+import {weatherEffects} from './weather';
 import {attendanceDemand,arenaConfidence} from './economy';
 import {describeEvent} from './commentary';
 import {activeSpells,SPELLS,spellById} from '../constants/spells';
@@ -94,7 +94,7 @@ export function simulateMatch(
   awayPlayers: Player[],
   seed = Date.now(),
   underlag: PitchUnderlag = 'Gräs',
-  weatherInput?: { temp: number; condition: string; wind: number; basketsBlocked?:boolean;chainsBlocked?:boolean;spells?:string[] },
+  weatherInput?: { temp: number; condition: string; wind: number; cloudiness?:number; precipitation?:number; basketsBlocked?:boolean;chainsBlocked?:boolean;spells?:string[] },
   crowdEffects:{portSurcharge:number;fanFactor:number}={portSurcharge:0,fanFactor:1}
 ): MatchReport {
   const rng = new SeededRNG(seed);
@@ -120,7 +120,7 @@ export function simulateMatch(
     const reservesBySlot = new Map<string, Player[]>();
     const usedIds = new Set<number>();
     const allActiveIds=new Set(Object.values(club.lineup?.slots||{}).flatMap(activeIds));
-    const morale=moraleFactor((club as any).morale??100);
+    const morale=1;
 
     // The manager's formation is authoritative. Never auto-fill empty slots.
     // Each cell can contain two active players plus two ordered reserves.
@@ -177,8 +177,15 @@ export function simulateMatch(
   for(const [side,squad] of [['home',homePlayers],['away',awayPlayers]] as const)for(const p of squad)individualStats[p.id]={id:p.id,name:p.name,race:p.race,number:p.shirtNumber,side,stats:emptyTeamStats()};
   const inc=(p:ActivePlayerState,k:string,field='antal')=>{individualStats[p.player.id].stats[k][field]++};
   const fatigue=new Map<number,number>();
-  const effort=(p:ActivePlayerState,cost:number)=>fatigue.set(p.player.id,(fatigue.get(p.player.id)||0)+cost*(10/Math.max(1,(homeSquad.active.some(a=>a.player.id===p.player.id)?homeSquad:awaySquad).active.length))*(1+Math.max(0,weather.temp-23)*.035+(weather.condition==='Regn'?.06:0))/(1+p.player.attributes.kondition*.14));
-  const skill=(p:ActivePlayerState,k:string)=>Math.max(0,Number((p.player.attributes as any)[k]))*(.75+p.player.form/64)*Math.max(.55,1-(fatigue.get(p.player.id)||0))*(k==='aggressivitet'||k==='tuffhet'?1:arenaConfidence(p.player.attributes.tuffhet,homeClub.arena?.ara||0,homeClub.arena?.skrack||0,attendance,homeSquad.active.includes(p)).multiplier)*surfaceRaceFactor(p.player.race,underlag);
+  const climate=weatherEffects(weather,underlag);
+  let activePeriod=0;
+  const homeMorale=(homeClub as any).morale??100,awayMorale=(awayClub as any).morale??100;
+  const moraleWinner=homeMorale>awayMorale?'home':awayMorale>homeMorale?'away':null;
+  const clubFor=(p:ActivePlayerState)=>homeSquad.active.includes(p)?homeClub:awayClub;
+  const focused=(club:Club)=>Object.values(club.lineup?.tactics||{}).filter(t=>t!=='Normal').length;
+  const tacticalFactor=(p:ActivePlayerState)=>{const own=clubFor(p),opponent=own===homeClub?awayClub:homeClub;return 1+Math.max(0,own.coach?.tacticsBonus||0)*.012+focused(opponent)*.015;};
+  const effort=(p:ActivePlayerState,cost:number)=>fatigue.set(p.player.id,(fatigue.get(p.player.id)||0)+cost*(10/Math.max(1,(homeSquad.active.some(a=>a.player.id===p.player.id)?homeSquad:awaySquad).active.length))*climate.fatigueFactor/(1+p.player.attributes.kondition*.14));
+  const skill=(p:ActivePlayerState,k:string)=>Math.max(0,Number((p.player.attributes as any)[k]))*(.75+p.player.form/64)*Math.max(.55,1-(fatigue.get(p.player.id)||0))*(k==='aggressivitet'||k==='tuffhet'?1:arenaConfidence(p.player.attributes.tuffhet,homeClub.arena?.ara||0,homeClub.arena?.skrack||0,attendance,homeSquad.active.includes(p)).multiplier)*surfaceRaceFactor(p.player.race,underlag)*(activePeriod===5&&moraleWinner===(homeSquad.active.includes(p)?'home':'away')?1.05:1)*(k==='markering'?tacticalFactor(p):1);
   const local=(squad:ActivePlayerState[],row:number,col:number)=>squad.filter(p=>p.slotKey!=='goal'&&p.fieldRow===row&&p.fieldCol===col);
   const pickWeighted=(pool:ActivePlayerState[],weights:number[])=>{let roll=rng.next()*weights.reduce((a,b)=>a+b,0);for(let i=0;i<pool.length;i++){roll-=weights[i];if(roll<=0)return pool[i]}return pool[pool.length-1]};
   // Missing players make every non-violent ball contest harder. Local marking and
@@ -216,6 +223,7 @@ export function simulateMatch(
     const p=individualStats[lastPass.id];p.assists=(p.assists||0)+1;p.assistWeighted=(p.assistWeighted||0)+lastPass.weighted;
     return {assistPlayerId:p.id,assistPlayerName:p.name};
   };
+  events.push({id:'weather-pitch',period:0,minute:0,type:'PREMATCH',teamSide:'neutral',text:climate.description,important:true} as any);
   const periodScores: MatchPeriodResult[] = [];
   const homeInjuries: Array<{ playerName: string; severity: number; playerId?: number }> = [];
   const awayInjuries: Array<{ playerName: string; severity: number; playerId?: number }> = [];
@@ -243,7 +251,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:28,id: `match-${seed}`,
+      engineVersion:29,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -287,6 +295,8 @@ export function simulateMatch(
   // 5 PERIODS SIMULATION (Section 14 & 53)
   let forfeit:'home'|'away'|null=null;
   for (let period = 1; period <= 5; period++) {
+    activePeriod=period;
+    if(period===5&&moraleWinner)events.push({id:'morale-final',period,minute:60,type:'ATMOSPHERE',teamSide:moraleWinner,text:(moraleWinner==='home'?homeClub:awayClub).name+' samlas under sitt baner. Den starkare lagandan ger spelarna mod och extra ork inför den sista perioden.',important:true} as any);
     if(period===5){
       for(const [side,squad,club,players] of [['home',homeSquad,homeClub,homePlayers],['away',awaySquad,awayClub,awayPlayers]] as const){
         for(const outgoing of [...squad.active]){
@@ -295,7 +305,7 @@ export function simulateMatch(
           const sub=players.find(p=>p.id===reserveId&&!p.isDeceased&&p.currentInjury===0&&!unavailable.has(p.id)&&!squad.active.some(a=>a.player.id===p.id));
           if(!sub){events.push({id:'shadow-missed-'+outgoing.player.id,period,minute:60,type:'PREMATCH',teamSide:side,playerId:outgoing.player.id,playerName:outgoing.player.name,text:outgoing.player.name+' väntar vid skuggornas rand, men den utsedda förstareserven är inte tillgänglig. Skuggbytet uteblir.',important:true} as any);continue;}
           const old=outgoing.player;unavailable.add(old.id);
-          const morale=moraleFactor((club as any).morale??100);
+          const morale=1;
           outgoing.player={...sub,form:Math.min(16,sub.form+activeSpells(sub.artifacts).reduce((a,s)=>a+(s.form||0),0)),attributes:Object.fromEntries(Object.entries(effectiveAttributes(sub)).map(([k,v])=>[k,v*morale])) as any};
           events.push({id:'shadow-sub-'+old.id,period,minute:60,type:'SUBSTITUTION',teamSide:side,playerId:sub.id,playerName:sub.name,opponentPlayerId:old.id,opponentPlayerName:old.name,slot:outgoing.slotKey,shirtNumber:sub.shirtNumber,text:'Inför sista perioden drar en slöja av lövskuggor över planen. '+old.name+' kliver ur skenet och '+sub.name+' tar spelarens plats genom Skuggbyte.',important:true} as any);
         }
@@ -403,7 +413,7 @@ export function simulateMatch(
           (side==='home'?homeInjuries:awayInjuries).push({playerId:old.id,playerName:old.name,severity});
           const queue=squad.reservesBySlot.get(slot)||[];let sub:Player|undefined;
           while(queue.length&&!sub){const candidate=queue.shift()!;if(!unavailable.has(candidate.id)&&!squad.active.some(p=>p.player.id===candidate.id))sub=candidate}
-          if(sub){const reserveMorale=moraleFactor(((side==='home'?homeClub:awayClub) as any).morale??100);target.player={...sub,form:Math.min(16,sub.form+activeSpells(sub.artifacts).reduce((a,s)=>a+(s.form||0),0)),attributes:Object.fromEntries(Object.entries(effectiveAttributes(sub)).map(([k,v])=>[k,v*reserveMorale])) as any};
+          if(sub){const reserveMorale=1;target.player={...sub,form:Math.min(16,sub.form+activeSpells(sub.artifacts).reduce((a,s)=>a+(s.form||0),0)),attributes:Object.fromEntries(Object.entries(effectiveAttributes(sub)).map(([k,v])=>[k,v*reserveMorale])) as any};
             events.push({id:'sub-'+period+'-'+phase+suffix,period,minute:currentMinute,type:'SUBSTITUTION',teamSide:side,playerId:sub.id,playerName:sub.name,opponentPlayerId:old.id,opponentPlayerName:old.name,text:`${sub.name} sprang in när ${old.name} lämnade planen.`,slot,shirtNumber:sub.shirtNumber} as any);
           }else{squad.active.splice(squad.active.indexOf(target),1);events.push({id:'inj-'+period+'-'+phase+suffix,period,minute:currentMinute,type:'INJURY',teamSide:side,playerId:old.id,playerName:old.name,text:`${old.name} lämnade planen skadad. Laget fortsätter med en spelare mindre.`,slot} as any)}
           // Resolve simultaneous ring retaliation by the first team to lose its sixth player.
@@ -438,7 +448,7 @@ export function simulateMatch(
       const formationRow=decisionHolder.slotKey==='goal'?3:Number(decisionHolder.slotKey[0]);
       const formationCol=decisionHolder.slotKey==='goal'?1:Number(decisionHolder.slotKey[2]);
       const basketBias=tactics?.skytte==='Korg'?.68:tactics?.skytte==='Mål'?.32:isMidfield?.56:.44;
-      const wantsBasket = !(weather as any).basketsBlocked && rng.next() < basketBias;
+      const wantsBasket = ballRow===1&&ballCol!==1&&!(weather as any).basketsBlocked && rng.next() < basketBias;
       // Normal goals are chiefly finished by attackers. Backs instead take a
       // larger share of basket attempts, especially from their outer lanes.
       // Inner and outer attackers use the same factor for the large goal.
@@ -460,7 +470,7 @@ export function simulateMatch(
         inc(decisionHolder,'lopningar');attackStats.lopningar.antal++;
         inc(marker,'brytningar');defendStats.brytningar.antal++;
         effort(decisionHolder,underlag==='Jord'?.042:underlag==='Sten'?.037:.035);
-        breakthrough=weighted(decisionHolder,'lopningar',skill(decisionHolder,'snabbhet')*(weather.condition==='Regn'?.82:1)+skill(decisionHolder,'teknik')*.5+support(attackSquad.active,decisionHolder,'teknik'),pressure(defendSquad.active,ballRow,ballCol),marker,'brytningar');
+        breakthrough=weighted(decisionHolder,'lopningar',skill(decisionHolder,'snabbhet')*climate.runFactor*tacticalFactor(decisionHolder)+skill(decisionHolder,'teknik')*.5+support(attackSquad.active,decisionHolder,'teknik'),pressure(defendSquad.active,ballRow,ballCol),marker,'brytningar');
         if(breakthrough){
           inc(decisionHolder,'lopningar','lyckade');attackStats.lopningar.lyckade++;
           events.push({id:`breakthrough-${period}-${phase}`,period,minute:currentMinute,type:'RUN_SUCCESS',teamSide:possession,playerId:decisionHolder.player.id,playerName:decisionHolder.player.name,text:`${decisionHolder.player.name} vek undan från sin bevakare och bröt fram mot målet inne i anfallsrutan.`});
@@ -472,7 +482,7 @@ export function simulateMatch(
         }
       }
       const shootingChance=Math.min(wantsBasket?.96:.9,(inAttackingThird?.8:isMidfield?.38:.06)*positionFactor+(breakthrough?.12:0))*serviceFactor;
-      if (rng.next() < shootingChance) {
+      if ((wantsBasket||inAttackingThird||(isMidfield&&climate.longShotsAllowed))&&rng.next() < shootingChance) {
 
         if (wantsBasket) {
           // Basket shot (Korgskott)
@@ -511,7 +521,7 @@ export function simulateMatch(
               id: `basket-${period}-${currentMinute}`,
               period,
               minute: currentMinute,
-              type: 'GOAL_BASKET', ...assist(shooter,possession,currentMinute),
+              shotRow:ballRow,shotCol:ballCol,type: 'GOAL_BASKET', ...assist(shooter,possession,currentMinute),
               teamSide: possession,
               playerId: shooter.player.id,
               playerName: shooter.player.name,
@@ -550,7 +560,7 @@ export function simulateMatch(
 
           const shooterFormationRow=shooter.slotKey==='goal'?3:Number(shooter.slotKey[0]);
           const visionWeight=shooterFormationRow===0?.15:shooter.slotKey.endsWith('-1')?.25:.04;
-          const shotRating = skill(shooter,'skott') * (weather.condition==='Dimma'?.6:.8) - weather.wind*.06 + skill(shooter,'speluppfattning') * visionWeight;
+          const shotRating = skill(shooter,'skott') * (inAttackingThird?.8:.5) * (weather.condition==='Dimma'?.75:1) - weather.wind*.06 + skill(shooter,'speluppfattning') * visionWeight;
           const saveRating = keeperPresent?skill(goalkeeper,'malvakt')*.8+skill(goalkeeper,'passning')*.2:0;
 
           inc(shooter,'skott');if(keeperPresent){inc(goalkeeper,'raddningar');defendStats.raddningar.antal++;}effort(shooter,.012);
@@ -588,7 +598,7 @@ export function simulateMatch(
               id: `goal-${period}-${currentMinute}`,
               period,
               minute: currentMinute,
-              type: 'GOAL_NORMAL', ...assist(shooter,possession,currentMinute),
+              longShot:!inAttackingThird,shotRow:ballRow,shotCol:ballCol,type: 'GOAL_NORMAL', ...assist(shooter,possession,currentMinute),
               teamSide: possession,
               playerId: shooter.player.id,
               playerName: shooter.player.name,
@@ -609,7 +619,7 @@ export function simulateMatch(
               id: `save-${period}-${currentMinute}`,
               period,
               minute: currentMinute,
-              type: keeperPresent?'SAVE_NORMAL':'SHOT_NORMAL',
+              longShot:!inAttackingThird,shotRow:ballRow,shotCol:ballCol,type: keeperPresent?'SAVE_NORMAL':'SHOT_NORMAL',
               teamSide: keeperPresent?(possession === 'home' ? 'away' : 'home'):possession,
               playerName: keeperPresent?goalkeeper.player.name:shooter.player.name, playerId: keeperPresent?goalkeeper.player.id:shooter.player.id,
               opponentPlayerName: keeperPresent?shooter.player.name:undefined,
@@ -634,7 +644,7 @@ export function simulateMatch(
         const marker = primaryMarker(defendSquad.active,ballRow,ballCol);
 
         inc(runner,'lopningar');inc(marker,'brytningar');defendStats.brytningar.antal++;effort(runner,underlag==='Jord'?.042:underlag==='Sten'?.037:.035);
-        const runSuccess=weighted(runner,'lopningar',skill(runner,'snabbhet')*(weather.condition==='Regn'?.82:1)+skill(runner,'teknik')*.5+support(attackSquad.active,runner,'teknik'),pressure(defendSquad.active,ballRow,ballCol),marker,'brytningar');
+        const runSuccess=weighted(runner,'lopningar',skill(runner,'snabbhet')*climate.runFactor*tacticalFactor(runner)+skill(runner,'teknik')*.5+support(attackSquad.active,runner,'teknik'),pressure(defendSquad.active,ballRow,ballCol),marker,'brytningar');
 
         if (runSuccess) {
           inc(runner,'lopningar','lyckade');
@@ -693,7 +703,7 @@ export function simulateMatch(
         const interceptor = primaryMarker(defendSquad.active,receiver.fieldRow,receiver.fieldCol);
 
         inc(passer,'passningar');inc(interceptor,'brytningar');defendStats.brytningar.antal++;effort(passer,.009);
-        const passA=skill(passer,'passning')*Math.max(.5,1-weather.wind*.012-(weather.condition==='Regn'?.1:0))+skill(passer,'speluppfattning')*(passer.slotKey.endsWith('-1')?.4:.08)+support(attackSquad.active,passer,'passning');
+        const passA=skill(passer,'passning')*climate.passFactor*tacticalFactor(passer)+skill(passer,'speluppfattning')*(passer.slotKey.endsWith('-1')?.4:.08)+support(attackSquad.active,passer,'passning');
         const passB=pressure(defendSquad.active,ballRow,ballCol)*.62*(diagonal?1.2:1)+Math.max(0,passDistance-1)*1.8,catchA=skill(receiver,'teknik')+skill(receiver,'speluppfattning')*(receiver.slotKey.endsWith('-1')?.5:.1)+3,catchB=pressure(defendSquad.active,receiver.fieldRow,receiver.fieldCol)*.38;
         const prob=(a:number,b:number)=>contestProbability(a,b);
         const deliveredProbability=prob(passA,passB),receiveProbability=prob(catchA,catchB),receivedProbability=deliveredProbability*receiveProbability;
@@ -814,7 +824,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:28,id: `match-${seed}`,
+    engineVersion:29,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',
@@ -826,7 +836,7 @@ export function simulateMatch(
     periodScores,
     finalScore: forfeit?{home:forfeit==='home'?5:0,away:forfeit==='away'?5:0}:{ home: totalHomeMatchPoints, away: totalAwayMatchPoints },
     underlag, individualStats:Object.values(individualStats),
-    events:events.map((e,i)=>({...e,playerId:e.playerId||(e.teamSide==='home'?homePlayers:awayPlayers).find(p=>p.name===e.playerName)?.id,opponentPlayerId:e.opponentPlayerId||(e.type==='PASS_SUCCESS'?(e.teamSide==='home'?homePlayers:awayPlayers):(e.teamSide==='home'?awayPlayers:homePlayers)).find(p=>p.name===e.opponentPlayerName)?.id,id:e.id+'-'+i,text:((e as any).important&&!['FIGHT_RESULT','ATMOSPHERE','RESTART','INJURY','SUBSTITUTION'].includes(e.type))||e.id.startsWith('shadow-sub-')?e.text:describeEvent(e,i)+((e as any).assistPlayerName?' Framspelningen kom från '+(e as any).assistPlayerName+'.':''),reported:reportEvent(e,i,seed)})),
+    events:events.map((e,i)=>({...e,playerId:e.playerId||(e.teamSide==='home'?homePlayers:awayPlayers).find(p=>p.name===e.playerName)?.id,opponentPlayerId:e.opponentPlayerId||(e.type==='PASS_SUCCESS'?(e.teamSide==='home'?homePlayers:awayPlayers):(e.teamSide==='home'?awayPlayers:homePlayers)).find(p=>p.name===e.opponentPlayerName)?.id,id:e.id+'-'+i,text:((e as any).important&&!['FIGHT_RESULT','ATMOSPHERE','RESTART','INJURY','SUBSTITUTION'].includes(e.type))||e.id.startsWith('shadow-sub-')||e.id==='morale-final'?e.text:describeEvent(e,i)+(e.longShot?' Avslutet kom som ett långskott från mittfältet.':'')+((e as any).assistPlayerName?' Framspelningen kom från '+(e as any).assistPlayerName+'.':''),reported:reportEvent(e,i,seed)})),
     homeStats,
     awayStats,
     tactics: {

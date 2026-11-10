@@ -1,3 +1,4 @@
+import {skyDescription} from '../engine/weather';
 import {InjuryMark} from './InjuryMark';
 import React, { useState } from 'react';
 import { MatchReport } from '../types';
@@ -94,7 +95,7 @@ export const MatchView: React.FC<MatchViewProps> = ({
             <strong>Arena:</strong> {match.arenaName}
           </div>
           <div className="flex items-center space-x-1">
-            <strong>Väder:</strong> <span>{match.weather.temp} °C</span> <span>☁</span> <span>{match.weather.wind} m/s</span>
+            <strong>Väder:</strong> <span>{match.weather.temp} °C</span> <span>{skyDescription(match.weather)}</span> <span>{match.weather.wind} m/s</span>
           </div>
         </div>
 

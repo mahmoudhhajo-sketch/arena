@@ -1,3 +1,4 @@
+import {initializeRules52,coachContract} from './coachContracts';
 import {trainingStepGains} from '../engine/calendar';
 import {clubEras,belongsToManager} from './clubOwnership';
 import {or as eitherClub} from 'drizzle-orm';
@@ -15,6 +16,7 @@ import {ATTRIBUTE_NAMES_SV} from '../constants/attributes';
 import {acquisitionMoralePenalty} from '../engine/economy';
 function visible(p:any,reveal=false,revealSpells=false){const {attributes,...rest}=p;return {...rest,artifacts:(rest.artifacts||[]).filter((id:string)=>revealSpells||!id.startsWith('magic:')&&!id.startsWith('spell:')),...((p.isMercenary||reveal)?{attributes:Object.fromEntries(Object.entries(attributes).map(([k,v])=>[k,Math.round(Number(v)*1000)/1000]))}:{})};}
 export async function initializeFeatures(){
+ await initializeRules52();
  if(!await record('recruitment-v4'))await db.transaction(async(tx:any)=>{
   if(await record('recruitment-v4',tx))return;
   const existing=(await tx.select().from(players)).filter((p:any)=>p.isMercenary).length;
@@ -86,7 +88,7 @@ export function registerFeatures(app:Express){
  route('get','/api/recruitment',async()=>{const teams=await db.select().from(clubs);return ({coaches:COACHES.map(c=>({...c,hiredBy:teams.find(t=>(t.coach as any)?.id===c.id)?{id:teams.find(t=>(t.coach as any)?.id===c.id)!.id,name:teams.find(t=>(t.coach as any)?.id===c.id)!.name}:null})),artifacts:ARTIFACTS,mercenaries:(await db.select().from(players)).filter(p=>p.isMercenary&&!p.clubId&&!p.isDeceased).map(p=>({...visible(p),fee:mercenaryFee(p.attributes as any)}))});});
  route('post','/api/recruitment/:kind',async req=>db.transaction(async(tx:any)=>{
   const [club]=await tx.select().from(clubs).where(eq(clubs.id,req.body.clubId)).for('update');if(!club||club.isBot)throw Error('Laget saknas.');
-  if(req.params.kind==='coach'){await tx.execute(sql`SELECT pg_advisory_xact_lock(719090)`);if((await tx.select().from(clubs)).some((c:any)=>c.coach?.id===req.body.id&&c.id!==club.id))throw Error('Tränaren har redan avtal med ett annat lag.');const coach=COACHES.find(c=>c.id===req.body.id);if(!coach)throw Error('Tränaren saknas.');const allocated=Object.values(club.trainingPoints).reduce((s:number,n:any)=>s+Number(n),0);if(Number(allocated)>6+coach.trainingBonus)throw Error('Minska träningsfördelningen före tränarbytet.');await tx.update(clubs).set({coach}).where(eq(clubs.id,club.id));return {success:true};}
+  if(req.params.kind==='coach'){await tx.execute(sql`SELECT pg_advisory_xact_lock(719090)`);if((await tx.select().from(clubs)).some((c:any)=>c.coach?.id===req.body.id&&c.id!==club.id))throw Error('Tränaren har redan avtal med ett annat lag.');const coach=COACHES.find(c=>c.id===req.body.id);if(!coach)throw Error('Tränaren saknas.');const allocated=Object.values(club.trainingPoints).reduce((s:number,n:any)=>s+Number(n),0);if(Number(allocated)>6+coach.trainingBonus)throw Error('Minska träningsfördelningen före tränarbytet.');if(club.coach?.id===coach.id)throw Error('Tränaren har redan ett kontrakt med ditt lag.');await tx.update(clubs).set({coach:{...coach,...coachContract(new Date().toISOString())}}).where(eq(clubs.id,club.id));return {success:true};}
   let price=0,category='';
   if(req.params.kind==='mercenary'){const [p]=await tx.select().from(players).where(eq(players.id,Number(req.body.id))).for('update');if(!p?.isMercenary||p.clubId||p.isDeceased)throw Error('Fribrytaren är inte ledig.');const squad=await tx.select().from(players).where(eq(players.clubId,club.id));if(squad.length>=99)throw Error('Truppen är full.');price=mercenaryFee(p.attributes as any);category='Fribrytare';await put('morale-change','morale-mercenary-'+p.id+'-'+Date.now(),{clubId:club.id,date:new Date().toISOString(),penalty:acquisitionMoralePenalty(club.race,p.race,squad)},tx);const used=new Set(squad.map((p:any)=>p.shirtNumber));let n=1;while(used.has(n))n++;await tx.update(players).set({clubId:club.id,shirtNumber:n}).where(eq(players.id,p.id));await put('mercenary-contract','contract-'+p.id,{playerId:p.id,clubId:club.id,hiredAt:new Date().toISOString()},tx);}
   else if(req.params.kind==='artifact')throw Error('Artefakter köps genom budgivning på artefaktmarknaden.');

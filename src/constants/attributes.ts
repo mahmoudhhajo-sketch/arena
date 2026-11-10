@@ -53,27 +53,9 @@ export function getQualitativeLabel(value: number): string {
 
 
 export const TOTAL_INJURY_LABELS: Record<number, string> = {
-
-  0: 'Skadefri',
-
-  1: 'Lätt stött',
-
-  2: 'Luttrad',
-
-  3: 'Skadedrabbad',
-
-  4: 'Härjad',
-
-  5: 'Sönderslagen',
-
-  6: 'Svårt härjad',
-
-  7: 'Krympling',
-
-  8: 'Invalid',
-
-  9: 'Död',
-
+  0: 'Skadefri', 1: 'Lätt stött', 2: 'Sällan skadad', 3: 'Luttrad',
+  4: 'Skadedrabbad', 5: 'Illa åtgången', 6: 'Bestående skador',
+  7: 'Tungt skadebelastad', 8: 'Invalid', 9: 'Död',
 };
 
 
