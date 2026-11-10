@@ -23,3 +23,5 @@ export function weatherEffects(weather:MatchWeather,surface:string){
 }
 
 export function skyDescription(weather:MatchWeather){const effects=weatherEffects(weather,'Gräs');return (effects.cloudiness<=30?'Klart':effects.cloudiness<80?'Växlande molnighet':'Mulet')+' · '+(['Ingen nederbörd','Lätt nederbörd','Nederbörd','Kraftig nederbörd'][effects.precipitation]||'Nederbörd');}
+
+export function matchWeatherPlace(venue:{hometown?:string;id?:string}|null|undefined,homeTown:string){return venue?.id?.startsWith('standard-')||venue?.id?.startsWith('friendly-')?homeTown:venue?.hometown||homeTown;}

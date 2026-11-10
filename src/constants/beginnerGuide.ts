@@ -268,7 +268,7 @@ Du betalar en engångsavgift, inte spelarens vanliga veckolön. Kontrollera matc
 Fribrytaren är dold för andra lag före matchen, men presenteras när matchen börjar. Han deltar inte i klubbens träning eller i Kejsarspelen.
 
 ## Tänk på lagandan
-En fribrytare av en främmande ras kan påverka moralen på samma sätt som en ny permanent spelare. Det gäller även en värvad talang. Den etablerade majoritetsrasen och klubbens huvudras behandlas enligt reglerna i kapitlet Din klubb och laganda.
+En fribrytare av en främmande ras kan påverka moralen på samma sätt som en ny permanent spelare. Talanger från scouten är undantagna och sänker inte moralen. Den etablerade majoritetsrasen och klubbens huvudras behandlas enligt reglerna i kapitlet Din klubb och laganda.
 
 En stark förstärkning kan göra stor skillnad, men behöver fortfarande en fungerande omgivning. Jämför hyran med vad klubben har råd att betala för en enda match.`},
  {id:15,group:'Utveckla truppen',title:'Talangscouten och resorna',body:`Talangscouten söker nya spelare i Mambennas städer och byar. Anställ honom och välj vart han ska resa. På scoutsidan ser du ortens folk, talangpotential och beräknad ankomst.
@@ -288,7 +288,7 @@ Talangpotential beskriver ortens möjligheter. Den påverkas när spelare värva
 
 Du kan avbryta en resa eller sökning. Scouten stannar då på den senast besökta orten. Ankomster hanteras vid morgonuppdateringen, och den konkreta tiden på sidan visas i din lokala tid.
 
-En värvad talang blir en vanlig klubbspelare med lön och träningsbehov. Även hans ras kan påverka lagandan.`},
+En värvad talang blir en vanlig klubbspelare med lön och träningsbehov. Talanger som värvas genom scouten sänker inte lagets moral.`},
  {id:13,group:'Magi och föremål',title:'Artefakter och brygder',body:`Artefakter är magiska föremål som du kan köpa på artefaktmarknaden. Vissa bärs av en spelare, vissa verkar från klubbens förråd och andra förbrukas när de används. Läs beskrivningen innan du väljer mottagare.
 
 ## Föremål som bärs
@@ -336,14 +336,14 @@ Underlaget påverkar hur väl olika spelare trivs. Goblins och troll är neutral
 
 ## Bygga och hyra ut
 När du bygger väljer du antal platser inom den valda arenatypens gräns. En större och mer påkostad arena kostar både att bygga och att driva. Sätt ett uthyrningspris om andra lag ska använda den och jämför möjliga intäkter med veckokostnaden.`},
- {id:19,group:'Driv klubben',title:'Väder och spelvillkor',body:`Dagens väder visas i spelet. Mambenna har ett gemensamt väderläge med regionala skillnader: kusten är ofta blåsigare och regnigare, bergen kallare och ökenmarkerna varmare.
+ {id:19,group:'Driv klubben',title:'Väder och spelvillkor',body:`Matchen använder vädret på den ort där arenan ligger. På en allmän arena används hemmalagets hemort. Vädermagi kan ändra dessa förhållanden för matchen. Dagens väder visas i spelet. Mambenna har ett gemensamt väderläge med regionala skillnader: kusten är ofta blåsigare och regnigare, bergen kallare och ökenmarkerna varmare.
 
 ## Varför spelar vädret roll?
 Vädret beskrivs med temperatur, vind, molnighet och nederbörd. Stark vind gör passningar svårare. Nederbörd försämrar fästet vid löpningar. På jord blir det dessutom lera, som gör löpningarna tyngre och kräver mer kondition. Värme kostar ork, särskilt under en klar och solig himmel.
 
 Kraftig nederbörd omöjliggör långskott. Detsamma gäller på en jordplan när det är soligt och varmare än 20 grader: dammet skymmer sikten. Vanliga skott från anfallsrutorna kan fortfarande tas. Långskott från mittfältet är svårare än avslut nära målet. Korgskott tas från själva sidokorgens ruta.
 
-Båda lagen spelar i samma väder, men kan vara olika rustade för det. God kondition hjälper den som måste arbeta mycket. Spelarnas egenskaper och din inriktning avgör hur väl laget hanterar förutsättningarna. Vädermagi kan ändra matchens villkor. Förbered besvärjelsen för en vald kommande match redan när du planerar laget. Vädermagi, Kedjefängelse och Bergets försegling kräver hemmamatch; Antimagi kan även användas borta.`},
+Båda lagen spelar i samma väder, men kan vara olika rustade för det. God kondition hjälper den som måste arbeta mycket. Spelarnas egenskaper och din inriktning avgör hur väl laget hanterar förutsättningarna. Vädermagi kan ändra matchens villkor. Förbered besvärjelsen för en vald kommande match redan när du planerar laget. Alla besvärjelser kan användas både hemma och borta, även vädermagi, Kedjefängelse och Bergens försegling.`},
  {id:16,group:'Driv klubben',title:'Ekonomi och merit',body:`## Håll koll på kassan
 Guld betalar löner, personal, vård, magi, arenor och värvningar. På ekonomisidan ser du intäkter, utgifter och transaktioner. Veckokostnader dras på måndagar; det konkreta klockslaget visas i lokal tid.
 
