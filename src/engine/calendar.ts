@@ -38,13 +38,13 @@ export function advanceTraining(value:number,effort:number){
  return 16+n+(extra-(Math.pow(2,n)-1))/Math.pow(2,n);
 }
 export type TrainingRemainders=Partial<Record<TrainableAttribute,number>>;
-function attributeUpdate(attributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,matches:number,matchesByAttribute:Partial<Record<TrainableAttribute,number>>|undefined,gainScale:number,carry:TrainingRemainders={}){
+function attributeUpdate(attributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,matches:number,matchesByAttribute:Partial<Record<TrainableAttribute,number>>|undefined,gainScale:number,carry:TrainingRemainders={},modern=false){
  const result={...attributes},remainders:TrainingRemainders={};
  for(const key of TRAINABLE_ATTRIBUTES){
   const positionalMatches=matchesByAttribute?.[key],load=Math.min(2,Math.max(0,positionalMatches??matches));
-  const participation=positionalMatches===undefined?[0.1,0.55,1][Math.round(load)]:load<=1?0.55*load:0.55+0.45*(load-1);
+  const participation=modern?0.55*load:positionalMatches===undefined?[0.1,0.55,1][Math.round(load)]:load<=1?0.55*load:0.55+0.45*(load-1);
   const points=Math.min(10,Math.max(0,allocation[key]||0));
-  const effort=gainScale*.25*points*participation*(key==='kondition'?2.25:key==='tuffhet'?.75:1);
+  const effort=gainScale*.25*(modern?Math.pow(points,.8):points)*participation*(key==='kondition'?2.25:key==='tuffhet'?.75:modern&&key==='malvakt'?.8:modern&&key==='skott'?.85:1);
   const exact=Math.max(0,advanceTraining(Math.max(0,attributes[key]+(carry[key]||0)),effort)-(key==='kondition'&&points===0?.15:0));
   result[key]=Math.round(exact*1000)/1000;remainders[key]=exact-result[key];
  }
@@ -66,9 +66,26 @@ const trainingSlotWeights:Record<TrainableAttribute,Record<string,number>>={
  tuffhet:{goal:.5,'0-0':.5,'0-1':.5,'0-2':.5,'1-0':.75,'1-1':.75,'1-2':.75,'2-0':1,'2-1':1,'2-2':1}
 };
 export function positionalTrainingMatches(appearances:Array<{date:string;slots:string[]}>,key:TrainableAttribute,after:number,before:number){return appearances.filter(a=>+new Date(a.date)>before&&+new Date(a.date)<=after).reduce((sum,a)=>sum+Math.max(0,...a.slots.map(slot=>trainingSlotWeights[key][slot]||0)),0);}
+export const positionTrainingWeights:Record<TrainableAttribute,Record<string,number>>={
+ ...trainingSlotWeights,
+ markering:{'2-0':1,'2-1':1,'2-2':1,'1-0':.5,'1-1':.5,'1-2':.5},
+ passning:{'2-0':1,'2-1':1,'2-2':1,'1-1':1,goal:.5},
+ teknik:{'0-0':1,'0-1':1,'0-2':1,'1-0':.5,'1-1':.5,'1-2':.5},
+ speluppfattning:{...trainingSlotWeights.speluppfattning,goal:.1},
+ skott:{'0-0':1,'0-1':1,'0-2':1,'1-0':.5,'1-2':.5,'1-1':.15},
+ malvakt:{goal:1,'1-0':.5,'1-2':.5},
+ tuffhet:{...trainingSlotWeights.tuffhet,'1-0':.5,'1-1':.5,'1-2':.5}
+};
+export function trainingPotential(playerId:number,lastExistingId:number){
+ if(playerId<=lastExistingId)return 1;
+ let x=Math.imul(playerId^0x51f15e,0x45d9f3b);x=Math.imul(x^(x>>>16),0x45d9f3b);x=(x^(x>>>16))>>>0;
+ return .9+(x%2001)/10000;
+}
 export function weeklyPositionTraining(attributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,appearances:Array<{date:string;slots:string[]}>,after:number,before:number,carry:TrainingRemainders={},gainScale=TRAINING_GAIN_SCALE){
- const weights=Object.fromEntries(TRAINABLE_ATTRIBUTES.map(key=>[key,positionalTrainingMatches(appearances,key,after,before)]));
- return attributeUpdate(attributes,allocation,0,weights,gainScale,carry);
+ const modern=after>=Date.parse('2026-11-10T00:00:00Z');
+ const played=appearances.filter(a=>+new Date(a.date)>before&&+new Date(a.date)<=after);
+ const weights=Object.fromEntries(TRAINABLE_ATTRIBUTES.map(key=>[key,modern?played.reduce((sum,a)=>sum+Math.max(0,...a.slots.map(slot=>positionTrainingWeights[key][slot]||0)),0)*(played.length>=2?.75:1):positionalTrainingMatches(appearances,key,after,before)]));
+ return attributeUpdate(attributes,allocation,0,weights,gainScale,carry,modern);
 }
 export function weeklyPositionAttributes(attributes:PlayerAttributes,allocation:Record<TrainableAttribute,number>,appearances:Array<{date:string;slots:string[]}>,after:number,before:number,gainScale=TRAINING_GAIN_SCALE):PlayerAttributes{
  return weeklyPositionTraining(attributes,allocation,appearances,after,before,{},gainScale).attributes;
@@ -98,4 +115,4 @@ export function reverseWeeklyPositionAttributes(afterAttributes:PlayerAttributes
  return result;
 }
 
-export function trainingStepGains(before:PlayerAttributes,after:PlayerAttributes){return TRAINABLE_ATTRIBUTES.filter(k=>Math.min(16,Math.floor(after[k]))>Math.min(16,Math.floor(before[k])));}
+export function trainingStepGains(before:PlayerAttributes,after:PlayerAttributes){return TRAINABLE_ATTRIBUTES.filter(k=>Math.min(16,Math.round(after[k]))>Math.min(16,Math.round(before[k])));}

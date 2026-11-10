@@ -32,7 +32,7 @@ export function moraleFactor(morale=100){return .95+.05*Math.max(0,Math.min(100,
 // become a strict majority of the current squad, that race is established in
 // the dressing room as well and no longer causes an integration penalty.
 export function acquisitionMoralePenalty(clubRace:string,newRace:string,squad:{race:string;isDeceased?:boolean}[]){
- if(newRace===clubRace)return 0;
+ if(newRace===clubRace)return 1;
  const living=squad.filter(player=>!player.isDeceased),count=living.filter(player=>player.race===newRace).length;
- return living.length>0&&count>living.length/2?0:5;
+ return living.length>0&&count>living.length/2?1:6;
 }

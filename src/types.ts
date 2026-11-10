@@ -90,6 +90,8 @@ export interface LineupConfig {
 }
 
 export interface Coach {
+  hiredAt?: string;
+  expiresAt?: string;
   id: string;
   name: string;
   race: Race;
@@ -173,6 +175,9 @@ export type MatchEventType =
   | 'MATCH_END';
 
 export interface MatchEvent {
+  longShot?: boolean;
+  shotRow?: number;
+  shotCol?: number;
   important?: boolean;
   slot?: string;
   id: string;

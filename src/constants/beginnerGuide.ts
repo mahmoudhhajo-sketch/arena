@@ -134,6 +134,8 @@ Mitten söker oftare centrala vägar, medan kantspel söker ytor på sidorna. Ti
 ## Skytte: vilka lägen vill ni skapa?
 Inriktning mot stora målet söker målchanser där, medan korgskott söker sidokorgarna oftare. Båda behöver spelare som kan få bollen till rätt plats. Att välja korgskott ersätter inte behovet av en bra skytt.
 
+En ensidig taktik blir lättare att läsa. Varje val som avviker från Normal hjälper motståndarna något i markeringen och när de letar passningsluckor eller fria löpvägar. En tydlig inriktning kan ändå löna sig när den passar truppen och motståndet.
+
 ## Lär av matchen
 Jämför bollvägar, försök, lyckade handlingar och byten. Ett dåligt resultat behöver inte betyda att taktiken är dålig: motstånd, skador, väder och enskilda situationer spelar också roll. Ändra gärna en sak i taget när du lär känna laget.`},
  {id:7,group:'Lär känna laget',title:'Inför matchen och efter slutsignalen',body:`## Före avkast
@@ -170,9 +172,9 @@ Ras påverkar även magiska traditioner och förutsättningar på olika underlag
 På lagssidan kan du skriva en presentation och ladda upp en lagbild. Där finns också trupp, matcher, historik och statistik. Kortnamnet kan du ändra själv; ett nytt fullständigt klubbnamn eller en flytt av hemorten kostar guld.
 
 ## Vad gör moral?
-Moralen beskriver lagandan: hur väl spelarna känner samhörighet och vågar lita på varandra. God moral hjälper laget att få ut sin förmåga på planen. Svag moral gör det svårare, men förvandlar inte skickliga spelare till dåliga och ersätter inte betydelsen av taktik och egenskaper.
+Moralen beskriver lagandan: hur väl spelarna känner samhörighet och vågar lita på varandra. Inför sista perioden får laget med högst moral extra mod och ork. Det är vilket lag som har högst moral som räknas, inte hur stor skillnaden är. Är moralen lika får inget lag den fördelen. Moralen ändrar inte förmågan under de fyra första perioderna.
 
-När en spelare av ett annat folk ansluter kan laget behöva tid att vänja sig. Om ett annat folk redan utgör majoriteten av truppen har det blivit en etablerad del av klubben; då tas nya spelare från både det folket och klubbens huvudras emot utan samma omställning. Moralen återhämtas med tiden.
+Varje spelarvärvning ger en liten omställning och sänker moralen, även om spelaren har klubbens ras. När en spelare av ett främmande folk ansluter blir omställningen större. Om ett annat folk redan utgör majoriteten av truppen har det blivit en etablerad del av klubben; då tas nya spelare från både det folket och klubbens huvudras emot utan samma omställning. Moralen återhämtas med tiden.
 
 Du kan alltså bygga ett blandat lag. Planera värvningarna och ge laget tid att hitta samman. Att anlita en tränare påverkar inte moralen.
 
@@ -195,19 +197,21 @@ Kontrollera skador, roll, lön och egenskaper tillsammans. En dyr spelare är in
  {id:10,group:'Utveckla truppen',title:'Träning: välj vad laget ska utveckla',body:`På träningssidan fördelar du pluppar mellan egenskaper. Plupparna visar hur mycket av lagets träning du lägger på varje område. Fler pluppar ger mer fokus, men två pluppar betyder inte automatiskt dubbelt så stor egenskapsökning eller två steg på ordskalan.
 
 ## Matchpositionen avgör vilken träning spelaren får
-Spelaren behöver ha spelat på en position där egenskapen används. Två relevanta matcher under veckan ger bättre träningsunderlag än en. Det är deltagandet och positionen som räknas, inte om spelaren vann, spelade bra eller följde en viss taktik.
+Spelaren behöver ha spelat på en position där egenskapen används. En match ger 100 procent av träningen för den spelade positionen. Spelar han två matcher får varje match 75 procent, som mest 150 procent totalt. En målvakt som står i mål en gång och vilar nästa match får 100 procent målvaktsträning. Står han i mål en gång och spelar innermitt nästa får han 75 procent målvaktsträning; står han i mål båda gångerna får han 150 procent. Det är deltagandet och positionen som räknas, inte om spelaren vann, spelade bra eller följde en viss taktik.
 
 - Snabbhet: kantspelare, inte innerback, innermitt eller inneranfall.
 - Kondition: alla positioner, även målvakter.
-- Teknik: utespelare.
-- Markering: backar och mittfältare.
-- Passning: backar och mittfältare får mer än anfallare.
+- Teknik: mest för anfallare, mindre för mittfältare.
+- Markering: mest för backar, mindre för mittfältare.
+- Passning: mest för backar och innermittar, mindre för målvakter.
 - Speluppfattning: främst innerback, innermitt och inneranfall; betydligt mindre på kanterna.
-- Skott: mittfältare och anfallare.
-- Målvakt: spelare i det stora målet eller vid sidokorgarna.
-- Tuffhet: främst backar, därefter mittfältare. Anfallare och målvakter får mindre träning i tuffhet. Tuffhet är den egenskap som tar längst tid att träna vid jämförbara förutsättningar.
+- Skott: mest för anfallare, mindre för yttermittar och en liten del för innermittar.
+- Målvakt: mest i det stora målet, mindre vid sidokorgarna.
+- Tuffhet: mest för backar och mindre för alla andra positioner. Tuffhet är den egenskap som tar längst tid att träna vid jämförbara förutsättningar.
 
 Aggressivitet kan inte tränas. En reserv som aldrig kommer in räknas inte som om han hade spelat. Specialfallet WO före avkast beskrivs under matchreglerna.
+
+Varje ytterligare plupp ger mindre extra träning än den föregående. Målvakt och skott utvecklas långsammare än vanliga egenskaper; tuffhet tar längst tid. Nytillkomna spelare har dessutom en dold, individuell träningspotential som kan ge mindre skillnader i utvecklingstakten.
 
 ## Varför syns inte alltid en höjning?
 Utveckling sker även mellan ordnivåerna. En spelare kan förbättras utan att exempelvis Duktig ännu blir Utmärkt. Ju högre den underliggande egenskapen är, desto svårare blir nästa steg. Artefakternas bonusar gör inte själva grundegenskapen svårare att träna.
@@ -221,7 +225,10 @@ Välj några områden som passar laget i stället för att förvänta dig stora 
 ## Välj efter både behov och ekonomi
 En bättre tränare kan ge fler möjligheter, men har också högre veckolön. Kontrollera den återkommande kostnaden innan du anställer. En tränare som redan arbetar för ett annat lag är inte tillgänglig för dig.
 
-Tränaren ersätter inte matchdeltagande eller rätt position för träningen. Du behöver fortfarande fördela träningsplupparna och ge spelarna rätt arbetsuppgifter. Tränarens ras ändrar inte klubbens moral.`},
+Tränaren ersätter inte matchdeltagande eller rätt position för träningen. Du behöver fortfarande fördela träningsplupparna och ge spelarna rätt arbetsuppgifter. Tränarens ras ändrar inte klubbens moral.
+
+## Kontrakt och taktisk hjälp
+Kontraktet löper över 20 veckor och avslutas vid den första måndagsuppdateringen när kontraktstiden har gått. Slutdatum visas på träningssidan. Därefter blir tränaren ledig igen. Tränarens taktiska förmåga förbättrar markeringen och hjälper spelarna att hitta passningsluckor och löpvägar.`},
  {id:11,group:'Utveckla truppen',title:'Skador, läkare och slitage',body:`## Två olika slags skada
 Aktuell skada är det som hindrar spelaren från att vara spelklar just nu. Den visas med röda skadekors. Permanent skada är kroppens samlade slitage under karriären. Läkning av en aktuell skada tar inte bort det permanenta slitaget.
 
@@ -233,10 +240,13 @@ På läkarsidan väljer du en löpande budget och ser jämförelsen med andra ma
 ## En karriär sliter på kroppen
 Matchspel och hårda händelser bidrar till slitage. Tuffare spelare står emot bättre. Drakblod kan också skada kroppen permanent. När slitaget blir för stort kan spelaren dö; en avliden spelare kan inte ställas upp.
 
-Skadebenämningen i profilen visar hur långt slitaget har gått. Läs den tillsammans med de aktuella korsen. En spelare kan vara skadefri inför nästa match men ändå ha en sliten kropp.
+Slitaget beskrivs i ordning som Skadefri, Lätt stött, Sällan skadad, Luttrad, Skadedrabbad, Illa åtgången, Bestående skador, Tungt skadebelastad, Invalid och slutligen Död. Läs benämningen tillsammans med de aktuella korsen. En spelare kan vara skadefri inför nästa match men ändå ha en sliten kropp.
 
 Vid WO innan matchen alls börjar tillkommer ingen permanent matchskada. Om matchen har hunnit spelas gäller vanligt slitage även om den sedan avbryts med WO.`},
  {id:12,group:'Utveckla truppen',title:'Transfermarknaden och bud',body:`På transfermarknaden köper du spelare permanent till klubben. Använd filter för egenskaper, ras och lön för att hitta en spelare som fyller ett behov. Titta också på skador och kostnaden över tid, inte bara på köpesumman.
+
+## Hitta rätt sorts förstärkning
+Spelarens angivna position är en utgångspunkt, inte ett löfte om en färdig specialist. En anfallare kan ha ett starkt skott men svag teknik, medan en mittfältare kan vara en skicklig passare som behöver hjälp i försvarsspelet. Jämför egenskaperna med uppgiften du vill ge honom och hur dina andra spelare kan komplettera honom. Rasen ger vanliga styrkor, men individerna varierar.
 
 ## Engångsbud eller maxbud
 Ett engångsbud är det belopp du lägger just nu. Ett maxbud är din gräns: systemet höjer åt dig med minsta tillåtna höjning när andra bjuder, tills gränsen nås. Det synliga priset behöver alltså inte vara ditt maxbelopp.
@@ -268,6 +278,11 @@ Resor tar tid. När scouten hittar en talang kan du granska spelaren innan du v�
 
 Väl på plats kan scouten stanna och leta igen i tre dagar eller göra en djupare sökning under sju dagar. Den längre sökningen ger bättre möjlighet att hitta en bra talang, men lovar inget visst resultat.
 
+## Res genom en portal
+Artefakten Portal låter en anställd talangscout resa direkt till valfri ort i Mambenna. Öppna Mina artefakter, välj ort och bekräfta. Portalen förbrukas och ersätter en eventuell pågående resa eller sökning. Har scouten redan hittat en talang behöver du först välja om den ska värvas.
+
+Portalen flyttar bara scouten. Väl framme väljer du en vanlig sökning eller en djuptalangsökning; dessa tar fortfarande sin vanliga tid.
+
 ## Välj plats med omsorg
 Talangpotential beskriver ortens möjligheter. Den påverkas när spelare värvas och återhämtas med tiden. Olika orter har olika förutsättningar. I Berunia kan scouten hitta spelare av alla folk.
 
@@ -282,8 +297,11 @@ Utrustning som Gripstövlar och Silverhandske hjälper bäraren. När en sådan 
 ## Brygder som förbrukas
 Örtbrygd läker hela spelarens aktuella skada. Svartbrygd förbättrar formen. Drakblod ger en tillfällig förstärkning som avtar under åtta dagar, men lämnar permanent slitage. En tuff kropp står bättre emot detta pris.
 
+## Portal för talangscouten
+Portal används från förrådet, inte på en spelare. Den flyttar din anställda talangscout direkt till vald ort och förbrukas. Sökningen efter en talang börjar först när du ger scouten ett nytt sökuppdrag.
+
 ## Föremål för hela klubben
-Mångrenens stav verkar från förrådet och öppnar andra rasers magiska traditioner under sin livslängd. Krigsherrarnas Ed upphäver rasblandningens negativa effekt på lagandan när tavlan finns i klubbens förråd. Ett föremål som ligger ute till försäljning ska inte räknas som aktiv klubbutrustning.
+Mångrenens stav verkar från förrådet och öppnar andra rasers magiska traditioner under sin livslängd. Krigsherrarnas Ed upphäver rasblandningens extra negativa effekt på lagandan när tavlan finns i klubbens förråd. Den vanliga omställningen när en ny spelare ansluter finns fortfarande kvar. Ett föremål som ligger ute till försäljning ska inte räknas som aktiv klubbutrustning.
 
 ## Alla artefakter
 Nedan ser du föremålens verkan. Samma budprinciper som på spelarmarknaden gäller även här.`},
@@ -300,7 +318,7 @@ Varje besvärjelse anger mål, kostnad och hur länge den gäller. Vissa riktas 
 Magi påverkar matchen även när bonusen inte visas som en ändrad grundegenskap i spelarprofilen. Andra lag ska inte kunna läsa dina spelares hemliga förberedelser där.
 
 ## Olika traditioner
-Raserna har olika besvärjelser. Alla har tillgång till Antimagi på hög nivå, men den kan användas bara en gång per säsong. Mångrenens stav kan öppna andra traditioner; nivå och mana behövs fortfarande.
+Människornas magiker kallas Präst, dvärgarnas Smed, alvernas Druid och orchernas Shaman. Raserna har olika besvärjelser. Alla har tillgång till Antimagi på hög nivå, men den kan användas bara en gång per säsong. Mångrenens stav kan öppna andra traditioner; nivå och mana behövs fortfarande.
 
 Kombinera magin med din matchplan. Den är ett stöd till laget, inte en garanti för seger.`},
  {id:18,group:'Driv klubben',title:'Arenor och publik',body:`## Boka en hemmamatch
@@ -321,7 +339,9 @@ När du bygger väljer du antal platser inom den valda arenatypens gräns. En st
  {id:19,group:'Driv klubben',title:'Väder och spelvillkor',body:`Dagens väder visas i spelet. Mambenna har ett gemensamt väderläge med regionala skillnader: kusten är ofta blåsigare och regnigare, bergen kallare och ökenmarkerna varmare.
 
 ## Varför spelar vädret roll?
-Regn gör bollhantering och fotfäste besvärligare. Vind påverkar bollbanor och avslut. Dimma gör det svårare att se, och värme gör att spelarna tröttnar snabbare.
+Vädret beskrivs med temperatur, vind, molnighet och nederbörd. Stark vind gör passningar svårare. Nederbörd försämrar fästet vid löpningar. På jord blir det dessutom lera, som gör löpningarna tyngre och kräver mer kondition. Värme kostar ork, särskilt under en klar och solig himmel.
+
+Kraftig nederbörd omöjliggör långskott. Detsamma gäller på en jordplan när det är soligt och varmare än 20 grader: dammet skymmer sikten. Vanliga skott från anfallsrutorna kan fortfarande tas. Långskott från mittfältet är svårare än avslut nära målet. Korgskott tas från själva sidokorgens ruta.
 
 Båda lagen spelar i samma väder, men kan vara olika rustade för det. God kondition hjälper den som måste arbeta mycket. Spelarnas egenskaper och din inriktning avgör hur väl laget hanterar förutsättningarna. Vädermagi kan ändra matchens villkor. Förbered besvärjelsen för en vald kommande match redan när du planerar laget. Vädermagi, Kedjefängelse och Bergets försegling kräver hemmamatch; Antimagi kan även användas borta.`},
  {id:16,group:'Driv klubben',title:'Ekonomi och merit',body:`## Håll koll på kassan

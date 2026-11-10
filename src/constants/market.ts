@@ -3,6 +3,7 @@ import {activeSpells} from './spells';
 import {PlayerAttributes} from '../types';
 
 export const ARTIFACTS=[
+ {id:'portal',name:'Portal',price:28000,attribute:'speluppfattning',bonus:0,rarity:'Sällsynt',supply:2,description:'Öppnar en väg till valfri ort i Mambenna för din talangscout. Resan sker omedelbart. Sökandet efter en ny talang tar fortfarande tid. Förbrukas vid användning'},
 
  {id:'speed-boots',name:'Gripstövlar',price:18000,attribute:'snabbhet',bonus:3,rarity:'Ovanlig',supply:10,description:'Förhäxade skor som ger bäraren snabbare steg'},
 
@@ -41,7 +42,7 @@ const brewWeightScale=31*brewShare/(1-brewShare)/65;
 export const ARTIFACT_MARKET_WEIGHTS:Record<string,number>={
  'herbal-brew':38*brewWeightScale,'black-brew':27*brewWeightScale,'luck-amulet':7,'keeper-gloves':5,
  'speed-boots':4,'thorn-bracer':4,'mithril':3,'seven-mile-boots':2,
- 'dragon-blood':1,'moon-staff':1,'cantaniring':3,'warlords-oath':1
+ 'portal':2,'dragon-blood':1,'moon-staff':1,'cantaniring':3,'warlords-oath':1
 };
 export const MARKET_ARTIFACTS=ARTIFACTS.filter(a=>ARTIFACT_MARKET_WEIGHTS[a.id]>0);
 
