@@ -83,27 +83,19 @@ const MARKET_ROLE_CEILINGS:Record<string,Record<string,number>>={
 };
 
 export function tuneSpecializedMarketWage(attributes:any,target:number,role:string,random=Math.random,race='',season=1){
- const shaped=specializeMarketPlayer(attributes,role,random),primary=new Set(MARKET_ROLE_PRIMARY[role]||MARKET_ROLE_PRIMARY.midfielder),ceilings=MARKET_ROLE_CEILINGS[role]||MARKET_ROLE_CEILINGS.midfielder;
+ const shaped=specializeMarketPlayer(attributes,role,random);
  const strengths:Record<string,string[]>={elf:['snabbhet'],human:['markering'],dwarf:['tuffhet'],orc:['skott'],goblin:['snabbhet'],troll:['tuffhet',random()<.5?'markering':'skott']};
- // Most listings retain their racial character, without forcing every player
- // into the same position or erasing unusual individuals.
+ const keys=Object.keys(shaped).filter(k=>k!=='aggressivitet');
+ const roleKeys=MARKET_ROLE_PRIMARY[role]||MARKET_ROLE_PRIMARY.midfielder;
+ const draw=(pool:string[])=>pool[Math.min(pool.length-1,Math.floor(random()*pool.length))];
+ const roll=random(),count=roll<.4?1:roll<.8?2:3;
  const favored=random()<.8?(strengths[race]||[]):[];
- for(const key of favored)shaped[key]*=1.45;
- // Specialists retain one outstanding skill instead of scaling every useful
- // attribute to the ceiling merely to meet a salary target.
- const specialist=random()<.60;
- const keys=[...primary],preferred=keys.filter(key=>favored.includes(key)),choices=preferred.length?preferred:keys,standout=choices[Math.min(choices.length-1,Math.floor(random()*choices.length))];
- const limits={...ceilings};
- // A specialist can lack a central skill for the nominal role. Salary is still
- // earned by attributes, never assigned independently. Other strengths may be
- // useful elsewhere (for example a durable shooter with poor ball control).
- const supportPool=Object.keys(shaped).filter(k=>k!=='aggressivitet'&&k!==standout&&k!=='malvakt');
- const supports=supportPool.map(k=>({k,sort:random()})).sort((a,b)=>a.sort-b.sort).slice(0,3).map(v=>v.k);
- for(const key of keys){
-  if(specialist&&key!==standout){shaped[key]*=.35+.3*random();limits[key]=Math.min(limits[key],3.2+random()*1.3);}
-  else if(!specialist){shaped[key]*=.65+.7*random();}
- }
- if(specialist)for(const key of supports){primary.add(key);limits[key]=8;shaped[key]=Math.max(shaped[key],3.5+random()*2);}
+ const primary=new Set<string>([draw(favored.length?favored:roleKeys)]);
+ while(primary.size<count){const pool=(random()<.5?keys:roleKeys).filter(k=>!primary.has(k));primary.add(draw(pool.length?pool:keys.filter(k=>!primary.has(k))));}
+ const limits:Record<string,number>={};
+ for(const key of keys){if(primary.has(key)){limits[key]=8;shaped[key]=4.5+random()*2.5;}else{limits[key]=1.5+random()*4.5;shaped[key]=Math.min(limits[key],.5+random()*4);}}
+ // Never invent extra strengths just to hit a wage target. Incomplete players
+ // may cost less; the existing skill and wage ceilings still apply.
  let low=.35,high=6,best={...shaped};
  for(let n=0;n<36;n++){
   const factor=(low+high)/2,candidate:any={...shaped};
