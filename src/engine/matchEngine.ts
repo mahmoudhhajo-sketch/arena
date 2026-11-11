@@ -251,7 +251,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:30,id: `match-${seed}`,
+      engineVersion:31,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -494,12 +494,14 @@ export function simulateMatch(
           const nearerBasket=ballCol===0?0:ballCol===2?2:rng.next()<.5?0:2;
           const sideBasketCol=nearerBasket;
           // Defender is wing midfielder on that side
-          const directDefender = defendSquad.active.find((a) => a.fieldRow === 1 && a.fieldCol === sideBasketCol);
+          const basketDefenders = local(defendSquad.active,1,sideBasketCol);
+          const basketRating=(p:ActivePlayerState)=>skill(p,'malvakt')*.7+skill(p,'snabbhet')*.3;
+          const directDefender = basketDefenders.length>1?pickWeighted(basketDefenders,basketDefenders.map(p=>.1+basketRating(p))):basketDefenders[0];
           const defender = directDefender || choose(defendSquad.active,1,sideBasketCol);
           const basketReach=distance(defender,1,sideBasketCol);
 
           const shotSkill = skill(shooter,'skott') * .7 - weather.wind*.08 + skill(shooter,'snabbhet') * 0.3 + rng.next() * 5;
-          const saveSkill = (skill(defender,'malvakt') * 0.7 + skill(defender,'snabbhet') * 0.3 + rng.next() * 5)/(1+basketReach*.45);
+          const saveSkill = ((basketDefenders.length?cellStrength(basketDefenders.map(basketRating)):basketRating(defender)) + rng.next() * 5)/(1+basketReach*.45);
 
           inc(shooter,'korgskott');inc(defender,'korgraddningar');effort(shooter,.012);
           if (weighted(shooter,'korgskott',Math.max(.1,shotSkill+support(attackSquad.active,shooter,'speluppfattning')-pressure(defendSquad.active,ballRow,ballCol)*.2),saveSkill*.55+.7+(activeSpells(defender.player.artifacts).some(s=>s.matchEffect==='baskets')?80:0),defender,'korgraddningar')) {
@@ -555,13 +557,15 @@ export function simulateMatch(
           attackStats.skott.antal++;
 
           const shooter = attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
-          const keeperPresent=defendSquad.active.some(a=>a.slotKey==='goal');
-          const goalkeeper = defendSquad.active.find((a) => a.slotKey === 'goal') || defendSquad.active[0];
+          const keepers=defendSquad.active.filter(a=>a.slotKey==='goal');
+          const keeperPresent=keepers.length>0;
+          const keeperRating=(p:ActivePlayerState)=>skill(p,'malvakt')*.8+skill(p,'passning')*.2;
+          const goalkeeper = keepers.length>1?pickWeighted(keepers,keepers.map(p=>.1+keeperRating(p))):keepers[0]||defendSquad.active[0];
 
           const shooterFormationRow=shooter.slotKey==='goal'?3:Number(shooter.slotKey[0]);
           const visionWeight=shooterFormationRow===0?.15:shooter.slotKey.endsWith('-1')?.25:.04;
           const shotRating = skill(shooter,'skott') * (inAttackingThird?.8:.5) * (weather.condition==='Dimma'?.75:1) - weather.wind*.06 + skill(shooter,'speluppfattning') * visionWeight;
-          const saveRating = keeperPresent?skill(goalkeeper,'malvakt')*.8+skill(goalkeeper,'passning')*.2:0;
+          const saveRating = cellStrength(keepers.map(keeperRating));
 
           inc(shooter,'skott');if(keeperPresent){inc(goalkeeper,'raddningar');defendStats.raddningar.antal++;}effort(shooter,.012);
           if (weighted(shooter,'skott',Math.max(.1,shotRating+support(attackSquad.active,shooter,'speluppfattning')-pressure(defendSquad.active,ballRow,ballCol)*(breakthrough?.06:.2)),saveRating*1.05+(keeperPresent?(inAttackingThird?1:4.5):.2),keeperPresent?goalkeeper:undefined,'raddningar')) {
@@ -824,7 +828,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:30,id: `match-${seed}`,
+    engineVersion:31,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',
