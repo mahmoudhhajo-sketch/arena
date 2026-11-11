@@ -251,7 +251,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:32,id: `match-${seed}`,
+      engineVersion:33,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -496,7 +496,8 @@ export function simulateMatch(
           // Defender is wing midfielder on that side
           const basketDefenders = local(defendSquad.active,1,sideBasketCol);
           const basketRating=(p:ActivePlayerState)=>skill(p,'malvakt')*.7+skill(p,'snabbhet')*.3;
-          const directDefender = basketDefenders.length>1?pickWeighted(basketDefenders,basketDefenders.map(p=>.1+basketRating(p))):basketDefenders[0];
+          const basketResponsibility=(p:ActivePlayerState)=>.1+skill(p,'malvakt');
+          const directDefender = basketDefenders.length>1?pickWeighted(basketDefenders,basketDefenders.map(basketResponsibility)):basketDefenders[0];
           const defender = directDefender || choose(defendSquad.active,1,sideBasketCol);
           const basketReach=distance(defender,1,sideBasketCol);
 
@@ -828,7 +829,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:32,id: `match-${seed}`,
+    engineVersion:33,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',

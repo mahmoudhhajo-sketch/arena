@@ -23,3 +23,5 @@ export function playerMatchRating(report:any,playerId:number):number|null{
  const value=6+(signal>=0?4:6)*Math.tanh(signal/3);
  return Math.round(Math.max(0,Math.min(10,value))*10)/10;
 }
+
+export function teamMatchRating(report:any,side:string){const values=(report.individualStats||[]).filter((p:any)=>p.side===side).map((p:any)=>playerMatchRating(report,p.id)).filter((n:any)=>n!==null);return values.length?Math.round(values.reduce((sum:number,n:number)=>sum+n,0)/values.length*10)/10:null;}

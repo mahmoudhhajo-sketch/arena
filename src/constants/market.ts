@@ -11,11 +11,11 @@ export const ARTIFACTS=[
 
  {id:'keeper-gloves',name:'Silverhandske',price:18000,attribute:'malvakt',bonus:3,rarity:'Vanlig',supply:18,description:'Säkrare grepp och bättre räckvidd i målet'},
 
- {id:'seven-mile-boots',name:'Sjumilastövlar',price:45000,attribute:'kondition',bonus:4,rarity:'Legendarisk',supply:2,description:'Ger fyra steg högre kondition och förhindrar veckans konditionsförlust vid utebliven konditionsträning'},
+ {id:'seven-mile-boots',name:'Sjumilastövlar',price:45000,attribute:'kondition',bonus:4,rarity:'Legendarisk',supply:2,description:'Ökar konditionen och förhindrar veckans konditionsförlust vid utebliven konditionsträning'},
 
  {id:'herbal-brew',name:'Örtbrygd',price:5000,attribute:'kondition',bonus:0,rarity:'Vanlig',supply:24,description:'Läker hela den aktuella skadan, men inte permanent slitage. Förbrukas vid användning'},
 
- {id:'black-brew',name:'Svartbrygd',price:9000,attribute:'kondition',bonus:0,rarity:'Ovanlig',supply:12,description:'Återger spelaren god form. Förbrukas vid användning'},
+ {id:'black-brew',name:'Svartbrygd',price:9000,attribute:'kondition',bonus:0,rarity:'Ovanlig',supply:12,description:'Ökar formen. Förbrukas vid användning'},
 
  {id:'dragon-blood',name:'Drakblod',price:60000,attribute:'tuffhet',bonus:0,rarity:'Legendarisk',supply:2,description:'Stärker alla egenskaper med en kraft som avtar under åtta dagar, men skadar kroppen permanent. Kan inte staplas. Förbrukas'},
 

@@ -203,7 +203,7 @@ Spelaren behöver ha spelat på en position där egenskapen används. En match g
 - Kondition: alla positioner, även målvakter.
 - Teknik: mest för anfallare, mindre för mittfältare.
 - Markering: mest för backar, mindre för mittfältare.
-- Passning: mest för backar och innermittar, mindre för målvakter.
+- Passning: mest för backar och innermittar, mindre för målvakter. Anfallare får ingen passningsträning.
 - Speluppfattning: främst innerback, innermitt och inneranfall; betydligt mindre på kanterna.
 - Skott: mest för anfallare, mindre för yttermittar och en liten del för innermittar.
 - Målvakt: mest i det stora målet, mindre vid sidokorgarna.
@@ -333,6 +333,8 @@ Publiken ger både inkomster och hemmastöd. Kejsarens indrivning av förfallna 
 Underlaget påverkar hur väl olika spelare trivs. Goblins och troll är neutrala på underlagen. Vädret spelar också in.
 
 Arenans ära stärker bara hemmalagets mod och självsäkerhet och hjälper spelarna att våga utnyttja ett läge. Skräck sätter press på bortalaget och kan bidra till misstag; tuffa spelare står emot bättre. Se arenan som en del av matchens förutsättningar, inte som en säker vinstknapp.
+
+Arenaval och valbart underlag låses en timme före avkast. Tidpunkten visas i matchplaneringen.
 
 ## Bygga och hyra ut
 När du bygger väljer du antal platser inom den valda arenatypens gräns. En större och mer påkostad arena kostar både att bygga och att driva. Sätt ett uthyrningspris om andra lag ska använda den och jämför möjliga intäkter med veckokostnaden.`},
