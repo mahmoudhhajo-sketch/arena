@@ -19,7 +19,7 @@ export async function transitionSeason(now:Date){
   await tx.execute(sql`SELECT pg_advisory_xact_lock(719085)`);
   const [world]=await tx.select().from(worldState),season=world.season;
   const games=await record('imperial-season-'+season,tx);
-  if(!games||games.competitions.length!==5||!await record('season-award-'+season,tx)||await record('season-transition-'+season,tx))return;
+  if(!games||!games.competitions.some((c:any)=>c.name==='Tvekamp')||!await record('season-award-'+season,tx)||await record('season-transition-'+season,tx))return;
   const fixtures=(await records('fixture',tx)).filter(f=>(f.season||1)===season);
   if(!fixtures.length||fixtures.some(f=>!f.played))return;
   const nextMonday=new Date(games.date);nextMonday.setUTCDate(nextMonday.getUTCDate()+7);nextMonday.setUTCHours(4,0,0,0);

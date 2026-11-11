@@ -194,10 +194,10 @@ export function simulateMatch(
   const numberFactor=(side:'home'|'away')=>{const own=(side==='home'?homeSquad:awaySquad).active.length,other=(side==='home'?awaySquad:homeSquad).active.length;return Math.max(.76,Math.min(1.18,1+(own-other)*.045))};
   const distance=(p:ActivePlayerState,row:number,col:number)=>Math.abs(p.fieldRow-row)+Math.abs(p.fieldCol-col);
   const choose=(squad:ActivePlayerState[],row:number,col:number)=>{const out=squad.filter(p=>p.slotKey!=='goal'),pool=out.length?out:squad;return pickWeighted(pool,pool.map(p=>(.3+skill(p,'speluppfattning')*(p.slotKey.endsWith('-1')?.4:.08)+skill(p,'teknik')*.3+skill(p,'snabbhet')*.3)/Math.pow(1+distance(p,row,col),3)))};
-  const support=(squad:ActivePlayerState[],actor:ActivePlayerState,k:string)=>cellStrength(local(squad,actor.fieldRow,actor.fieldCol).filter(p=>p!==actor).map(p=>skill(p,k)))*.35;
+  const support=(squad:ActivePlayerState[],actor:ActivePlayerState,k:string)=>Math.max(0,cellStrength(local(squad,actor.fieldRow,actor.fieldCol).map(p=>skill(p,k)))-skill(actor,k));
   const markingPressure=(p:ActivePlayerState,row:number,col:number)=>(skill(p,'markering')+.3*skill(p,'snabbhet')+.15*skill(p,'speluppfattning'))/Math.pow(1+distance(p,row,col),2.7);
   const pressure=(squad:ActivePlayerState[],row:number,col:number)=>cellStrength(squad.filter(p=>p.slotKey!=='goal').map(p=>markingPressure(p,row,col)));
-  const primaryMarker=(squad:ActivePlayerState[],row:number,col:number)=>{const out=squad.filter(p=>p.slotKey!=='goal'),pool=out.length?out:squad;return [...pool].sort((a,b)=>markingPressure(b,row,col)-markingPressure(a,row,col))[0]};
+  const primaryMarker=(squad:ActivePlayerState[],row:number,col:number)=>{const out=squad.filter(p=>p.slotKey!=='goal'),pool=out.length?out:squad;return pickWeighted(pool,pool.map(p=>.01+markingPressure(p,row,col)))};
   const lane=(side:'home'|'away',row:number)=>{const tactic=(side==='home'?homeClub:awayClub).lineup?.tactics?.spelvag;const defenders=side==='home'?awaySquad.active:homeSquad.active;const weights=[0,1,2].map(col=>(tactic==='Kant'?(col===1?.4:2):tactic==='Mitten'?(col===1?3:.5):1)/(1+pressure(defenders,row,col)*.05));let roll=rng.next()*weights.reduce((a,b)=>a+b,0);for(let col=0;col<3;col++){roll-=weights[col];if(roll<=0)return col}return 2;};
   const chance=(a:number,b:number)=>rng.next()<contestProbability(a,b);
   const weighted=(p:ActivePlayerState,key:string,a:number,b:number,other?:ActivePlayerState,otherKey?:string)=>{if(key!=='slagsmal'){const side=playerSide(p);a*=numberFactor(side);b*=numberFactor(other?playerSide(other):side==='home'?'away':'home')}const probability=contestProbability(a,b);let success=rng.next()<probability;if(success&&other&&luck(other,['skott','korgskott'].includes(key)?'skott':key==='slagsmal'?'duell':'brytning'))success=false;else if(!success&&luck(p,['skott','korgskott'].includes(key)?'avslut':key==='slagsmal'?'duell':'boll'))success=true;individualStats[p.player.id].stats[key].viktat+=(Number(success)-probability)*100;if(other&&otherKey)individualStats[other.player.id].stats[otherKey].viktat+=(Number(!success)-(1-probability))*100;return success;};
@@ -251,7 +251,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:31,id: `match-${seed}`,
+      engineVersion:32,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -828,7 +828,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:31,id: `match-${seed}`,
+    engineVersion:32,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',

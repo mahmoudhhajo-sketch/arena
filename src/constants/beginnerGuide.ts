@@ -408,6 +408,7 @@ Referatet beskriver utvalda händelser. Statistiken räknar också bollhandlinga
 - Passning: spelarna tävlar i att lyckas med passningar.
 - Skytte: avslutarnas träffsäkerhet sätts på prov.
 - Målvaktskonst: målvaktsförmågan prövas.
+- Markering: spelaren försöker stoppa motståndarens framstötar. Flest lyckade brytningar vinner. Grenen avgörs på fredagen, före lördagens tvekamp.
 - Tvekamp: en utslagsturnering där tuffhet står i centrum och aggressivitet också spelar roll.
 
 Tävlingarna avgörs av spelarnas förmågor, utan slump. Permanenta artefakters fördelar räknas med, men tillfällig dopning med Drakblod ger ingen fördel.
