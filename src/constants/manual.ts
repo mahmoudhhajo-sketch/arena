@@ -1,7 +1,7 @@
 export const EXTRA_CHAPTERS:Array<[string,string]>= [
  ['Publik, arenadrift och mod',`Biljettpris, division, merit, färska matchresultat och klubbens historia påverkar efterfrågan. När två lag från samma ort möts lockar stadsderbyt extra intresse. En liten klubb får inte fler supportrar bara för att den hyr en jättelik arena. Gratis inträde kan locka fler, men ger ingen biljettintäkt. Vanliga priser ligger ungefär mellan 3 och 12 guld; högre pris kan ge betydligt glesare läktare. Kejsarseriens publikunderlag fyller normalt en 30 000-arena vid 6 guld, men ingen klubb är garanterad 120 000 åskådare med ett mycket högt pris.
 
-Hemmapubliken ger spelarna mod. Arenans ära inspirerar båda lagen medan skräck kan göra spelare tveksamma; tuffa spelare står bättre emot. En storslagen arena ersätter aldrig bra spelare.
+Hemmapubliken ger spelarna mod. Arenans ära stärker hemmalagets mod och självsäkerhet. Skräck pressar bortalaget och kan leda till misstag; tuffa spelare står bättre emot. En storslagen arena ersätter aldrig bra spelare.
 
 Ägda arenor har löpande driftkostnad efter storlek och byggvärde, även om de står tomma. Du väljer priset för uthyrning till andra lag. Egna hemmamatcher bokas på den egna arenan om du inte väljer en annan. En arena kan bara ha en match åt gången.`],
  ['Säsongens prispengar',`När alla arton serieomgångar är spelade får de fem främsta lagen i varje serie ett placeringspris. I Kejsarserien är det, från plats 1 till 5: 1 000 000, 650 000, 450 000, 300 000 och 240 000 guld. Plats 6–10 får inga prispengar. Beloppen halveras för varje divisionsnivå: division 1 får hälften, division 2 en fjärdedel och division 3 en åttondel. Kejsarseriens vinnare får också Kodudorfpokalen. Priset betalas en gång per säsong och syns i ekonomins transaktioner.`],
@@ -66,7 +66,7 @@ Viktat mäter utfallet i just matchen och är inte ett säkert betyg på långsi
 Referatet väljer ut händelser efter betydelse. Alla mål i stora målet och alla skador finns med, de flesta korgmålen berättas, men rutinhandlingar behöver ingen egen text. Statistiken räknar dem ändå. Klicka i referatet eller välj tidpunkt för att se hur uppställningen förändrades vid byten och skador.`],
  ['Kejsarserien och Kodudorfpokalen',`Kejsarserien är Mambennas högsta liga. Under den finns division 1, division 2 och division 3. Serier visar hela förteckningen; klicka på ett serienamn för att öppna tabell och schema. Alla lagnamn i tabellerna går att öppna. Divisionsträdet visar hur nivåerna hör ihop.
 
-Varje division har tio lag och arton omgångar, med hemma- och bortamöten. En vinst ger tre seriepoäng, oavgjort en och förlust noll. SM betyder spelade matcher, V vinster, O oavgjorda, F förluster, PS poängskillnad och P seriepoäng.
+Varje division har tio lag och arton omgångar, med hemma- och bortamöten. En vinst ger tre seriepoäng, oavgjort en och förlust noll. SM betyder spelade matcher, V vinster, O oavgjorda, F förluster, PS periodsskillnad och P seriepoäng.
 
 Plats 1 går upp och plats 8–10 går ned där det finns en nivå att flytta till. Kejsarseriens etta blir mästare och division 3 har ingen lägre nivå. Det finns inget slutspel mellan klubbarna.
 

@@ -11,8 +11,8 @@ export function attendanceDemand(home:any,away:any,ticket:number,variation=.5){
  return Math.round(base*merit*form*history*visiting*derby*Math.exp(-.13*(Math.max(0,ticket)-3))*(.94+variation*.12));
 }
 export function arenaConfidence(toughness:number,glory:number,dread:number,homeFans:number,isHome:boolean){
- const courage=.10*(1-Math.exp(-Math.max(0,glory)/20));
- const fear=.24*(1-Math.exp(-Math.max(0,dread)/(8+Math.max(0,toughness)*2)));
+ const courage=isHome?.10*(1-Math.exp(-Math.max(0,glory)/20)):0;
+ const fear=isHome?0:.24*(1-Math.exp(-Math.max(0,dread)/(8+Math.max(0,toughness)*2)));
  const support=isHome?.08*(1-Math.exp(-Math.max(0,homeFans)/35000)):0;
  return {courage,fear,support,multiplier:1+courage+support-fear};
 }

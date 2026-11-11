@@ -185,7 +185,7 @@ export function simulateMatch(
   const focused=(club:Club)=>Object.values(club.lineup?.tactics||{}).filter(t=>t!=='Normal').length;
   const tacticalFactor=(p:ActivePlayerState)=>{const own=clubFor(p),opponent=own===homeClub?awayClub:homeClub;return 1+Math.max(0,own.coach?.tacticsBonus||0)*.012+focused(opponent)*.015;};
   const effort=(p:ActivePlayerState,cost:number)=>fatigue.set(p.player.id,(fatigue.get(p.player.id)||0)+cost*(10/Math.max(1,(homeSquad.active.some(a=>a.player.id===p.player.id)?homeSquad:awaySquad).active.length))*climate.fatigueFactor/(1+p.player.attributes.kondition*.14));
-  const skill=(p:ActivePlayerState,k:string)=>Math.max(0,Number((p.player.attributes as any)[k]))*(.75+p.player.form/64)*Math.max(.55,1-(fatigue.get(p.player.id)||0))*(k==='aggressivitet'||k==='tuffhet'?1:arenaConfidence(p.player.attributes.tuffhet,homeClub.arena?.ara||0,homeClub.arena?.skrack||0,attendance,homeSquad.active.includes(p)).multiplier)*surfaceRaceFactor(p.player.race,underlag)*(activePeriod===5&&moraleWinner===(homeSquad.active.includes(p)?'home':'away')?1.05:1)*(k==='markering'?tacticalFactor(p):1);
+  const skill=(p:ActivePlayerState,k:string)=>Math.max(0,Number((p.player.attributes as any)[k]))*(.75+p.player.form/64)*Math.max(.55,1-(fatigue.get(p.player.id)||0))*(k==='aggressivitet'||k==='tuffhet'?1:arenaConfidence(p.player.attributes.tuffhet,homeClub.arena?.ara||0,homeClub.arena?.skrack||0,attendance,homeSquad.active.includes(p)).multiplier)*surfaceRaceFactor(p.player.race,underlag)*(activePeriod===5&&moraleWinner===(homeSquad.active.includes(p)?'home':'away')?1.10:1)*(k==='markering'?tacticalFactor(p):1);
   const local=(squad:ActivePlayerState[],row:number,col:number)=>squad.filter(p=>p.slotKey!=='goal'&&p.fieldRow===row&&p.fieldCol===col);
   const pickWeighted=(pool:ActivePlayerState[],weights:number[])=>{let roll=rng.next()*weights.reduce((a,b)=>a+b,0);for(let i=0;i<pool.length;i++){roll-=weights[i];if(roll<=0)return pool[i]}return pool[pool.length-1]};
   // Missing players make every non-violent ball contest harder. Local marking and
@@ -251,7 +251,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:29,id: `match-${seed}`,
+      engineVersion:30,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -824,7 +824,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:29,id: `match-${seed}`,
+    engineVersion:30,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',

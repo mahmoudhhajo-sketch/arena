@@ -332,7 +332,7 @@ Publiken ger både inkomster och hemmastöd. Kejsarens indrivning av förfallna 
 ## Underlag, ära och skräck
 Underlaget påverkar hur väl olika spelare trivs. Goblins och troll är neutrala på underlagen. Vädret spelar också in.
 
-Ära kan ge mod och hjälpa spelare att våga utnyttja ett läge. Skräck kan sätta press på spelare och bidra till misstag; tuffa spelare står emot bättre. Se arenan som en del av matchens förutsättningar, inte som en säker vinstknapp.
+Arenans ära stärker bara hemmalagets mod och självsäkerhet och hjälper spelarna att våga utnyttja ett läge. Skräck sätter press på bortalaget och kan bidra till misstag; tuffa spelare står emot bättre. Se arenan som en del av matchens förutsättningar, inte som en säker vinstknapp.
 
 ## Bygga och hyra ut
 När du bygger väljer du antal platser inom den valda arenatypens gräns. En större och mer påkostad arena kostar både att bygga och att driva. Sätt ett uthyrningspris om andra lag ska använda den och jämför möjliga intäkter med veckokostnaden.`},
@@ -375,7 +375,7 @@ En matchvinst ger tre seriepoäng, oavgjort en och förlust noll. Det är allts�
 
 - SM: spelade matcher.
 - V, O och F: vinster, oavgjorda och förluster.
-- PS: poängskillnad.
+- PS: periodsskillnad.
 - P: seriepoäng.
 
 Ettan går upp där en högre nivå finns; de tre sista går ned där en lägre nivå finns. Kejsarseriens etta blir mästare. Det finns inget slutspel mellan klubbarna.
