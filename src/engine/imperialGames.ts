@@ -9,7 +9,7 @@ export function imperialAttributes(p:Player){return equippedAttributes(p);}
 // A test uses copies and returns results; no prizes, injuries or league state are written.
 export function simulateImperialGames(players:Player[], seed:number, legendIds:Set<number>=new Set()) {
  const entrants=players.filter(p=>!p.isDeceased&&p.clubId&&!p.isMercenary);
- const events=[{name:'Snabbhet',day:'Måndag',weights:{snabbhet:.8,kondition:.2}},{name:'Passning',day:'Tisdag',weights:{passning:1}},{name:'Skytte',day:'Onsdag',weights:{skott:1}},{name:'Målvakt',day:'Torsdag',weights:{malvakt:1}},{name:'Tvekamp',day:'Fredag',weights:{tuffhet:.8,aggressivitet:.2}}];
+ const events=[{name:'Snabbhet',day:'Måndag',weights:{snabbhet:.8,kondition:.2}},{name:'Passning',day:'Tisdag',weights:{passning:1}},{name:'Skytte',day:'Onsdag',weights:{skott:1}},{name:'Målvakt',day:'Torsdag',weights:{malvakt:1}},{name:'Markering',day:'Fredag',weights:{markering:1}},{name:'Tvekamp',day:'Lördag',weights:{tuffhet:.8,aggressivitet:.2}}];
  const score=(p:Player,weights:Record<string,number>)=>{const a=imperialAttributes(p);return Object.entries(weights).reduce((s,[k,w])=>s+(a as any)[k]*w,0)*(.85+p.form/80)};
  const names=new Map<number,string>();const identity=(p:Player)=>({id:p.id,name:names.get(p.id)||p.name,clubId:p.clubId,race:p.race});const champion=(p:Player,event:string)=>{if(!legendIds.has(p.id)&&!names.has(p.id))names.set(p.id,p.name+' '+legendName(event,seed));return {...identity(p),legendName:names.has(p.id)?names.get(p.id)!.slice(p.name.length+1):''}};
  return {seed,entrants:entrants.length,competitions:events.map(event=>{
@@ -27,4 +27,4 @@ export function simulateImperialGames(players:Player[], seed:number, legendIds:S
  })};
 }
 
-export function imperialResult(p:Player,event:string){const a=imperialAttributes(p);if(event==='Snabbhet')return Math.round(((a.snabbhet*.8+a.kondition*.2<=16?250-Math.max(0,a.snabbhet*.8+a.kondition*.2)*210/16:40/(1+(a.snabbhet*.8+a.kondition*.2-16)*.12)))*100)/100;if(event==='Passning')return Math.max(1,Math.round(1+Math.max(0,a.passning)*199/16));if(event==='Skytte')return Math.max(1,Math.round(1+Math.max(0,a.skott)*199/16));return Math.max(1,Math.round(1+Math.max(0,a.malvakt)*149/16));}
+export function imperialResult(p:Player,event:string){const a=imperialAttributes(p);if(event==='Snabbhet')return Math.round(((a.snabbhet*.8+a.kondition*.2<=16?250-Math.max(0,a.snabbhet*.8+a.kondition*.2)*210/16:40/(1+(a.snabbhet*.8+a.kondition*.2-16)*.12)))*100)/100;if(event==='Passning')return Math.max(1,Math.round(1+Math.max(0,a.passning)*199/16));if(event==='Markering')return Math.max(1,Math.round(1+Math.max(0,a.markering)*199/16));if(event==='Skytte')return Math.max(1,Math.round(1+Math.max(0,a.skott)*199/16));return Math.max(1,Math.round(1+Math.max(0,a.malvakt)*149/16));}

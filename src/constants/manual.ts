@@ -85,7 +85,7 @@ Du kan ha flera olika lån samtidigt; obetalda lån hindrar inte andra erbjudand
 Obetalda lån hindrar inte nya lån. Planera ändå återbetalningen: över 2 000 000 guld i sammanlagd återbetalningsskuld under mer än fem veckor i följd leder till konkurs. Detsamma gäller en kassa under −50 000 i mer än fem veckor när klubben inte kan få fler lån. Förvaltaren tar då över klubben och ditt managerkonto kan börja om med ett nytt lag.`],
  ['Vad är en legend?',`En legend är en spelare som har vunnit en gren i de officiella Kejsarspelen. Endast vinnaren får ett hedersnamn. Övriga deltagare får inget legendnamn bara för att de är med eller hamnar på topp 100.
 
-Grenarna är snabbhet, passning, skytte, målvaktskonst och tvekamp. Snabbhet mäts i sekunder med lägre tid som bättre resultat; de övriga färdighetsgrenarna räknar lyckade handlingar. Tvekampen är en utslagsturnering för rikets deltagande spelare, skild från lagens seriesystem.
+Grenarna är snabbhet, passning, skytte, målvaktskonst, markering och tvekamp. Snabbhet mäts i sekunder med lägre tid som bättre resultat; de övriga färdighetsgrenarna räknar lyckade handlingar. Tvekampen är en utslagsturnering för rikets deltagande spelare, skild från lagens seriesystem.
 
 Vinnaren blir en legend och bär sitt hedersnamn under resten av karriären.
 
