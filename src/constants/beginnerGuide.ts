@@ -1,3 +1,8 @@
+import {QUALITATIVE_ATTRIBUTE_LABELS,ATTRIBUTE_NAMES_SV} from './attributes';
+import {positionTrainingWeights} from '../engine/calendar';
+const trainingPositions=[['Målvakt','goal'],['Ytterback','2-0'],['Innerback','2-1'],['Yttermitt','1-0'],['Innermitt','1-1'],['Ytteranfall','0-0'],['Inneranfall','0-1']];
+export const ATTRIBUTE_LEVEL_TABLE=['| Nivå | Benämning |','| --- | --- |',...Object.entries(QUALITATIVE_ATTRIBUTE_LABELS).map(([level,label])=>'| '+level+' | '+label+' |')].join('\n');
+export const POSITION_TRAINING_TABLE=['| Egenskap | '+trainingPositions.map(([name])=>name).join(' | ')+' |','| --- | '+trainingPositions.map(()=> '---').join(' | ')+' |',...Object.entries(positionTrainingWeights).map(([key,weights])=>'| '+ATTRIBUTE_NAMES_SV[key as keyof typeof ATTRIBUTE_NAMES_SV]+' | '+trainingPositions.map(([,slot])=>{const weight=weights[slot]||0;return weight===1?'Full':weight>=.5?'Mindre':weight>0?'Liten':'Ingen';}).join(' | ')+' |')].join('\n');
 /** IDs survive chapter reordering and are also used by the administration editor. */
 export const BEGINNER_CHAPTERS = [
  {id:0,group:'Börja här',title:'Välkommen till Mambenna!',body:`Välkommen till Arenan! Du är manager för ett lag i Mambenna, ett fantasyrike där alver, människor, dvärgar och orcher möts i den våldsamma bollsporten Yaraaz Vigil. Här finns både stora mål, sidokorgar och magi. Din uppgift är att bygga ett lag som kan vinna matcher och samtidigt hålla klubben på fötter.
@@ -66,6 +71,11 @@ Vid WO före avkast får de spelklara startspelarna träningsunderlag för sina 
 ## Följ matchen medan den pågår
 Matchen pågår i fem gånger femton minuter, om den inte slutar tidigare med WO. Uppdatera matchsidan för att läsa nya händelser. Flera saker kan hända under samma minut, och vissa minuter saknar en särskild referattext. Periodresultatet fastställs när perioden avslutas.`},
  {id:4,group:'Lär känna laget',title:'Spelarnas egenskaper',body:`En egenskap beskriver vad en spelare är bra på. De visas med ord, till exempel Duktig och Utmärkt, i stället för exakta mätvärden. Ingen egenskap gör en spelare bra på allt: en träffsäker skytt kan ha svårt att ta emot bollen, och en stark slagskämpe kan vara långsam.
+
+## Egenskapsnivåerna 0–16
+Orden nedan används för spelarnas egenskaper. Tabellen visar ordskalan, inte spelarens exakta värde.
+
+${ATTRIBUTE_LEVEL_TABLE}
 
 ## Flytta och behålla bollen
 - Snabbhet hjälper spelaren att ta sig fram med bollen och reagera på kanterna.
@@ -199,15 +209,16 @@ Kontrollera skador, roll, lön och egenskaper tillsammans. En dyr spelare är in
 ## Matchpositionen avgör vilken träning spelaren får
 Spelaren behöver ha spelat på en position där egenskapen används. En match ger 100 procent av träningen för den spelade positionen. Spelar han två matcher får varje match 75 procent, som mest 150 procent totalt. En målvakt som står i mål en gång och vilar nästa match får 100 procent målvaktsträning. Står han i mål en gång och spelar innermitt nästa får han 75 procent målvaktsträning; står han i mål båda gångerna får han 150 procent. Det är deltagandet och positionen som räknas, inte om spelaren vann, spelade bra eller följde en viss taktik.
 
-- Snabbhet: kantspelare, inte innerback, innermitt eller inneranfall.
-- Kondition: alla positioner, även målvakter.
-- Teknik: mest för anfallare, mindre för mittfältare.
-- Markering: mest för backar, mindre för mittfältare.
-- Passning: mest för backar och innermittar, mindre för målvakter. Anfallare får ingen passningsträning.
-- Speluppfattning: främst innerback, innermitt och inneranfall; betydligt mindre på kanterna.
-- Skott: mest för anfallare, mindre för yttermittar och en liten del för innermittar.
-- Målvakt: mest i det stora målet, mindre vid sidokorgarna.
-- Tuffhet: mest för backar och mindre för alla andra positioner. Tuffhet är den egenskap som tar längst tid att träna vid jämförbara förutsättningar.
+## Vilken position tränar vad?
+Alla positioner får konditionsträning, även målvakter. Anfallare får ingen passningsträning. Inner- och ytteranfallare får mest teknikträning; mittfältare får mindre. Backar får mest tuffhetsträning, och samtliga övriga positioner får mindre.
+
+Tabellen gäller den position spelaren faktiskt spelade på, inte rollen i spelarprofilen. Höger och vänster ytter har samma träningsfördelning.
+
+${POSITION_TRAINING_TABLE}
+
+Full betyder den största positionsandelen för just den egenskapen. Mindre och Liten ger lägre andelar; Ingen betyder att den positionen inte ger träning i egenskapen. Det betyder inte att olika egenskaper utvecklas lika snabbt. Antalet pluppar och veckans matchdeltagande påverkar också träningen.
+
+Speluppfattning tränas främst centralt, lite på kanterna och en liten del i mål. Innermittar får även en liten del skotträning. Målvaktsträning ges i målet och i mindre omfattning vid sidokorgarna, på yttermitt.
 
 Aggressivitet kan inte tränas. En reserv som aldrig kommer in räknas inte som om han hade spelat. Specialfallet WO före avkast beskrivs under matchreglerna.
 
