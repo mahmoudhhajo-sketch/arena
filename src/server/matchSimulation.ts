@@ -1,3 +1,4 @@
+import {simulateScheduledMatch} from './fixtureScenario';
 import {Worker} from 'node:worker_threads';
 import {resolve} from 'node:path';
 import {simulateMatch} from '../engine/matchEngine';
@@ -18,6 +19,6 @@ function pump(){
 }
 export function simulateMatchAsync(...args:Parameters<typeof simulateMatch>):Promise<ReturnType<typeof simulateMatch>>{
  // Isolated in-memory integration tests use the same pure engine without spawning a deployment bundle.
- if(process.env.LOCAL_DB_DIR===':memory:')return Promise.resolve(simulateMatch(...args));
+ if(process.env.LOCAL_DB_DIR===':memory:')return Promise.resolve(simulateScheduledMatch(...args));
  return new Promise((resolve,reject)=>{queue.push({id:++sequence,args,resolve,reject});pump()});
 }

@@ -1,3 +1,4 @@
+import {fixtureScenario} from './fixtureScenario';
 import {record as readScoutRecord,put as writeScoutRecord} from './records';
 import {restoreFriendlyMagic} from './restoreFriendlyMagic';
 import {friendlyNotice} from './friendlies';
@@ -264,7 +265,7 @@ await db.transaction(async(tx:any)=>{
    const ward=await record('ward-'+f.id,tx);for(const p of [...hs,...as])p.artifacts=artifactsForFixture(p.artifacts,f);if(ward)for(const p of [...hs,...as])p.artifacts=p.artifacts.filter((a:string)=>!a.startsWith('magic:')&&!a.startsWith('spell:'));const enchantment=ward?null:await record('weather-'+f.id,tx);const effect=enchantment?.effect;const weather=effect?{temp:effect==='rain'?8:15,condition:effect==='rain'?'Regn':effect==='fog'?'Dimma':'Klart',wind:effect==='wind'?(enchantment.spellId==='stormcall'?14:0):3}:weatherFor(matchWeatherPlace(home.arena as any,home.hometown),new Date(f.date));
    const basketSpell=ward?null:await record('baskets-'+f.id,tx);if(basketSpell)(weather as any).basketsBlocked=true;const chainSpell=ward?null:await record('chains-'+f.id,tx);(weather as any).chainsBlocked=!!chainSpell;(weather as any).spells=[ward?.spellId,enchantment?.spellId,basketSpell?.spellId,chainSpell?.spellId].filter(Boolean);
    (weather as any).friendly=!!f.friendly;
-   report=await simulateMatchAsync(home,away,hs,as,Number(new Date(f.date))+(home.id+away.id).split('').reduce((a,c)=>a+c.charCodeAt(0),0),home.lineup.underlag,weather,overdueEffects(await records('loan',tx),home.id,new Date(f.date)));
+   report=await simulateMatchAsync(home,away,hs,as,Number(new Date(f.date))+(home.id+away.id).split('').reduce((a,c)=>a+c.charCodeAt(0),0),home.lineup.underlag,weather,overdueEffects(await records('loan',tx),home.id,new Date(f.date)),fixtureScenario(f));
    }
    report.id=f.id;report.date=f.date;if(f.friendly){report.friendly=true;report.division='Vänskapsmatch';report.attendance=0;report.ticketPrice=0;}
    if(!early&&+now<+new Date(f.date)+(f.friendly?friendlyDuration(report):75)*60000){await put('live-match','live-'+f.id,{report,homeIds:hs.map(p=>p.id),awayIds:as.map(p=>p.id),originalSpells:[...originalSpells]},tx);return;}
