@@ -303,7 +303,7 @@ En värvad talang blir en vanlig klubbspelare med lön och träningsbehov. Talan
  {id:13,group:'Magi och föremål',title:'Artefakter och brygder',body:`Artefakter är magiska föremål som du kan köpa på artefaktmarknaden. Vissa bärs av en spelare, vissa verkar från klubbens förråd och andra förbrukas när de används. Läs beskrivningen innan du väljer mottagare.
 
 ## Föremål som bärs
-Utrustning som Gripstövlar och Silverhandske hjälper bäraren. När en sådan artefakt har bundits till en spelare kan den inte tas av och flyttas till någon annan. Den följer med om spelaren säljs.
+Utrustning som Gripstövlar och Silverhandske hjälper bäraren. När en sådan artefakt har bundits till en spelare kan den inte tas av och flyttas till någon annan. Den följer med om spelaren säljs. Permanenta egenskapsbonusar räknas också in när lönerna revideras efter kejsarspelen.
 
 ## Brygder som förbrukas
 Örtbrygd läker hela spelarens aktuella skada. Svartbrygd förbättrar formen. Drakblod ger en tillfällig förstärkning som avtar under åtta dagar, men lämnar permanent slitage. En tuff kropp står bättre emot detta pris.
@@ -316,7 +316,7 @@ Mångrenens stav verkar från förrådet och öppnar andra rasers magiska tradit
 
 ## Alla artefakter
 Nedan ser du föremålens verkan. Samma budprinciper som på spelarmarknaden gäller även här.`},
- {id:14,group:'Magi och föremål',title:'Magi och mana',body:`Mana är kraften som behövs för att kasta besvärjelser. Maginivån bestämmer vilka besvärjelser klubben kan använda. Du börjar utan mana på nivå noll och bygger upp verksamheten genom din satsning på magi.
+ {id:14,group:'Magi och föremål',title:'Magi och mana',body:`Mana är kraften som behövs för att kasta besvärjelser. Fler­matchersmagi som Aura räknas i spelade seriematcher. Den verkar även i vänskapsmatcher däremellan, utan att de förbrukar någon av seriematcherna. Den valda startmatchen avgör när besvärjelsen börjar verka. Maginivån bestämmer vilka besvärjelser klubben kan använda. Du börjar utan mana på nivå noll och bygger upp verksamheten genom din satsning på magi.
 
 ## Bygg upp magin
 Din satsning jämförs med andra managerstyrda lag. Nivågränserna uppdateras varje söndag. De högre kunskaperna kräver också uthållighet över tid. Mana tillkommer dagligen och kan sparas utan övre gräns.

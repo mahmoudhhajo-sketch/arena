@@ -12,26 +12,34 @@ export function calculateLegacyWage(attrs: PlayerAttributes): number {
   return Math.round(60+10*Math.pow(quality,2.65));
 }
 
-// Activated for the whole world at the season change after the first official
-// Imperial Games. The power curve makes elite specialists expensive without a cap.
-export function calculateSeasonWage(attrs: PlayerAttributes): number {
-  const weights: Partial<Record<keyof PlayerAttributes, number>> = {
-    tuffhet: 1,
-    skott: .85,
-    malvakt: .85,
-    snabbhet: .65,
-    markering: .65,
-    passning: .65,
-    teknik: .65,
-    speluppfattning: .65,
-    kondition: .45,
-    aggressivitet: 0,
-  };
-  const power = (Object.keys(weights) as Array<keyof PlayerAttributes>).reduce((sum, key) =>
-    sum + (weights[key] || 0) * Math.pow(Math.max(0, attrs[key]), 2.35), 0);
-  return Math.round(200 + 18 * power);
-}
-
+// Applied at season rollover after the Imperial Games. Base attributes only.
+// Cumulative price per primary skill. Elite steps flatten instead of compounding explosively.
+const WAGE_SKILL_STEPS = [0, 5, 10, 15, 20, 25, 300, 650, 1150,
+  2100, 3500, 5100, 7300, 9200, 10600, 11300, 11800];
+export function wageAttributeContribution(value: number): number {
+  const x = Math.max(0, value);
+  // The entire visible Medioker band remains inexpensive.
+  if (x <= 5.5) return 5 * x;
+  if (x < 6) return 27.5 + (x - 5.5) * 545;
+  if (x >= 16) {
+    // No ceiling: each further whole step adds 3% more than the previous one.
+    return 11800 + 500 * Math.expm1(Math.log(1.03) * (x - 16)) / .03;
+  }
+  const lower = Math.floor(x);
+  return WAGE_SKILL_STEPS[lower] + (WAGE_SKILL_STEPS[lower + 1] - WAGE_SKILL_STEPS[lower]) * (x - lower);
+}
+
+export function calculateSeasonWage(attrs: PlayerAttributes): number {
+  const weights: Partial<Record<keyof PlayerAttributes, number>> = {
+    skott: 1, tuffhet: 1, malvakt: 3,
+    snabbhet: .65, markering: .65, passning: .65, teknik: .65, speluppfattning: .65,
+    kondition: .25, aggressivitet: 0,
+  };
+  const contributions = (Object.keys(weights) as Array<keyof PlayerAttributes>).reduce(
+    (sum, key) => sum + (weights[key] || 0) * wageAttributeContribution(attrs[key]), 0);
+  return Math.max(300, Math.round(300 + contributions));
+}
+
 export function calculateWage(attrs: PlayerAttributes, season = 1): number {
   return season >= 2 ? calculateSeasonWage(attrs) : calculateLegacyWage(attrs);
 }

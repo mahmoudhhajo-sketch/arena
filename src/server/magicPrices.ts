@@ -6,6 +6,7 @@ const key='magic-weekly-prices';
 export async function refreshMagicPrices(teams:any[],at:Date,tx:any=db){
  const previous=await record(key,tx);
  if(previous&&+new Date(previous.updatedAt)>=+at)return;
+ if(previous?.updatedAt)await put('magic-price-history','magic-prices-'+previous.updatedAt,previous,tx);
  await put('magic-prices',key,{updatedAt:at.toISOString(),teams:teams.filter(c=>!c.isBot).map(c=>({id:c.id,magicInvestment:c.magicInvestment}))},tx);
 }
 export async function weeklyMagicThresholds(clubId:string,tx:any=db){
