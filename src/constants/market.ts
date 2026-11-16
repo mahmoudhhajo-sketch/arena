@@ -21,7 +21,7 @@ export const ARTIFACTS=[
 
  {id:'moon-staff',name:'Mångrenens stav',price:48000,attribute:'speluppfattning',bonus:0,rarity:'Sällsynt',supply:1,description:'Verkar i 20 veckor från den första förvärvningen. Öppnar andra rasers besvärjelser för laget när staven finns i klubbens förråd. Magin kräver fortfarande rätt nivå och mana'},
 
- {id:'luck-amulet',name:'Turamuletten',price:34000,attribute:'teknik',bonus:0,rarity:'Sällsynt',supply:5,description:'Kan vända ett osannolikt bollögonblick eller avvärja en skada. Lyckan kan ingripa högst två gånger per bärare och match'},
+ {id:'luck-amulet',name:'Turamuletten',price:34000,attribute:'teknik',bonus:0,rarity:'Sällsynt',supply:5,description:'Gynnar främst avslut mot mål och korg, räddningar och slagsmål. Kan även hjälpa i andra bollmoment eller avvärja en skada. Lyckan kan ingripa högst två gånger per bärare och match'},
 
  {id:'falcon-ring',name:'Falkögats ring',price:20000,attribute:'speluppfattning',bonus:0,rarity:'Ovanlig',supply:8,description:'Skärper spelarens blick för medspelare och öppningar'},
 

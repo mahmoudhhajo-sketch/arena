@@ -1,4 +1,10 @@
 import {cantaniringRetaliation,cantaniringCommentary} from './cantaniring';
+
+// Keep decisive interventions at their existing rate; ordinary ball actions get half that chance.
+export function luckAmuletProbability(reason: string): number {
+  return ['avslut', 'skott', 'duell', 'skada'].includes(reason) ? .35 : .175;
+}
+
 import {weatherEffects} from './weather';
 import {attendanceDemand,arenaConfidence} from './economy';
 import {describeEvent} from './commentary';
@@ -194,7 +200,7 @@ export function simulateMatch(
   const playerSide=(p:ActivePlayerState):'home'|'away'=>homeSquad.active.includes(p)?'home':'away';
   const numberFactor=(side:'home'|'away')=>{const own=(side==='home'?homeSquad:awaySquad).active.length,other=(side==='home'?awaySquad:homeSquad).active.length;return Math.max(.76,Math.min(1.18,1+(own-other)*.045))};
   const distance=(p:ActivePlayerState,row:number,col:number)=>Math.abs(p.fieldRow-row)+Math.abs(p.fieldCol-col);
-  const choose=(squad:ActivePlayerState[],row:number,col:number)=>{const out=squad.filter(p=>p.slotKey!=='goal'),pool=out.length?out:squad;return pickWeighted(pool,pool.map(p=>(.3+skill(p,'speluppfattning')*(p.slotKey.endsWith('-1')?.4:.08)+skill(p,'teknik')*.3+skill(p,'snabbhet')*.3)/Math.pow(1+distance(p,row,col),3)))};
+  const choose=(squad:ActivePlayerState[],row:number,col:number)=>{const out=squad.filter(p=>p.slotKey!=='goal'),pool=out.length?out:squad;return pickWeighted(pool,pool.map(p=>(.3+(p.slotKey.startsWith('0-')&&!p.slotKey.endsWith('-1')?skill(p,'snabbhet')*.32+skill(p,'speluppfattning')*.08:skill(p,'speluppfattning')*(p.slotKey.endsWith('-1')?.4:.08))+skill(p,'teknik')*.3+skill(p,'snabbhet')*.3)/Math.pow(1+distance(p,row,col),3)))};
   const support=(squad:ActivePlayerState[],actor:ActivePlayerState,k:string)=>Math.max(0,cellStrength(local(squad,actor.fieldRow,actor.fieldCol).map(p=>skill(p,k)))-skill(actor,k));
   const markingPressure=(p:ActivePlayerState,row:number,col:number)=>(skill(p,'markering')+.3*skill(p,'snabbhet')+.15*skill(p,'speluppfattning'))/Math.pow(1+distance(p,row,col),2.7);
   const pressure=(squad:ActivePlayerState[],row:number,col:number)=>cellStrength(squad.filter(p=>p.slotKey!=='goal').map(p=>markingPressure(p,row,col)));
@@ -212,7 +218,7 @@ export function simulateMatch(
   const matchHeat=.8+.3*rng.next();
   const luck=(p:ActivePlayerState,reason:string)=>{
    const side=homeSquad.active.includes(p)?'home':'away';
-   if(!p.player.artifacts.includes('luck-amulet')||(luckUses.get(p.player.id)||0)>=2||rng.next()>=.35)return false;
+   if(!p.player.artifacts.includes('luck-amulet')||(luckUses.get(p.player.id)||0)>=2||rng.next()>=luckAmuletProbability(reason))return false;
    luckUses.set(p.player.id,(luckUses.get(p.player.id)||0)+1);
    events.push({id:'luck-'+p.player.id+'-'+luckUses.get(p.player.id),period:luckPeriod,minute:luckMinute,type:'LUCK',teamSide:side,playerId:p.player.id,playerName:p.player.name,text:reason==='skada'?p.player.name+' snubblar undan i sista ögonblicket. Turamuletten glimmar och slaget som borde ha skadat spelaren träffar tom luft.':reason==='skott'?p.player.name+' ser bollen ändra riktning i en osannolik studs. Bollen som var på väg in styrs undan medan turamuletten glimmar.':reason==='duell'?p.player.name+' undkommer motståndarens grepp när en fot halkar. Turamuletten glimmar och närkampen tar en oväntad vändning.':reason==='brytning'?p.player.name+' får en lycklig studs till skänks. Turamuletten glimmar och motståndarens övertag försvinner.':reason==='boll'?p.player.name+' får bollen med sig genom en osannolik lucka. Turamuletten glimmar och det förlorade bollmomentet vänds.':p.player.name+' får en otrolig medstuds. Turamuletten glimmar när det hopplösa avslutet hittar rätt.',important:true} as any);
    return true;
@@ -252,7 +258,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:33,id: `match-${seed}`,
+      engineVersion:35,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -699,7 +705,7 @@ export function simulateMatch(
           ballHolder=runner.player.id;
           // Advance ball
           const direction=possession==='home'?-1:1,move=rng.next();
-          if(move<.76&&ballRow+direction>=0&&ballRow+direction<=2)ballRow+=direction;
+          if(move<.76){if(ballRow+direction>=0&&ballRow+direction<=2)ballRow+=direction;} // At the goal line, a forward run stays inside the attacking box.
           else if(move<.95)ballCol+=ballCol===0?1:ballCol===2?-1:rng.next()<.5?-1:1;
           else ballRow+=ballRow-direction>=0&&ballRow-direction<=2?-direction:direction;
           runner.fieldRow=ballRow;runner.fieldCol=ballCol;
@@ -736,25 +742,30 @@ export function simulateMatch(
         attackStats.passningar.antal++;
         const passer = actor;
         const desiredCol=lane(possession,ballRow),allReceivers=attackSquad.active.filter(p=>p!==passer&&!chainBlocksPass(!!weatherInput?.chainsBlocked,period,possession,ballRow,ballCol,p.fieldRow,p.fieldCol));
-        const near=allReceivers.filter(p=>distance(p,ballRow,ballCol)<=1),pool=near.length&&rng.next()<.88?near:allReceivers;
+        const near=allReceivers.filter(p=>distance(p,ballRow,ballCol)<=1||(isMidfield&&p.slotKey.startsWith('0-')&&distance(p,ballRow,ballCol)<=2)),pool=near.length&&rng.next()<.88?near:allReceivers;
         const passerFormationRow=passer.slotKey==='goal'?3:Number(passer.slotKey[0]);
         const receiver=pool.length?pickWeighted(pool,pool.map(p=>{
           const receiverFormationRow=p.slotKey==='goal'?3:Number(p.slotKey[0]);
           const finisherBonus=passerFormationRow!==0&&receiverFormationRow===0&&(inAttackingThird||isMidfield)?4:1;
           // Wide forwards offer pace and finishing; central players offer vision.
           // Selection only creates a pass attempt: delivery and reception still have to succeed.
-          const receivingQuality=.5+skill(p,'teknik')+skill(p,'speluppfattning')*(p.slotKey.endsWith('-1')?1:.15)+(receiverFormationRow===0?skill(p,'skott')*.5+skill(p,'snabbhet')*.25:0);
-          return receivingQuality*(p.fieldCol===desiredCol?1.8:1)*(p.fieldRow===(ballRow+(possession==='home'?-1:1))?4.5:p.fieldRow===ballRow?1:.6)*finisherBonus/Math.pow(1+distance(p,ballRow,ballCol),2);
+          const receivingQuality=.5+skill(p,'teknik')+skill(p,'speluppfattning')*(p.slotKey.endsWith('-1')?1:.15)+(receiverFormationRow===0&&!p.slotKey.endsWith('-1')?skill(p,'snabbhet')*.85:0)+(receiverFormationRow===0?skill(p,'skott')*.5+skill(p,'snabbhet')*.25:0);
+          // Wide forwards have fewer adjacent passing lanes; compensate their availability, not shot accuracy.
+          const forwardAvailability=receiverFormationRow===0&&!p.slotKey.endsWith('-1')?1.5:1;
+          return receivingQuality*forwardAvailability*(p.fieldCol===desiredCol?1.8:1)*(p.fieldRow===(ballRow+(possession==='home'?-1:1))?4.5:p.fieldRow===ballRow?1:.6)*finisherBonus/Math.pow(1+distance(p,ballRow,ballCol),2);
         })):passer;
         const passDistance=distance(receiver,ballRow,ballCol),diagonal=receiver.fieldRow!==ballRow&&receiver.fieldCol!==ballCol;
         const interceptor = primaryMarker(defendSquad.active,receiver.fieldRow,receiver.fieldCol);
 
         inc(passer,'passningar');inc(interceptor,'brytningar');defendStats.brytningar.antal++;effort(passer,.009);
         const passA=skill(passer,'passning')*climate.passFactor*tacticalFactor(passer)+skill(passer,'speluppfattning')*(passer.slotKey.endsWith('-1')?.4:.08)+support(attackSquad.active,passer,'passning');
-        const passB=pressure(defendSquad.active,ballRow,ballCol)*.62*(diagonal?1.2:1)+Math.max(0,passDistance-1)*1.8,catchA=skill(receiver,'teknik')+skill(receiver,'speluppfattning')*(receiver.slotKey.endsWith('-1')?.5:.1)+3,catchB=pressure(defendSquad.active,receiver.fieldRow,receiver.fieldCol)*.38;
+        const passB=pressure(defendSquad.active,ballRow,ballCol)*.62*(diagonal?1.2:1)+Math.max(0,passDistance-1)*1.8,catchA=skill(receiver,'teknik')+skill(receiver,'speluppfattning')*(receiver.slotKey.endsWith('-1')?.5:.1)+(receiver.slotKey.startsWith('0-')&&!receiver.slotKey.endsWith('-1')?skill(receiver,'snabbhet')*.4:0)+3,catchB=pressure(defendSquad.active,receiver.fieldRow,receiver.fieldCol)*.38;
         const prob=(a:number,b:number)=>contestProbability(a,b);
         const deliveredProbability=prob(passA,passB),receiveProbability=prob(catchA,catchB),receivedProbability=deliveredProbability*receiveProbability;
-        const delivered=rng.next()<deliveredProbability;let received=false;
+        let delivered=rng.next()<deliveredProbability;
+        if(delivered&&luck(interceptor,'brytning'))delivered=false;
+        else if(!delivered&&luck(passer,'boll'))delivered=true;
+        let received=false;
         if(delivered){inc(receiver,'mottagningar');attackStats.mottagningar.antal++;received=weighted(receiver,'mottagningar',catchA,catchB);}
         individualStats[passer.player.id].stats.passningar.viktat+=(Number(received)-receivedProbability)*100;
         individualStats[interceptor.player.id].stats.brytningar.viktat+=(Number(!received)-(1-receivedProbability))*100;
@@ -871,7 +882,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:33,id: `match-${seed}`,
+    engineVersion:35,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',

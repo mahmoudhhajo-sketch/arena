@@ -16,7 +16,7 @@ export const SPELLS:Spell[]=[
  {id:'clear-sight',name:'Klarblick',race:'elf',level:1,mana:14,hours:24,cooldown:24,description:'Skärper en spelares spelförståelse och passningar.',bonus:{speluppfattning:.6,passning:.5}},
  {id:'barkskin',name:'Barkhud',race:'elf',level:2,mana:35,hours:24,cooldown:48,description:'Gör en spelare tåligare och säkrare i markeringen.',bonus:{tuffhet:1.2,markering:.7}},
  {id:'moon-song',name:'Månsång',race:'elf',level:2,mana:40,hours:24,cooldown:48,description:'Stärker en spelares form och teknik tillfälligt.',bonus:{teknik:.6},form:2},
- {id:'aura',matches:4,name:'Aura',race:'elf',level:3,mana:100,hours:24,cooldown:168,description:'Omger en spelare med god form, ett milt lyft i alla egenskaper och skydd mot matchskador. Verkar under fyra spelade matcher. Hög manakostnad.',bonus:{snabbhet:.5,kondition:.5,markering:.5,passning:.5,teknik:.5,speluppfattning:.5,skott:.5,malvakt:.5,aggressivitet:.5,tuffhet:.5},form:3,immune:true},
+ {id:'aura',matches:4,name:'Aura',race:'elf',level:3,mana:100,hours:24,cooldown:168,description:'Omger en spelare med god form, ett milt lyft i alla egenskaper och skydd mot matchskador. Verkar under fyra spelade seriematcher och även i vänskapsmatcher däremellan. Vänskapsmatcher förbrukar inte varaktigheten. Hög manakostnad.',bonus:{snabbhet:.5,kondition:.5,markering:.5,passning:.5,teknik:.5,speluppfattning:.5,skott:.5,malvakt:.5,aggressivitet:.5,tuffhet:.5},form:3,immune:true},
  {id:'courage',name:'Lejonmod',race:'human',level:1,mana:14,hours:24,cooldown:24,description:'Stärker en spelares mod och bollsinne.',bonus:{tuffhet:.5,teknik:.6}},
  {id:'banner',name:'Solbaner',race:'human',level:2,mana:35,hours:24,cooldown:48,description:'Höjer form och spelförståelse tillfälligt.',bonus:{speluppfattning:.8},form:2},
  {id:'oath',name:'Kejsared',race:'human',level:3,mana:80,hours:24,cooldown:120,description:'Ger en spelare säkrare skott, passningar och teknik.',bonus:{skott:1,passning:1,teknik:1}},
@@ -36,13 +36,17 @@ export function consumeMatchSpells(artifacts:string[]){return artifacts.flatMap(
 export function spellById(id:string){return SPELLS.find(s=>s.id===(/^antimagic-(human|elf|dwarf|orc|goblin|troll)$/.test(id)?'antimagic':id));}
 
 // Unbound legacy magic belongs to competitive matches. A newly cast spell starts
-// at its selected fixture; remaining uses stay in that competition type.
+// at its selected fixture. Multi-match spells then span series and friendlies;
+// only competitive appearances consume their remaining duration.
 export function spellAppliesToFixture(a:string,f:{id:string;friendly?:boolean}){
  if(!a.startsWith('magic:')&&!a.startsWith('spell:'))return true;
- const target=a.split(':')[3];
+ const [,id,count,target]=a.split(':');
+ if(a.startsWith('magic:')&&(spellById(id)?.matches||1)>1&&Number(count)>0&&(!target||target==='series'||target==='friendly'))return true;
  return target===f.id||target===(f.friendly?'friendly':'series')||(!target&&!f.friendly);
 }
 export function artifactsForFixture(artifacts:string[],f:{id:string;friendly?:boolean}){return artifacts.filter(a=>spellAppliesToFixture(a,f));}
 export function consumeFixtureSpells(artifacts:string[],f:{id:string;friendly?:boolean}){
- return artifacts.flatMap(a=>{if(!a.startsWith('magic:')||!spellAppliesToFixture(a,f))return [a];const [,id,count]=a.split(':');return Number(count)>1?['magic:'+id+':'+(Number(count)-1)+':'+(f.friendly?'friendly':'series')]:[];});
+ return artifacts.flatMap(a=>{if(!a.startsWith('magic:')||!spellAppliesToFixture(a,f))return [a];const [,id,count]=a.split(':');
+  if((spellById(id)?.matches||1)>1&&f.friendly)return ['magic:'+id+':'+count+':series'];
+  return Number(count)>1?['magic:'+id+':'+(Number(count)-1)+':'+(f.friendly?'friendly':'series')]:[];});
 }
