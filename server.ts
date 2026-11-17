@@ -524,12 +524,15 @@ app.post('/api/clubs/:clubId/arena', async (req, res) => {
     if (!supplied?.name?.trim() || supplied.name.length>80) return res.status(400).json({error:'Ange ett arenanamn.'});
 
     const arena=arenaConfig(supplied.name,supplied.landscape,supplied.underlag,supplied.typeDescription,supplied.capacity,supplied.additions||[]);
+    if(supplied.rentalPrice!==undefined&&(!Number.isInteger(supplied.rentalPrice)||supplied.rentalPrice<0||supplied.rentalPrice>1000000)) return res.status(400).json({error:'Ange ett uthyrningspris mellan 0 och 1 000 000 guld.'});
 
     const newGold=await db.transaction(async(tx:any)=>{
 
       const [club]=await tx.select().from(clubs).where(eq(clubs.id,clubId)).for('update');
 
       if(!club||club.gold<arena.cost) throw Error('Otillräckligt med guld.');
+      const rentalPrice=supplied.rentalPrice??club.arena?.rentalPrice;
+      if(rentalPrice!==undefined) arena.rentalPrice=rentalPrice;
 
       await tx.update(clubs).set({arena,gold:club.gold-arena.cost}).where(eq(clubs.id,clubId));
 
