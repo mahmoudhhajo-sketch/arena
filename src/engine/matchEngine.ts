@@ -230,7 +230,6 @@ export function simulateMatch(
     const p=individualStats[lastPass.id];p.assists=(p.assists||0)+1;p.assistWeighted=(p.assistWeighted||0)+lastPass.weighted;
     return {assistPlayerId:p.id,assistPlayerName:p.name};
   };
-  events.push({id:'weather-pitch',period:0,minute:0,type:'PREMATCH',teamSide:'neutral',text:climate.description,important:true} as any);
   const periodScores: MatchPeriodResult[] = [];
   const homeInjuries: Array<{ playerName: string; severity: number; playerId?: number }> = [];
   const awayInjuries: Array<{ playerName: string; severity: number; playerId?: number }> = [];
