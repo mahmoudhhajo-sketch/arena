@@ -5,13 +5,13 @@ import {PlayerAttributes} from '../types';
 export const ARTIFACTS=[
  {id:'portal',name:'Portal',price:28000,attribute:'speluppfattning',bonus:0,rarity:'Sällsynt',supply:2,description:'Öppnar en väg till valfri ort i Mambenna för din talangscout. Resan sker omedelbart. Sökandet efter en ny talang tar fortfarande tid. Förbrukas vid användning'},
 
- {id:'speed-boots',name:'Gripstövlar',price:18000,attribute:'snabbhet',bonus:3,rarity:'Ovanlig',supply:10,description:'Förhäxade skor som ger bäraren snabbare steg'},
+ {id:'speed-boots',name:'Gripstövlar',price:18000,attribute:'snabbhet',bonus:3,rarity:'Ovanlig',supply:10,description:'Förhäxade skor som ger bäraren snabbare steg. Kan inte kombineras med Sjumilastövlar'},
 
  {id:'mithril',name:'Mithrilrustning',price:24000,attribute:'tuffhet',bonus:3,rarity:'Sällsynt',supply:5,description:'Lätt rustning som gör bäraren tåligare'},
 
  {id:'keeper-gloves',name:'Silverhandske',price:18000,attribute:'malvakt',bonus:3,rarity:'Vanlig',supply:18,description:'Säkrare grepp och bättre räckvidd i målet'},
 
- {id:'seven-mile-boots',name:'Sjumilastövlar',price:45000,attribute:'kondition',bonus:4,rarity:'Legendarisk',supply:2,description:'Ökar konditionen och förhindrar veckans konditionsförlust vid utebliven konditionsträning'},
+ {id:'seven-mile-boots',name:'Sjumilastövlar',price:45000,attribute:'kondition',bonus:4,rarity:'Legendarisk',supply:2,description:'Ökar konditionen och förhindrar veckans konditionsförlust vid utebliven konditionsträning. Kan inte kombineras med Gripstövlar'},
 
  {id:'herbal-brew',name:'Örtbrygd',price:5000,attribute:'kondition',bonus:0,rarity:'Vanlig',supply:24,description:'Läker hela den aktuella skadan, men inte permanent slitage. Förbrukas vid användning'},
 
@@ -21,7 +21,7 @@ export const ARTIFACTS=[
 
  {id:'moon-staff',name:'Mångrenens stav',price:48000,attribute:'speluppfattning',bonus:0,rarity:'Sällsynt',supply:1,description:'Verkar i 20 veckor från den första förvärvningen. Öppnar andra rasers besvärjelser för laget när staven finns i klubbens förråd. Magin kräver fortfarande rätt nivå och mana'},
 
- {id:'luck-amulet',name:'Turamuletten',price:34000,attribute:'teknik',bonus:0,rarity:'Sällsynt',supply:5,description:'Gynnar främst avslut mot mål och korg, räddningar och slagsmål. Kan även hjälpa i andra bollmoment eller avvärja en skada. Lyckan kan ingripa högst två gånger per bärare och match'},
+ {id:'luck-amulet',name:'Turamuletten',price:34000,attribute:'teknik',bonus:0,rarity:'Sällsynt',supply:5,description:'Kan låta lyckan vända en svår situation till bärarens fördel eller avvärja en skada. Lyckan kan ingripa högst två gånger per bärare och match'},
 
  {id:'falcon-ring',name:'Falkögats ring',price:20000,attribute:'speluppfattning',bonus:0,rarity:'Ovanlig',supply:8,description:'Skärper spelarens blick för medspelare och öppningar'},
 
@@ -72,3 +72,5 @@ const ADDITIONAL_COACHES=Array.from({length:42},(_,i)=>{const c=COACH_BASE[(i*2+
 export const COACHES=[...COACH_BASE,...ADDITIONAL_COACHES].map(c=>({...c,wage:Math.round(700+80*c.trainingBonus**3+65*c.tacticsBonus**3)}));
 
 export function dragonBloodAttributes(p:{attributes:PlayerAttributes;artifacts?:string[]},now=Date.now()):PlayerAttributes {const until=Math.max(0,...(p.artifacts||[]).filter(a=>a.startsWith("effect:dragon-blood:")).map(a=>Number(a.split(":")[2])||0));const strength=Math.min(1,Math.max(0,(until-now)/(8*86400000))),multiplier=1+.7*strength;return Object.fromEntries(Object.entries(p.attributes).map(([k,v])=>[k,Number(v)*multiplier])) as unknown as PlayerAttributes;}
+
+export function conflictingBoots(artifacts:readonly string[],artifactId:string):boolean{return artifactId==='speed-boots'?artifacts.includes('seven-mile-boots'):artifactId==='seven-mile-boots'?artifacts.includes('speed-boots'):false;}
