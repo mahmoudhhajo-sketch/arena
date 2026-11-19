@@ -129,22 +129,8 @@ export async function releaseMarketPlayers(now:Date){
   const targets:any={goblin:4,troll:3};main.forEach((race,i)=>targets[race]=(i+rotation)%4<2?8:7);
   const counts=()=>auctions.reduce((m:any,a:any)=>{const race=(playerById.get(Number(a.playerId)) as any)?.race;if(race)m[race]=(m[race]||0)+1;return m;},{});
   let raceCounts=counts();
-  // Let the old 45-player supply expire naturally. Once the market has reached
-  // its new size, no-bid listings may again be rotated to preserve the mix.
-  for(const race of auctions.length<=IMPERIAL_PLAYER_MARKET_TARGET?Object.keys(targets):[])while((raceCounts[race]||0)>targets[race]){
-   const surplus=auctions.find(a=>!a.bidderId&&(playerById.get(Number(a.playerId)) as any)?.race===race);
-   if(!surplus)break;
-   await put('auction',surplus.id,{...surplus,closed:true,replaced:true},tx);auctions=auctions.filter(a=>a.id!==surplus.id);raceCounts=counts();
-  }
-  // Rotate only unbid imperial goalkeepers. Auctions with bids and managers'
-  // listings keep their player, price and deadline unchanged.
-  const isKeeper=(a:any)=>a.marketRole==='goalkeeper'||(!a.marketRole&&String(playerById.get(Number(a.playerId))?.nominalPosition).includes('Målvakt'));
-  while(auctions.filter(isKeeper).length>4){
-   const surplus=auctions.find(a=>isKeeper(a)&&!a.bidderId);
-   if(!surplus)break;
-   await put('auction',surplus.id,{...surplus,closed:true,replaced:true},tx);
-   auctions=auctions.filter(a=>a.id!==surplus.id);
-  }
+  // Balance only new listings. Published auctions must run to their deadline,
+  // even when a race or position is temporarily overrepresented.
   const missing=Math.max(0,IMPERIAL_PLAYER_MARKET_TARGET-auctions.length);
   if(!missing){if(!await record('market-day-'+day,tx))await put('system','market-day-'+day,{date:day,active:auctions.length},tx);return;}
   for(let i=0;i<missing;i++){
