@@ -50,3 +50,14 @@ export function consumeFixtureSpells(artifacts:string[],f:{id:string;friendly?:b
   if((spellById(id)?.matches||1)>1&&f.friendly)return ['magic:'+id+':'+count+':series'];
   return Number(count)>1?['magic:'+id+':'+(Number(count)-1)+':'+(f.friendly?'friendly':'series')]:[];});
 }
+
+// A single-fixture spell expires with that fixture, even if its bearer stayed on the bench.
+// Multi-match magic retains unused appearances and can continue in later fixtures.
+export function clearFinishedFixtureSpells(artifacts:string[],finished:ReadonlySet<string>){
+ return artifacts.flatMap(a=>{
+  if(!a.startsWith('magic:'))return [a];
+  const [,id,count,target]=a.split(':');
+  if(!target||!finished.has(target))return [a];
+  return (spellById(id)?.matches||1)>1?['magic:'+id+':'+count+':series']:[];
+ });
+}

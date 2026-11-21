@@ -1,3 +1,4 @@
+import {EditableText} from './PageTextEditor';
 import React from 'react';
 import { Club } from '../types';
 import { localWeeklyTimeFromSweden } from '../lib/localTime';
@@ -23,9 +24,7 @@ export const EconomicsView: React.FC<EconomicsViewProps> = ({ club }) => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto font-serif">
       <div className="border-b border-[#cfbeaa] pb-3 text-center">
-        <h2 className="text-3xl font-extrabold text-[#292015]">
-          Ekonomi
-        </h2>
+        <h2 className="text-3xl font-extrabold text-[#292015]"><EditableText id="copy-e6d3f7accc8643f7"/></h2>
         <span className="text-xs text-stone-600 block mt-1 font-sans">
           Säsong 1 &bull; Veckoavräkning: {localWeeklyTimeFromSweden(1, 6)} lokal tid
         </span>

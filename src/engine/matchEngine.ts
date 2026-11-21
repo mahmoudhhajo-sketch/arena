@@ -205,7 +205,7 @@ export function simulateMatch(
   const markingPressure=(p:ActivePlayerState,row:number,col:number)=>(skill(p,'markering')+.3*skill(p,'snabbhet')+.15*skill(p,'speluppfattning'))/Math.pow(1+distance(p,row,col),2.7);
   const pressure=(squad:ActivePlayerState[],row:number,col:number)=>cellStrength(squad.filter(p=>p.slotKey!=='goal').map(p=>markingPressure(p,row,col)));
   const primaryMarker=(squad:ActivePlayerState[],row:number,col:number)=>{const out=squad.filter(p=>p.slotKey!=='goal'),pool=out.length?out:squad;return pickWeighted(pool,pool.map(p=>.01+markingPressure(p,row,col)))};
-  const lane=(side:'home'|'away',row:number)=>{const tactic=(side==='home'?homeClub:awayClub).lineup?.tactics?.spelvag;const defenders=side==='home'?awaySquad.active:homeSquad.active;const weights=[0,1,2].map(col=>(tactic==='Kant'?(col===1?.4:2):tactic==='Mitten'?(col===1?3:.5):1)/(1+pressure(defenders,row,col)*.05));let roll=rng.next()*weights.reduce((a,b)=>a+b,0);for(let col=0;col<3;col++){roll-=weights[col];if(roll<=0)return col}return 2;};
+  const lane=(side:'home'|'away',row:number)=>{const tactic=(side==='home'?homeClub:awayClub).lineup?.tactics?.spelvag;const defenders=side==='home'?awaySquad.active:homeSquad.active;const attackers=side==='home'?homeSquad.active:awaySquad.active;const weights=[0,1,2].map(col=>(attackers.some(p=>p.fieldCol===col&&Math.abs(p.fieldRow-row)<=1)?1:.35)*(tactic==='Kant'?(col===1?.75:1.7):tactic==='Mitten'?(col===1?2.4:.9):1)/(1+pressure(defenders,row,col)*.05));let roll=rng.next()*weights.reduce((a,b)=>a+b,0);for(let col=0;col<3;col++){roll-=weights[col];if(roll<=0)return col}return 2;};
   const chance=(a:number,b:number)=>rng.next()<contestProbability(a,b);
   const weighted=(p:ActivePlayerState,key:string,a:number,b:number,other?:ActivePlayerState,otherKey?:string)=>{if(key!=='slagsmal'){const side=playerSide(p);a*=numberFactor(side);b*=numberFactor(other?playerSide(other):side==='home'?'away':'home')}const probability=contestProbability(a,b);let success=rng.next()<probability;if(success&&other&&luck(other,['skott','korgskott'].includes(key)?'skott':key==='slagsmal'?'duell':'brytning'))success=false;else if(!success&&luck(p,['skott','korgskott'].includes(key)?'avslut':key==='slagsmal'?'duell':'boll'))success=true;individualStats[p.player.id].stats[key].viktat+=(Number(success)-probability)*100;if(other&&otherKey)individualStats[other.player.id].stats[otherKey].viktat+=(Number(!success)-(1-probability))*100;return success;};
   const unavailable=new Set<number>();
@@ -257,7 +257,7 @@ export function simulateMatch(
 
 
     return {
-      engineVersion:35,id: `match-${seed}`,
+      engineVersion:36,id: `match-${seed}`,
       date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       division: homeClub.division || 'Kejsarserien',
       arenaName: homeClub.arena?.name || 'Mintrion',
@@ -494,7 +494,7 @@ export function simulateMatch(
       const decisionHolder=attackSquad.active.find(p=>p.player.id===ballHolder)||choose(attackSquad.active,ballRow,ballCol);
       const formationRow=decisionHolder.slotKey==='goal'?3:Number(decisionHolder.slotKey[0]);
       const formationCol=decisionHolder.slotKey==='goal'?1:Number(decisionHolder.slotKey[2]);
-      const basketBias=tactics?.skytte==='Korg'?.68:tactics?.skytte==='Mål'?.32:isMidfield?.56:.44;
+      const basketBias=tactics?.skytte==='Korg'?.62:tactics?.skytte==='Mål'?.38:isMidfield?.56:.44;
       const wantsBasket = ballRow===1&&ballCol!==1&&!(weather as any).basketsBlocked && rng.next() < basketBias;
       // Normal goals are chiefly finished by attackers. Backs instead take a
       // larger share of basket attempts, especially from their outer lanes.
@@ -751,7 +751,9 @@ export function simulateMatch(
           const receivingQuality=.5+skill(p,'teknik')+skill(p,'speluppfattning')*(p.slotKey.endsWith('-1')?1:.15)+(receiverFormationRow===0&&!p.slotKey.endsWith('-1')?skill(p,'snabbhet')*.85:0)+(receiverFormationRow===0?skill(p,'skott')*.5+skill(p,'snabbhet')*.25:0);
           // Wide forwards have fewer adjacent passing lanes; compensate their availability, not shot accuracy.
           const forwardAvailability=receiverFormationRow===0&&!p.slotKey.endsWith('-1')?1.5:1;
-          return receivingQuality*forwardAvailability*(p.fieldCol===desiredCol?1.8:1)*(p.fieldRow===(ballRow+(possession==='home'?-1:1))?4.5:p.fieldRow===ballRow?1:.6)*finisherBonus/Math.pow(1+distance(p,ballRow,ballCol),2);
+          // An occupied basket lane remains a useful passing outlet even with a goal-focused tactic.
+          const basketOutlet=p.fieldRow===1&&p.fieldCol!==1&&!weather.basketsBlocked?(tactics?.skytte==='Korg'?3.5:2.5):1;
+          return receivingQuality*forwardAvailability*basketOutlet*(p.fieldCol===desiredCol?1.8:1)*(p.fieldRow===(ballRow+(possession==='home'?-1:1))?4.5:p.fieldRow===ballRow?1:.6)*finisherBonus/Math.pow(1+distance(p,ballRow,ballCol),2);
         })):passer;
         const passDistance=distance(receiver,ballRow,ballCol),diagonal=receiver.fieldRow!==ballRow&&receiver.fieldCol!==ballCol;
         const interceptor = primaryMarker(defendSquad.active,receiver.fieldRow,receiver.fieldCol);
@@ -881,7 +883,7 @@ export function simulateMatch(
 
 
   return {
-    engineVersion:35,id: `match-${seed}`,
+    engineVersion:36,id: `match-${seed}`,
     date: new Date().toISOString().replace('T', ' ').substring(0, 19),
     division: homeClub.division || 'Kejsarserien',
     arenaName: homeClub.arena?.name || 'Mintrion',

@@ -1,3 +1,4 @@
+import {EditableText} from './PageTextEditor';
 import React from 'react';
 
 export const RulesView: React.FC = () => {
@@ -14,12 +15,8 @@ export const RulesView: React.FC = () => {
 
       {/* Intro */}
       <div className="bg-[#fbf9f4] border border-[#cfbeaa] p-4 rounded text-xs space-y-3 font-sans">
-        <h3 className="font-bold text-sm text-[#2b2116] font-serif">1. Vad är Yaraaz Vigil?</h3>
-        <p>
-          Yaraaz Vigil är den mest ärofyllda och våldsamma boll- och taktikstriden i Kejsardömet Mambenna.
-          Två fästen ställer upp tio krigare och trollkarlar var på en stensatt hexagonal plan för att erövra sidokorgar,
-          genombryta fiendens linjer och drämma läderbollen i motståndarens målbur.
-        </p>
+        <h3 className="font-bold text-sm text-[#2b2116] font-serif"><EditableText id="copy-eaab649590d452d7"/></h3>
+        <p><EditableText id="copy-729fd292b7aa8ff4"/></p>
       </div>
 
       {/* Spelplan & Positioner */}
@@ -28,9 +25,7 @@ export const RulesView: React.FC = () => {
           2. Spelplanen och de 10 Spelarna
         </div>
         <div className="p-4 text-xs space-y-3 font-sans">
-          <p>
-            Planen är indelad i ett 3x3 rutmönster samt två målvaktszoner:
-          </p>
+          <p><EditableText id="copy-174d1a8d97db8d9c"/></p>
           <ul className="list-disc list-inside space-y-1 text-stone-700 pl-2">
             <li><strong>Målvakt (1):</strong> Vaktar den egna målburen. Kräver hög målvaktsförmåga och speluppfattning.</li>
             <li><strong>Backlinje (3):</strong> Vänsterback, mittback och högerback. Kräver markering, tuffhet och passning.</li>
@@ -72,9 +67,7 @@ export const RulesView: React.FC = () => {
           4. Den Kvalitativa Egenskapsskalan
         </div>
         <div className="p-4 text-xs font-sans">
-          <p className="mb-2">
-            Spelarnas attribut mäts inte i siffror utåt, utan i den klassiska kejserliga skalan:
-          </p>
+          <p className="mb-2"><EditableText id="copy-448cff683f6f93b8"/></p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
             <span className="p-1 bg-[#ede4d4] rounded">1: Hopplös</span>
             <span className="p-1 bg-[#ede4d4] rounded">2: Katastrofal</span>
