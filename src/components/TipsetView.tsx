@@ -1,3 +1,4 @@
+import {EditableText} from './PageTextEditor';
 import React, { useState } from 'react';
 import { TipsetMatch } from '../types';
 import { localWeeklyTimeFromSweden } from '../lib/localTime';
@@ -47,9 +48,7 @@ export const TipsetView: React.FC<TipsetViewProps> = ({
   return (
     <div className="space-y-6 max-w-4xl mx-auto font-serif">
       <div className="border-b border-[#cfbeaa] pb-3 text-center">
-        <h2 className="text-3xl font-extrabold text-[#292015]">
-          Tipset
-        </h2>
+        <h2 className="text-3xl font-extrabold text-[#292015]"><EditableText id="copy-8b4cdc33dbd82afb"/></h2>
         <span className="text-xs text-stone-600 block mt-1">
           Omgång 1 &bull; Mambennas Kejsarserier
         </span>
@@ -57,9 +56,7 @@ export const TipsetView: React.FC<TipsetViewProps> = ({
 
       {/* Description text (Screenshot 6) */}
       <div className="bg-[#fbf9f4] border border-[#cfbeaa] p-4 rounded text-xs leading-relaxed text-stone-800 font-sans">
-        <p>
-          Tipset går ut på att tippa utgången av tio utvalda matcher i Yaraaz Vigil. Ett rätt tips ger en poäng. Det kostar inget att delta och du kan vinna fina priser, guld och kejsarens ära. Lycka till!
-        </p>
+        <p><EditableText id="copy-729508b1587e8c9c"/></p>
       </div>
 
       {/* Submitted indicator notice (Screenshot 6) */}

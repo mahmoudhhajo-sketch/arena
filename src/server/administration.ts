@@ -1,3 +1,4 @@
+import {SITE_COPY} from '../constants/siteCopy';
 import {Express} from 'express';
 import {eq,desc,sql} from 'drizzle-orm';
 import {db} from '../db';
@@ -13,6 +14,7 @@ function boundedText(value:any,min:number,max:number){const v=String(value??'').
 async function lockedRecord(id:string,kind:string,tx:any){const [r]=await tx.select().from(gameRecords).where(eq(gameRecords.id,id)).for('update');if(!r||r.kind!==kind)throw Error('Posten saknas.');return {id:r.id,...r.payload};}
 export function registerAdministration(app:Express){
  app.get('/api/manual-content',async(_req,res)=>{try{res.json(await records('content-page'))}catch{res.status(500).json({error:'Texterna kunde inte hämtas.'})}});
+ app.get('/api/site-texts',async(_req,res)=>{try{res.json(Object.fromEntries((await records('site-text')).filter(x=>x.active&&Object.hasOwn(SITE_COPY,x.key)).map(x=>[x.key,x.body])))}catch{res.status(500).json({error:'Texterna kunde inte hämtas.'})}});
  app.use('/api/administration',(req:any,res,next)=>{if(!req.arenaUser?.admin)return res.status(403).json({error:'Administratörsbehörighet krävs.'});next();});
  app.get('/api/administration',async(_req,res)=>{try{
   const teams=await db.select().from(clubs),accounts=await records('account'),bans=await records('moderation-account'),roles=await records('admin-role'),loginEvents=await records('login-event'),sessions=await records('session'),now=Date.now();
@@ -63,6 +65,12 @@ export function registerAdministration(app:Express){
     if(action==='forum-restore'){const saved=await record('moderation-backup-'+p.id,tx);if(!p.removed||!saved)throw Error('Ingen borttagen version finns.');after={...saved.post,id:p.id,removed:false};}
     if(action==='forum-lock'||action==='forum-unlock'){if(p.threadId)throw Error('Välj trådens första inlägg.');if(p.removed)throw Error('Återställ tråden först.');after.locked=action==='forum-lock';}
     await put('forum',p.id,after,tx);
+   }else if(action==='site-text-save'||action==='site-text-reset'){
+    if(!Object.hasOwn(SITE_COPY,String(target)))throw Error('Textavsnittet saknas.');
+    before=await record('site-text-'+target,tx)||null;
+    after={key:String(target),body:action==='site-text-save'?boundedText(req.body.body,1,10000):SITE_COPY[String(target)],active:action==='site-text-save',updatedAt:new Date().toISOString(),updatedBy:req.arenaUser.name};
+    await put('site-text','site-text-'+target,after,tx);
+    await put('content-version','content-version-'+requestId,{target,action,body:after.body,active:after.active,date:after.updatedAt,actor:req.arenaUser.name,reason},tx);
    }else if(action==='content-save'||action==='content-reset'){
     if(!/^(guide|rules)-\d+$/.test(String(target)))throw Error('Textavsnittet saknas.');
     const current=await record('content-'+target,tx);before=current||null;

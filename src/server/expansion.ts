@@ -1,3 +1,5 @@
+import {reviseTrainingGuide77} from './guideRevision77';
+import {clearExpiredFixtureMagic} from './expiredMagic';
 import {fixtureScenario} from './fixtureScenario';
 import {record as readScoutRecord,put as writeScoutRecord} from './records';
 import {restoreFriendlyMagic} from './restoreFriendlyMagic';
@@ -153,6 +155,8 @@ export async function tickWorld(now=new Date()){
   });
  }
  }
+ await reviseTrainingGuide77();
+ await clearExpiredFixtureMagic();
  await advanceCalendar(now);
  await settleTips();
  if(matchesStarted){await advanceImperialGames(now);await awardSeason(now);await transitionSeason(now);}

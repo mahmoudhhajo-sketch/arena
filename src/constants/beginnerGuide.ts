@@ -210,7 +210,17 @@ Kontrollera skador, roll, lön och egenskaper tillsammans. En dyr spelare är in
 Spelaren behöver ha spelat på en position där egenskapen används. En match ger 100 procent av träningen för den spelade positionen. Spelar han två matcher får varje match 75 procent, som mest 150 procent totalt. En målvakt som står i mål en gång och vilar nästa match får 100 procent målvaktsträning. Står han i mål en gång och spelar innermitt nästa får han 75 procent målvaktsträning; står han i mål båda gångerna får han 150 procent. Det är deltagandet och positionen som räknas, inte om spelaren vann, spelade bra eller följde en viss taktik.
 
 ## Vilken position tränar vad?
-Alla positioner får konditionsträning, även målvakter. Anfallare får ingen passningsträning. Inner- och ytteranfallare får mest teknikträning; mittfältare får mindre. Backar får mest tuffhetsträning, och samtliga övriga positioner får mindre.
+Börja med vad du vill träna och välj sedan matchposition. Samma egenskap kan ge olika mycket träning på olika positioner.
+
+- Kondition: alla spelade positioner, även målvakter.
+- Snabbhet: ytterback, yttermitt och ytteranfall. Ingen snabbhetsträning i mitten eller i mål.
+- Markering: mest på backar, mindre på mittfältare.
+- Passning: mest på backar och innermitt, mindre i mål. Ingen på anfallare eller yttermitt.
+- Teknik: mest på inner- och ytteranfallare, mindre på mittfältare. Ingen på backar eller målvakter.
+- Speluppfattning: mest på innerback, innermitt och inneranfall, lite på kanterna och en liten del i mål.
+- Skott: mest på inner- och ytteranfallare, mindre på yttermitt och en liten del på innermitt.
+- Målvakt: mest i målet, mindre på yttermitt vid sidokorgarna.
+- Tuffhet: mest på backar, mindre på alla andra positioner.
 
 Tabellen gäller den position spelaren faktiskt spelade på, inte rollen i spelarprofilen. Höger och vänster ytter har samma träningsfördelning.
 
