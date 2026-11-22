@@ -102,7 +102,7 @@ export function useGameStore() {
     hasClub: false,
     userId,
     world: { season: 1, round: 0, day: 0, totalMatchesPlayed: 0 },
-    currentTab: 'lag',
+    currentTab: 'nyheter',
     selectedPlayerId: null,
     selectedMatchId: null,
     club: DUMMY_FALLBACK_CLUB,
@@ -204,7 +204,7 @@ export function useGameStore() {
           await fetchClubAndWorld();
           setState((prev) => ({
             ...prev,
-            currentTab: 'lag',
+            currentTab: 'nyheter',
             selectedPlayerId: null,
           }));
         }
