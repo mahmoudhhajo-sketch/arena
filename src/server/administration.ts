@@ -35,7 +35,11 @@ export function registerAdministration(app:Express){
    if(!(await record('admin-role-'+req.arenaUser.userId,tx))?.enabled||(await record('moderation-account-'+req.arenaUser.userId,tx))?.banned)throw Error('Administratörsbehörighet saknas.');
    const auditId='admin-audit-'+requestId,existing=await record(auditId,tx);if(existing){if(existing.actor!==req.arenaUser.userId)throw Error('Åtgärds-ID används redan.');return {success:true,repeated:true};}
    const {action,target}=req.body;let before:any,after:any;
-   if(action==='club-name'||action==='club-gold'||action==='club-rebuild'){
+   if(action==='news-publish'){
+    const title=boundedText(req.body.title,3,160),body=boundedText(req.body.body,10,20000);const [world]=await tx.select().from(worldState);
+    after={title,body:body.split(/\n\s*\n/),sender:'Spelledningen',season:world.season,date:new Date().toISOString(),authorId:req.arenaUser.userId};
+    await put('official-news','official-admin-'+requestId,after,tx);
+   }else if(action==='club-name'||action==='club-gold'||action==='club-rebuild'){
     const [c]=await tx.select().from(clubs).where(eq(clubs.id,String(target))).for('update');if(!c)throw Error('Laget saknas.');
     if(action==='club-name'){
      const name=boundedText(req.body.name,3,50),shortName=boundedText(req.body.shortName,1,25);
