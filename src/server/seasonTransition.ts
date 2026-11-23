@@ -1,3 +1,4 @@
+import {publishOfficialNews} from './officialNews';
 import {db} from '../db';
 import {clubs,players,worldState,gameRecords} from '../db/schema';
 import {eq,sql} from 'drizzle-orm';
@@ -29,6 +30,7 @@ export async function transitionSeason(now:Date){
   for(const division of DIVISION_NAMES){const ids=teams.filter((c:any)=>destinations.get(c.id)===division).map((c:any)=>c.id);if(ids.length!==10)throw Error('Fel antal lag efter flytt: '+division);roundRobin(ids).forEach((pairs,r)=>pairs.forEach(([homeId,awayId])=>rows.push({id:'fixture-'+randomUUID(),kind:'fixture',payload:{season:season+1,division,round:r+1,homeId,awayId,date:dates[r],played:false}})));}
   for(let i=0;i<rows.length;i+=100)await tx.insert(gameRecords).values(rows.slice(i,i+100));
   await tx.update(worldState).set({season:season+1,round:0,day:0,updatedAt:now});
+  await publishOfficialNews(tx,'official-season-'+(season+1),{title:'Nu har säsong '+(season+1)+' börjat!',season:season+1,date:now.toISOString(),sender:'Mambennas spelledning',body:['En ny säsong gryr över Mambenna. Lagen samlas åter under sina fanor, redo att skriva nästa kapitel i Yaraaz Vigils historia.','Tabellerna är uppdaterade och det nya spelschemat finns att läsa. Se över din trupp och förbered laget inför premiären.','Lycka till under säsong '+(season+1)+'!']});
   await put('system','season-transition-'+season,{season,nextSeason:season+1,date:now.toISOString(),firstMatch:dates[0]},tx);
  });
 }
