@@ -305,6 +305,8 @@ Artefakten Portal låter en anställd talangscout resa direkt till valfri ort i 
 Portalen flyttar bara scouten. Väl framme väljer du en vanlig sökning eller en djuptalangsökning; dessa tar fortfarande sin vanliga tid.
 
 ## Välj plats med omsorg
+Fynden varierar: en talang kan ha en särskilt stark egenskap utan att redan vara bra på allt. En djupsökning ger bättre chans att hitta en lovande spelare.
+
 Talangpotential beskriver ortens möjligheter. Den påverkas när spelare värvas och återhämtas med tiden. Olika orter har olika förutsättningar. I Berunia kan scouten hitta spelare av alla folk.
 
 Du kan avbryta en resa eller sökning. Scouten stannar då på den senast besökta orten. Ankomster hanteras vid morgonuppdateringen, och den konkreta tiden på sidan visas i din lokala tid.
@@ -426,12 +428,12 @@ Det är inte ett säkert mått på vem som är bäst över tid. En enda ovanlig 
 Referatet beskriver utvalda händelser. Statistiken räknar också bollhandlingar som inte fått en egen text. Historisk statistik hör till den säsong och de klubbar där spelaren deltog.`},
  {id:21,group:'Tävla och följ spelet',title:'Kejsarspelen och legenderna',body:`Kejsarspelen är individuella tävlingar mellan spelarna, skilda från lagens seriematcher. Alla levande ordinarie spelare i managerstyrda lag deltar automatiskt, även skadade. Du behöver inte anmäla dem. Fribrytare deltar inte.
 
-## Fem grenar
-- Snabbhet: en löptävling där snabbhet är viktigast och kondition hjälper. Lägre tid är bättre.
-- Passning: spelarna tävlar i att lyckas med passningar.
+## Sex grenar
+- Hinderbana: en löptävling där snabbhet är viktigast och kondition hjälper. Lägre tid är bättre.
+- Passet: spelarna tävlar i att lyckas med passningar.
 - Skytte: avslutarnas träffsäkerhet sätts på prov.
-- Målvaktskonst: målvaktsförmågan prövas.
-- Markering: spelaren försöker stoppa motståndarens framstötar. Flest lyckade brytningar vinner. Grenen avgörs på fredagen, före lördagens tvekamp.
+- Vakten: målvaktsförmågan prövas.
+- Brytet: spelaren försöker stoppa motståndarens framstötar. Flest lyckade brytningar vinner. Grenen avgörs på fredagen, före lördagens tvekamp.
 - Tvekamp: en utslagsturnering där tuffhet står i centrum och aggressivitet också spelar roll.
 
 Tävlingarna avgörs av spelarnas förmågor, utan slump. Permanenta artefakters fördelar räknas med, men tillfällig dopning med Drakblod ger ingen fördel.
