@@ -4,8 +4,8 @@ import {PlayerAttributes} from '../types';
 
 export const ARTIFACTS=[
  {id:'quickroot',name:'Kvickrot',price:30000,attribute:'kondition',bonus:0,rarity:'Sällsynt',supply:2,description:'Läker lite aktuell skada hos lagets egna levande spelare, höjer deras form och stärker lagets moral. Förbrukas'},
- {id:'mana-stone',name:'Manasten',price:45000,attribute:'speluppfattning',bonus:0,rarity:'Sällsynt',supply:2,description:'Ger laget en extra mana varje dag medan stenen finns i förrådet. Flera stenar verkar tillsammans. Till salu vilar dess kraft'},
- {id:'mana-cluster',name:'Manakluster',price:0,attribute:'speluppfattning',bonus:0,rarity:'Unik',supply:0,description:'Kejsarens gåva till vinnaren av Kejsarserien. Fördubblar lagets befintliga mana, med högst 300 mana i tillskott. Förbrukas och kan inte säljas'},
+ {id:'mana-stone',name:'Manasten',price:45000,attribute:'speluppfattning',bonus:0,rarity:'Sällsynt',supply:2,description:'Ger laget en extra mana varje dag i 20 veckor från första förvärvet. Flera stenar verkar tillsammans. Försäljning startar inte om tiden; till salu vilar kraften'},
+ {id:'mana-cluster',name:'Manakluster',price:0,attribute:'speluppfattning',bonus:0,rarity:'Unik',supply:0,description:'Kejsarens gåva till vinnaren av Kejsarserien. Fördubblar lagets befintliga mana, med högst 300 mana i tillskott. Förbrukas. Kan säljas mellan lag men läggs aldrig ut av Kejsaren'},
  {id:'portal',name:'Portal',price:28000,attribute:'speluppfattning',bonus:0,rarity:'Sällsynt',supply:2,description:'Öppnar en väg till valfri ort i Mambenna för din talangscout. Resan sker omedelbart. Sökandet efter en ny talang tar fortfarande tid. Förbrukas vid användning'},
 
  {id:'speed-boots',name:'Gripstövlar',price:18000,attribute:'snabbhet',bonus:3,rarity:'Ovanlig',supply:10,description:'Förhäxade skor som ger bäraren snabbare steg. Kan inte kombineras med Sjumilastövlar'},
