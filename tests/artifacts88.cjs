@@ -1,0 +1,10 @@
+const fs=require('fs'),ts=require('typescript'),assert=require('node:assert/strict');process.env.LOCAL_DB_DIR=':memory:';process.env.DATABASE_URL='';process.env.SQL_HOST='';process.env.RAILWAY_ENVIRONMENT='';require.extensions['.ts']=(m,p)=>m._compile(ts.transpileModule(fs.readFileSync(p,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,p);
+const {db,initializeDatabase,closeDatabase}=require('../src/db/index.ts'),{clubs,players}=require('../src/db/schema.ts'),{put,record}=require('../src/server/records.ts');
+const {useTeamArtifact,awardChampionCluster}=require('../src/server/manaArtifacts.ts'),{clubMorale}=require('../src/server/revision13.ts');
+(async()=>{await initializeDatabase();const now=new Date();await db.insert(clubs).values({id:'c',userId:'u',name:'C',shortName:'C',race:'human',hometown:'Berunia',division:'Kejsarserien',isBot:false,ownerName:'U',lineup:{},trainingPoints:{}});
+await db.insert(players).values({id:1,clubId:'c',name:'P',race:'human',shirtNumber:1,hometown:'Berunia',nominalPosition:'Back',wage:500,attributes:{},form:9,totalInjury:3,currentInjury:2});
+await put('morale-change','penalty',{clubId:'c',penalty:10,date:now.toISOString()});
+await put('mana','mana-c',{version:2,mana:200,at:+now,dailyGain:0});
+await db.transaction(async tx=>{assert.equal(await awardChampionCluster(tx,'c',1,now),true);assert.equal(await awardChampionCluster(tx,'c',1,now),false);await useTeamArtifact(tx,await record('champion-mana-cluster-1',tx),now)});assert.equal((await record('mana-c')).mana,400);assert.equal((await record('champion-mana-cluster-1')).clubId,null);
+await put('artifact-item','root',{artifactId:'quickroot',clubId:'c',listed:false});await db.transaction(async tx=>useTeamArtifact(tx,await record('root',tx),now));const [p]=await db.select().from(players);assert.equal(p.currentInjury,1);assert.equal(p.totalInjury,3);assert.equal(p.form,10);assert.equal(await clubMorale('c',db,+now),95);
+await closeDatabase();console.log('New artifacts integration passed');})().catch(e=>{console.error(e);process.exitCode=1});

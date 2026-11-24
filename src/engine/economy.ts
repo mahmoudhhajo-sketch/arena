@@ -16,11 +16,11 @@ export function arenaConfidence(toughness:number,glory:number,dread:number,homeF
  const support=isHome?.08*(1-Math.exp(-Math.max(0,homeFans)/35000)):0;
  return {courage,fear,support,multiplier:1+courage+support-fear};
 }
-export function acquisitionMorale(events:{date:string;penalty:number}[],now=Date.now()){
+export function acquisitionMorale(events:{date:string;penalty:number;bonus?:number}[],now=Date.now()){
  const changes=events.filter(e=>Number.isFinite(+new Date(e.date))&&+new Date(e.date)<=now).sort((a,b)=>+new Date(a.date)-+new Date(b.date));
  let morale=100,at=changes.length?+new Date(changes[0].date):now;
  const recover=(until:number)=>{morale=Math.min(100,morale+2*dailyUpdates(new Date(at),new Date(until)).filter(d=>d.getUTCDay()===0).length);at=until;};
- for(const e of changes){recover(+new Date(e.date));morale=Math.max(0,morale-Math.max(0,e.penalty));}
+ for(const e of changes){recover(+new Date(e.date));morale=Math.min(100,Math.max(0,morale-Math.max(0,e.penalty)+Math.max(0,e.bonus||0)));}
  recover(now);return morale;
 }
 // Morale is deliberately the lightest broad match factor: the complete range

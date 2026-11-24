@@ -1,3 +1,4 @@
+import {manaStoneIncome} from '../engine/manaArtifacts';
 import {expireCoaches} from './coachContracts';
 import {weeklyMagicThresholds,refreshMagicPrices} from './magicPrices';
 import {earnedMagicLevel,regenerateMana} from '../engine/magicEconomy';
@@ -72,11 +73,13 @@ export async function advanceCalendar(until:Date){
    }
    // Credit mana and remember the daily share of the budget that produced it.
    // A later budget change therefore cannot erase an already earned charge.
+   const manaArtifacts=await records('artifact-item',tx);
    for(const snapshot of all){
     const [c]=await tx.select().from(clubs).where(eq(clubs.id,snapshot.id)).for('update');
     if(c.createdAt>at)continue;
     const thresholds=await weeklyMagicThresholds(c.id,tx),progress=await record('magic-progress-'+c.id,tx);
     const state=regenerateMana(await record('mana-'+c.id,tx),c.magicInvestment,earnedMagicLevel(c.magicInvestment,thresholds,progress?.weeks||0),thresholds.reference,+at);
+    state.mana+=manaStoneIncome(manaArtifacts,c.id,+at);
     await put('mana','mana-'+c.id,state,tx);
     const prior=await record('magic-billing-'+c.id,tx),accrued=Number(prior?.accrued||0)+Number(c.magicInvestment||0)/7;
     await put('magic-billing','magic-billing-'+c.id,{clubId:c.id,accrued,updatedAt:at.toISOString()},tx);
