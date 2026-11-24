@@ -3,6 +3,9 @@ import {activeSpells} from './spells';
 import {PlayerAttributes} from '../types';
 
 export const ARTIFACTS=[
+ {id:'quickroot',name:'Kvickrot',price:30000,attribute:'kondition',bonus:0,rarity:'Sällsynt',supply:2,description:'Läker lite aktuell skada hos lagets egna levande spelare, höjer deras form och stärker lagets moral. Förbrukas'},
+ {id:'mana-stone',name:'Manasten',price:45000,attribute:'speluppfattning',bonus:0,rarity:'Sällsynt',supply:2,description:'Ger laget en extra mana varje dag medan stenen finns i förrådet. Flera stenar verkar tillsammans. Till salu vilar dess kraft'},
+ {id:'mana-cluster',name:'Manakluster',price:0,attribute:'speluppfattning',bonus:0,rarity:'Unik',supply:0,description:'Kejsarens gåva till vinnaren av Kejsarserien. Fördubblar lagets befintliga mana, med högst 300 mana i tillskott. Förbrukas och kan inte säljas'},
  {id:'portal',name:'Portal',price:28000,attribute:'speluppfattning',bonus:0,rarity:'Sällsynt',supply:2,description:'Öppnar en väg till valfri ort i Mambenna för din talangscout. Resan sker omedelbart. Sökandet efter en ny talang tar fortfarande tid. Förbrukas vid användning'},
 
  {id:'speed-boots',name:'Gripstövlar',price:18000,attribute:'snabbhet',bonus:3,rarity:'Ovanlig',supply:10,description:'Förhäxade skor som ger bäraren snabbare steg. Kan inte kombineras med Sjumilastövlar'},
@@ -42,7 +45,7 @@ const brewWeightScale=31*brewShare/(1-brewShare)/65;
 export const ARTIFACT_MARKET_WEIGHTS:Record<string,number>={
  'herbal-brew':38*brewWeightScale,'black-brew':27*brewWeightScale,'luck-amulet':7,'keeper-gloves':5,
  'speed-boots':4,'thorn-bracer':4,'mithril':3,'seven-mile-boots':2,
- 'portal':2,'dragon-blood':1,'moon-staff':1,'cantaniring':3,'warlords-oath':1
+ 'quickroot':2,'mana-stone':2,'portal':2,'dragon-blood':1,'moon-staff':1,'cantaniring':3,'warlords-oath':1
 };
 export const MARKET_ARTIFACTS=ARTIFACTS.filter(a=>ARTIFACT_MARKET_WEIGHTS[a.id]>0);
 
