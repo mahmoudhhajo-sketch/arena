@@ -1,3 +1,4 @@
+import {initializeManaStoneLifetimes} from './manaStoneLifetime';
 import {manaStoneIncome} from '../engine/manaArtifacts';
 import {expireCoaches} from './coachContracts';
 import {weeklyMagicThresholds,refreshMagicPrices} from './magicPrices';
@@ -12,6 +13,7 @@ import {ATTRIBUTE_NAMES_SV,QUALITATIVE_ATTRIBUTE_LABELS} from '../constants/attr
 import {teamNews} from './newsStatistics';
 
 export async function advanceCalendar(until:Date){
+ await db.transaction((tx:any)=>initializeManaStoneLifetimes(tx,until));
  const clock=await record('calendar-clock');
  // Installing this feature never retroactively charges the user's existing club.
  if(!clock){await put('system','calendar-clock',{last:until.toISOString()});return;}
