@@ -1,3 +1,4 @@
+import {playersByNumber} from '../lib/playerOrder';
 import { useState, useEffect, useCallback } from 'react';
 import {api} from '../lib/api';
 import {
@@ -145,7 +146,7 @@ export function useGameStore() {
         world: worldData,
         hasClub: clubData.hasClub,
         club: clubData.hasClub ? clubData.club : prev.club,
-        players: clubData.hasClub ? clubData.players : [],
+        players: clubData.hasClub ? playersByNumber(clubData.players) : [],
         divisionStandings: divisionClubs,
         matchesHistory,
         selectedMatchId: matchesHistory[0]?.id || null,
@@ -273,7 +274,7 @@ export function useGameStore() {
         setState((prev) => ({
           ...prev,
           club: data.updatedClub || prev.club,
-          players: data.updatedPlayers || prev.players,
+          players: playersByNumber(data.updatedPlayers || prev.players),
           matchesHistory: [data.matchReport, ...prev.matchesHistory],
           selectedMatchId: data.matchReport.id,
         }));
