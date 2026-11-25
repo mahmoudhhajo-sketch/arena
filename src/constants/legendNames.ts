@@ -1,11 +1,53 @@
 import {imperialDisciplineKey} from './imperialDisciplines';
-const parts:Record<string,[string[],string[]]>={
- Snabbhet:[['Vind','Storm','Grynings','Skymnings','Blixt'],['foten','fångaren','löparen','vandraren','språnget','steget','dansaren','vinge','skuggan','pilen']],
- Passning:[['Boll','Tråd','Silkes','Stjärn','Båg'],['vävaren','bindaren','mästaren','spinnaren','lotsen','sändaren','ritaren','trollaren','länken','formaren']],
- Skytte:[['Sol','Falk','Drak','Mån','Eld'],['ögat','pilen','siktet','träffen','skytten','spetsen','stötaren','lansen','slungan','klingan']],
- Målvakt:[['Järn','Berg','Granit','Sköld','Koppar'],['muren','väktaren','borgen','handen','porten','fästet','låset','vakten','pelaren','bastionen']],
- Markering:[['Skugg','Järn','Natt','Spår','Stål'],['väktaren','följaren','låset','fångaren','vakten','stängslet','blicken','greppet','väggen','jägaren']],
- Tvekamp:[['Åsk','Stål','Varg','Jord','Ek'],['näven','brytaren','hammaren','tämjaren','greppet','kämpen','fällaren','kraften','duellanten','vrålet']]
+
+// Handwritten, single-word epithets in indefinite form. Never combine name parts.
+export const LEGEND_NAMES:Record<string,string[]>={
+ Snabbhet:[
+  'Vindfot','Vindfånge','Raskben','Blixtfot','Stormvinge','Lättfot','Snabbfot','Fjädersteg','Daggdans','Skymningssprång',
+  'Hjortfot','Svalvinge','Gryningsbud','Silversteg','Stigfinnare','Molnlöpare','Fjäderfot','Vindföre','Harfot','Dimmsteg',
+  'Solsteg','Bråddjupsdans','Bäcksprång','Lövsus','Åskföre','Snöspår','Långkliv','Morgonvind','Korpvinge','Forslöpare',
+  'Vidfot','Fjällvind','Rimfot','Regnflykt','Glödsteg','Vägfarare','Nattflykt','Kvilfot','Gräsviskare','Stjärnfall',
+  'Horisontjägare','Vildsprång','Tusensteg','Frihjort','Månstråk','Silversporre','Våril','Disvinge','Flyktfot','Ljungeld',
+ ],
+ Passning:[
+  'Silkestråd','Vägvisare','Guldhand','Ödesvävare','Trädsång','Bollviskare','Genväg','Silverbana','Klarsyn','Nålsöga',
+  'Samklang','Stjärnled','Brobyggare','Dubbelsyn','Knutlösare','Gryningstråd','Edsbindare','Vänsterhand','Drömvävare','Falkbud',
+  'Bågmästare','Framsyn','Svanbåge','Trådfinnare','Månstrimma','Gläntbud','Spindelsilke','Guldtråd','Hjärtlänk','Kedjebindare',
+  'Säkerhand','Kvicksilver','Stigöppnare','Fjärrbud','Ljusled','Trollslända','Spelvävare','Hoppbud','Vänhand','Vägbindare',
+  'Regnbåge','Lönnstig','Kroklist','Skymningsbud','Duvvinge','Bollpoet','Stillabud','Sidenhand','Lönnvävare','Vindsändare',
+ ],
+ Skytte:[
+  'Falköga','Solspjut','Drakbett','Månpil','Stjärnskott','Gyllenhand','Tyståska','Korgbane','Långskott','Ödespil',
+  'Eldtunga','Skarpöga','Komet','Järnsikte','Hökblick','Rödblixt','Bågfurste','Målsökare','Stormslunga','Dödvinkel',
+  'Solsting','Nattpil','Fjärrträff','Kronkrossare','Gryningsspjut','Segerskott','Nålspets','Skymningsjägare','Kopparöga','Tornfällare',
+  'Stålregn','Draktunga','Månristare','Rödfjäder','Gyllenbåge','Domseld','Måltjuv','Glödöga','Askpil','Korgfällare',
+  'Bågstorm','Silversikte','Nätbrännare','Vildskott','Falkklo','Blixtkast','Rimspjut','Örnblick','Långarm','Segergnist',
+ ],
+ Målvakt:[
+  'Järnmur','Silverhand','Bergfast','Portvakt','Granithjärta','Sköldbärare','Nattvakt','Tryggfamn','Bollfångare','Gråklippa',
+  'Gränsvakt','Kungsport','Stenhand','Stormankare','Månvakt','Örnklo','Kopparsköld','Tröskelvakt','Räddare','Järnfamn',
+  'Morgonvakt','Granitnäve','Löfteshållare','Fjällväktare','Stängnäve','Skymningsport','Rikssköld','Vinterborg','Bastion','Fångstmästare',
+  'Sköldhjärta','Stillafamn','Bergrot','Stenlöfte','Järnport','Säkerfamn','Klipphand','Vallväktare','Grindvakt','Falkfångare',
+  'Ekhjärta','Snabbhand','Bollbindare','Kronväktare','Ormsköld','Dubbelfamn','Tornvakt','Rimväktare','Sistaankare','Edsvakt',
+ ],
+ Markering:[
+  'Skuggföljare','Spårlösare','Järngrepp','Bolltjuv','Vägstängare','Nattöga','Fällmästare','Stålklo','Kedjebrytare','Gråvarg',
+  'Avskärare','Stigväktare','Korpblick','Lodjursöga','Spårhund','Silkesfälla','Stiglös','Rävlist','Bollskugga','Järnring',
+  'Gränsdragare','Tjuvhand','Bakspår','Stålblick','Nattnät','Låsmästare','Försåt','Vilseledare','Bantjuv','Lodjurssteg',
+  'Knutnäve','Hållfast','Fångstnät','Ingenmansmark','Ödesbrytare','Skuggsteg','Spårfinnare','Törngrepp','Smygklo','Tjuvblick',
+  'Nätkastare','Stigspärr','Listvävare','Fångstklo','Passvakt','Bolljägare','Lönngrepp','Vägklippare','Skuggklo','Rävöga',
+ ],
+ Tvekamp:[
+  'Järnkäke','Åsknäve','Bergbrytare','Benknäckare','Stålhjärta','Tungnäve','Vildhjärta','Klanbane','Ekrot','Stormtämjare',
+  'Drakrygg','Sköldknäckare','Gråbjörn','Blodsek','Rödhand','Hammarslag','Jordskakare','Ärrkung','Fjällrese','Brottmästare',
+  'Vargtämjare','Järnvilja','Dunder','Stenbock','Käftkrossare','Björnfamn','Klanskräck','Asknäve','Trollfällare','Bronsnacke',
+  'Kampglöd','Åskvrål','Bergakraft','Granitrygg','Vargbroder','Märgbrytare','Segervrål','Järnrot','Stridsarvinge','Bisterhand',
+  'Björnklo','Benkross','Hårdnacke','Hammarnäve','Bergbane','Stormkäft','Ärrväktare','Blodtand','Kampvilja','Sköldbane',
+ ],
 };
-export const LEGEND_NAMES=Object.fromEntries(Object.entries(parts).map(([k,[a,b]])=>[k,a.flatMap(x=>b.map(y=>x+y))]));
-export function legendName(event:string,seed:number,used:string[]=[]){const all=LEGEND_NAMES[imperialDisciplineKey(event)]||LEGEND_NAMES.Tvekamp,available=all.filter(n=>!used.includes(n));const pool=available.length?available:all;return pool[Math.abs(seed)%pool.length]}
+export function legendName(event:string,seed:number,used:string[]=[]){
+ const all=LEGEND_NAMES[imperialDisciplineKey(event)]||LEGEND_NAMES.Tvekamp;
+ const available=all.filter(n=>!used.some(name=>name===n||name.endsWith(' '+n)));
+ const pool=available.length?available:all;
+ return pool[Math.abs(seed)%pool.length];
+}
