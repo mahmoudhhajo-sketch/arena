@@ -3,17 +3,23 @@ export function magicThresholds(clubId:string,teams:Array<{id:string;magicInvest
 export function earnedMagicLevel(budget:number,thresholds:{level2:number;level3:number},weeks:number){return budget<=0?0:budget>=thresholds.level3&&weeks>=6?3:budget>=thresholds.level2?2:1}
 
 // Daily income is bounded; saved mana has no storage limit.
-export function manaPlan(budget:number,level:number,reference:number){
+export function manaPlan(budget:number,level:number,reference:number,now=Date.now()){
  const ratio=Math.max(0,budget)/Math.max(1,reference);
  const dailyGain=level<=0||budget<=0?0:Math.round(Math.min(24,[0,6,9,12][level]*Math.min(2,ratio))*10)/10;
- return {dailyGain};
+ return {dailyGain:dailyGain*(now>=MANA_GROWTH_CHANGE_AT?.5:1)};
 }
-export function regenerateMana(state:any,budget:number,level:number,reference:number,now=Date.now()){
- const plan=manaPlan(budget,level,reference);
- // Migrate an existing balance without granting an old stockpile of daily income.
+
+// Existing balances and income earned before this instant are preserved.
+export const MANA_GROWTH_CHANGE_AT=Date.parse('2026-11-25T16:52:22.947Z');
+export function accrueMana(state:any,now=Date.now()){
  const previous=state?.version===2?state:null;
  const at=Math.max(now,Number(previous?.at||0));
- const days=previous?dailyUpdates(new Date(previous.at),new Date(at)).length:0;
- const mana=Math.max(0,Number(state?.mana||0))+days*Number(previous?.dailyGain||0);
- return {...plan,mana,at,version:2,cooldowns:{}};
+ const baseGain=Number(previous?.dailyGain||0)/(previous?.growthRevision===94&&Number(previous.at)>=MANA_GROWTH_CHANGE_AT?.5:1);
+ const income=previous?dailyUpdates(new Date(previous.at),new Date(at)).reduce((sum,date)=>sum+baseGain*(+date>=MANA_GROWTH_CHANGE_AT?.5:1),0):0;
+ return {...state,mana:Math.max(0,Number(state?.mana||0))+income,at,dailyGain:baseGain*(at>=MANA_GROWTH_CHANGE_AT?.5:1),version:2,growthRevision:94};
+}
+
+export function regenerateMana(state:any,budget:number,level:number,reference:number,now=Date.now()){
+ const accrued=accrueMana(state,now);
+ return {...accrued,...manaPlan(budget,level,reference,accrued.at),cooldowns:{}};
 }

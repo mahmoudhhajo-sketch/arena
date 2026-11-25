@@ -1,4 +1,4 @@
-import {dailyUpdates} from '../engine/calendar';
+import {accrueMana} from '../engine/magicEconomy';
 import {eq} from 'drizzle-orm';
 import {clubs,players} from '../db/schema';
 import {put,record} from './records';
@@ -11,8 +11,7 @@ export async function useTeamArtifact(tx:any,item:any,now=new Date()){
  const [club]=await tx.select().from(clubs).where(eq(clubs.id,item.clubId)).for('update');
  if(!club)throw Error('Laget saknas.');
  if(item.artifactId==='mana-cluster'){
-  const state=await record('mana-'+club.id,tx)||{version:2,mana:0,at:+now,dailyGain:0,cooldowns:{}};
-  if(state.version===2){state.mana+=dailyUpdates(new Date(state.at),now).length*Number(state.dailyGain||0);state.at=Math.max(Number(state.at),+now);}
+  const state=accrueMana(await record('mana-'+club.id,tx),+now);
   const gain=manaClusterGain(state.mana);if(!gain)throw Error('Laget behöver mana innan klustret kan användas.');
   await put('mana','mana-'+club.id,{...state,mana:state.mana+gain},tx);
  }else{
