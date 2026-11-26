@@ -1,3 +1,5 @@
+import {prepareRecruitmentCampaign} from './recruitmentCampaign';
+import {mailReadyToSend,mimeBody} from './mailMessage';
 import nodemailer from 'nodemailer';
 import {record,records,put} from './records';
 import {db} from '../db';
@@ -26,22 +28,23 @@ export async function sendQueuedMessage(m:any){
  const text=m.text||'Välkommen till Arenan, '+m.name+'!\nLogga in på '+process.env.PUBLIC_ORIGIN+' och anmäl ditt lag.\nSpelledningen';
  if(process.env.GMAIL_APP_PASSWORD){
   const transport=nodemailer.createTransport({host:'smtp.gmail.com',port:465,secure:true,auth:{user:gameMailbox,pass:process.env.GMAIL_APP_PASSWORD},connectionTimeout:10000,greetingTimeout:10000,socketTimeout:15000});
-  try{await transport.sendMail({from:{name:'Arenan',address:gameMailbox},to:m.to,replyTo:m.replyTo||gameMailbox,subject,text,messageId:'<'+m.id+'@arena.local>'});}finally{transport.close();}
+  try{await transport.sendMail({from:{name:'Arenan',address:gameMailbox},to:m.to,replyTo:m.replyTo||gameMailbox,subject,text,...(m.html?{html:m.html}:{}),messageId:'<'+m.id+'@arena.local>'});}finally{transport.close();}
   return;
  }
  const response=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:process.env.GMAIL_CLIENT_ID!,client_secret:process.env.GMAIL_CLIENT_SECRET!,refresh_token:process.env.GMAIL_REFRESH_TOKEN!,grant_type:'refresh_token'}),signal:AbortSignal.timeout(10000)});
  if(!response.ok)throw Error('Google authorization failed');
  const token=await response.json() as any;
- const raw=['From: Arenan <'+gameMailbox+'>','To: '+m.to,'Reply-To: '+(m.replyTo||gameMailbox),'Subject: =?UTF-8?B?'+Buffer.from(subject).toString('base64')+'?=','Message-ID: <'+m.id+'@arena.local>','MIME-Version: 1.0','Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64','',Buffer.from(text).toString('base64').match(/.{1,76}/g)!.join('\r\n')].join('\r\n');
+ const raw=['From: Arenan <'+gameMailbox+'>','To: '+m.to,'Reply-To: '+(m.replyTo||gameMailbox),'Subject: =?UTF-8?B?'+Buffer.from(subject).toString('base64')+'?=','Message-ID: <'+m.id+'@arena.local>','MIME-Version: 1.0',mimeBody(text,m.html)].join('\r\n');
  const sent=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{Authorization:'Bearer '+token.access_token,'Content-Type':'application/json'},body:JSON.stringify({raw:Buffer.from(raw).toString('base64url')}),signal:AbortSignal.timeout(10000)});
  if(!sent.ok)throw Error('Gmail delivery failed');
 }
 export async function deliverWelcomeMail(){
+ try{await prepareRecruitmentCampaign()}catch(error){console.error('Recruitment campaign initialization:',error)}
  if(!mailConfigured())return;
- const pending=(await records('mail-outbox')).filter(m=>!m.sentAt&&m.attempts<5&&(!m.retryAt||+new Date(m.retryAt)<=Date.now())).slice(0,3);
+ const pending=(await records('mail-outbox')).filter(m=>mailReadyToSend(m)).slice(0,60);
  for(const item of pending)await db.transaction(async(tx:any)=>{
   await tx.execute(sql`SELECT pg_advisory_xact_lock(719204)`);
-  const m=await record(item.id,tx);if(m.sentAt||m.attempts>=5||m.retryAt&&+new Date(m.retryAt)>Date.now())return;
+  const m=await record(item.id,tx);if(!mailReadyToSend(m))return;
   try{await sendQueuedMessage(m);await put('mail-outbox',m.id,{...m,sentAt:new Date().toISOString()},tx);}
   catch{await put('mail-outbox',m.id,{...m,attempts:m.attempts+1,retryAt:new Date(Date.now()+3600000).toISOString()},tx);console.error('Email delivery failed; queued for retry.');}
  });

@@ -1,0 +1,14 @@
+.recruitment-notice{width:min(640px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:2px solid #657950;border-radius:14px;background:#f4f0e3;color:#283122;box-shadow:0 14px 60px #0006;overflow:hidden;box-sizing:border-box}
+.recruitment-notice::backdrop{background:rgba(20,29,19,.72)}
+.recruitment-notice[open]{display:flex;flex-direction:column}.recruitment-notice header,.recruitment-notice footer{flex-shrink:0}.recruitment-notice-body{min-height:0;flex-shrink:1}
+.recruitment-notice header{padding:20px 24px 14px;background:linear-gradient(115deg,#e1e6d2,#f0ead7);border-bottom:1px solid #bdc5aa}
+.recruitment-notice header small{color:#586a44;letter-spacing:.06em}
+.recruitment-notice h2{font-family:Georgia,serif;font-size:clamp(19px,3.5vw,25px);line-height:1.25;margin:9px 0 0!important;color:#33452c}
+.recruitment-notice-body{height:min(40dvh,300px);overflow-y:auto;overscroll-behavior:contain;padding:6px 24px 18px;line-height:1.7;font-size:16px;scrollbar-color:#839270 #e8e4d5}
+.recruitment-notice-body:focus-visible{outline:2px solid #788c5e;outline-offset:-3px}
+.recruitment-notice-body p{margin:16px 0}.recruitment-notice-body a{color:#49643b;text-decoration:underline;overflow-wrap:anywhere}
+.recruitment-notice footer{padding:12px 24px 18px;border-top:1px solid #bdc5aa;background:#e9eadc}
+.recruitment-notice footer p{font-size:13px;margin:0 0 10px;color:#536047}
+.recruitment-notice footer button{width:100%;padding:11px 14px;border:1px solid #4c603b;border-radius:7px;background:#526c42;color:#fff;line-height:1.35;font-weight:bold;cursor:pointer}
+.recruitment-notice footer button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:480px){.recruitment-notice header{padding:15px 17px 12px}.recruitment-notice-body{padding-left:17px;padding-right:17px;height:38dvh}.recruitment-notice footer{padding:12px 17px}}
