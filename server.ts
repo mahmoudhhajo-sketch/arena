@@ -1,3 +1,4 @@
+import {registerRecruitmentCampaign} from './src/server/recruitmentCampaign';
 import {deliverWelcomeMail} from './src/server/welcomeMail';
 import {registerCoachLicense} from './src/server/coachLicense';
 import {initializeRevision39} from './src/server/revision39';
@@ -106,7 +107,7 @@ app.use(express.json({limit:"1mb"}));
 registerClubIdAliases(app);
 registerAuth(app);
 registerCoachLicense(app);
-registerContactPreferences(app);
+registerContactPreferences(app);registerRecruitmentCampaign(app);
 registerAdministration(app);
 
 registerRevision13(app);registerRevision11(app);registerSharedChat(app);
