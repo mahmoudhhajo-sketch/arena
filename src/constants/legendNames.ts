@@ -51,3 +51,9 @@ export function legendName(event:string,seed:number,used:string[]=[]){
  const pool=available.length?available:all;
  return pool[Math.abs(seed)%pool.length];
 }
+
+// Owner-selected titles for the remaining first-season competitions only.
+export function officialLegendName(event:string,season:number,seed:number,used:string[]=[]){
+ const chosen:Record<string,string>={Passning:'Vägbindare',Skytte:'Stormslunga',Målvakt:'Portvakt',Markering:'Avskärare',Tvekamp:'Käftkrossare'};
+ return (season===1?chosen[imperialDisciplineKey(event)]:undefined)||legendName(event,seed,used);
+}
