@@ -13,6 +13,9 @@ export function trustedOrigin(origin:string,host:string){
  return allowed.includes(origin);
 }
 export function registerAuth(app:Express){
+ let communityCache:{count:number;at:number}|null=null;
+ app.get('/api/auth/community-count',async(_req,res)=>{try{const now=Date.now();if(!communityCache||now-communityCache.at>30000){const registered=new Set((await records('account')).map(a=>a.userId));const teams=await db.select({userId:clubs.userId,isBot:clubs.isBot}).from(clubs);const ids=new Set(teams.filter(c=>!c.isBot&&c.userId&&registered.has(c.userId)).map(c=>c.userId));communityCache={count:ids.size,at:now};}res.setHeader('Cache-Control','no-store');res.json({count:communityCache.count,goal:100});}catch{res.status(503).json({error:'Antalet spelare kunde inte hämtas.'})}});
+
  const attempts=new Map<string,{count:number;at:number}>();
  const token=(req:any)=>String(req.headers.cookie||'').split(';').map((s:string)=>s.trim()).find((s:string)=>s.startsWith('arena_session='))?.slice(14)||'';
  const local=(req:any)=>['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)&&!process.env.PUBLIC_ORIGIN;
